@@ -103,8 +103,10 @@ func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request)
 
 // AdminBookmarksList handles the admin bookmarks listing
 func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
-	bookmarks, err := h.service.ListBookmarks(r.Context(), service.BookmarkListOptions{
-		Limit:  100,
+	ctx := r.Context()
+
+	bookmarks, err := h.service.ListBookmarks(ctx, service.BookmarkListOptions{
+		Limit:  500, // Load more for client-side filtering
 		Offset: 0,
 	})
 	if err != nil {
@@ -112,7 +114,12 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, admin.BookmarksList(bookmarks))
+	collections, _ := h.service.ListCollections(ctx, false)
+
+	render(w, r, admin.BookmarksList(admin.BookmarksListData{
+		Bookmarks:   bookmarks,
+		Collections: collections,
+	}))
 }
 
 // AdminBookmarkNew handles the new bookmark form
