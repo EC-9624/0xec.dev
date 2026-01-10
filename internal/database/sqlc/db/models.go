@@ -8,6 +8,16 @@ import (
 	"time"
 )
 
+type Activity struct {
+	ID         int64      `json:"id"`
+	Action     string     `json:"action"`
+	EntityType *string    `json:"entity_type"`
+	EntityID   *int64     `json:"entity_id"`
+	Title      *string    `json:"title"`
+	Metadata   *string    `json:"metadata"`
+	CreatedAt  *time.Time `json:"created_at"`
+}
+
 type Bookmark struct {
 	ID           int64      `json:"id"`
 	Url          string     `json:"url"`

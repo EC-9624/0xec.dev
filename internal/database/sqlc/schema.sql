@@ -134,3 +134,19 @@ CREATE TABLE IF NOT EXISTS post_tags (
 );
 
 CREATE INDEX IF NOT EXISTS idx_post_tags_tag ON post_tags(tag_id);
+
+-- ============================================
+-- ACTIVITIES (activity feed/audit log)
+-- ============================================
+CREATE TABLE IF NOT EXISTS activities (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    action          TEXT NOT NULL,
+    entity_type     TEXT,
+    entity_id       INTEGER,
+    title           TEXT,
+    metadata        TEXT,
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activities_entity ON activities(entity_type, entity_id);

@@ -55,6 +55,9 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 		}
 	}
 
+	// Log activity
+	s.LogActivity(ctx, ActionBookmarkCreated, EntityBookmark, bookmark.ID, input.Title, nil)
+
 	return s.GetBookmarkByID(ctx, bookmark.ID)
 }
 
@@ -91,12 +94,30 @@ func (s *Service) UpdateBookmark(ctx context.Context, id int64, input models.Upd
 		return nil, err
 	}
 
+	// Log activity
+	s.LogActivity(ctx, ActionBookmarkUpdated, EntityBookmark, id, input.Title, nil)
+
 	return s.GetBookmarkByID(ctx, id)
 }
 
 // DeleteBookmark deletes a bookmark
 func (s *Service) DeleteBookmark(ctx context.Context, id int64) error {
-	return s.queries.DeleteBookmark(ctx, id)
+	// Get bookmark title for activity log before deleting
+	bookmark, _ := s.GetBookmarkByID(ctx, id)
+	title := ""
+	if bookmark != nil {
+		title = bookmark.Title
+	}
+
+	err := s.queries.DeleteBookmark(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Log activity
+	s.LogActivity(ctx, ActionBookmarkDeleted, EntityBookmark, id, title, nil)
+
+	return nil
 }
 
 // GetBookmarkByID retrieves a bookmark by ID
