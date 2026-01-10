@@ -121,6 +121,15 @@ func main() {
 		}
 	})
 
+	// Import
+	adminMux.HandleFunc("/admin/import", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			h.AdminImportBookmarks(w, r)
+		} else {
+			h.AdminImportPage(w, r)
+		}
+	})
+
 	// Collections admin
 	adminMux.HandleFunc("/admin/collections", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {

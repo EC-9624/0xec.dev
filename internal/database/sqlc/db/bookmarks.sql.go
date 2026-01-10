@@ -187,6 +187,32 @@ func (q *Queries) GetBookmarkByID(ctx context.Context, id int64) (Bookmark, erro
 	return i, err
 }
 
+const getBookmarkByURL = `-- name: GetBookmarkByURL :one
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks WHERE url = ? LIMIT 1
+`
+
+func (q *Queries) GetBookmarkByURL(ctx context.Context, url string) (Bookmark, error) {
+	row := q.db.QueryRowContext(ctx, getBookmarkByURL, url)
+	var i Bookmark
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.Title,
+		&i.Description,
+		&i.Excerpt,
+		&i.CoverImage,
+		&i.Favicon,
+		&i.Domain,
+		&i.CollectionID,
+		&i.IsPublic,
+		&i.IsFavorite,
+		&i.SortOrder,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getBookmarkTags = `-- name: GetBookmarkTags :many
 SELECT t.id, t.name, t.slug, t.color, t.created_at
 FROM tags t
