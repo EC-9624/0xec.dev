@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/EC-9624/0xec.dev/internal/service"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
 )
@@ -85,17 +84,19 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 // AdminDashboard handles the admin dashboard
 func (h *Handlers) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	postCount, _ := h.service.CountPosts(ctx, false)
-	bookmarkCount, _ := h.service.CountBookmarks(ctx, service.BookmarkListOptions{})
-	collections, _ := h.service.ListCollections(ctx, false)
-	tags, _ := h.service.ListTags(ctx)
 
-	stats := admin.DashboardStats{
-		PostCount:       postCount,
-		BookmarkCount:   bookmarkCount,
-		CollectionCount: len(collections),
-		TagCount:        len(tags),
+	// Get dashboard stats
+	stats, err := h.service.GetDashboardStats(ctx)
+	if err != nil {
+		http.Error(w, "Failed to load dashboard", http.StatusInternalServerError)
+		return
 	}
 
-	render(w, r, admin.Dashboard(stats))
+	// Get recent activities
+	activities, _ := h.service.ListRecentActivities(ctx, 10, 0)
+
+	render(w, r, admin.Dashboard(admin.DashboardData{
+		Stats:      stats,
+		Activities: activities,
+	}))
 }
