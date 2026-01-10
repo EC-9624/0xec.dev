@@ -11,19 +11,19 @@ import (
 
 // ImportedBookmark represents a bookmark parsed from an import file
 type ImportedBookmark struct {
-	URL       string
-	Title     string
-	AddedAt   time.Time
-	Folder    string // The folder path from the import (e.g., "Bookmarks Bar/Tech")
+	URL     string
+	Title   string
+	AddedAt time.Time
+	Folder  string // The folder path from the import (e.g., "Bookmarks Bar/Tech")
 }
 
 // ImportResult contains the results of an import operation
 type ImportResult struct {
-	Total    int
-	Created  int
-	Updated  int
-	Skipped  int
-	Errors   []string
+	Total   int
+	Created int
+	Updated int
+	Skipped int
+	Errors  []string
 }
 
 // ParseChromeBookmarks parses a Chrome bookmarks HTML export file
@@ -189,9 +189,13 @@ func cleanHTMLEntities(s string) string {
 }
 
 // Helper to get *int64 from sql.NullInt64
-func getInt64Ptr(n interface{ Valid bool; Int64 int64 }) *int64 {
+func getInt64Ptr(n struct {
+	Int64 int64
+	Valid bool
+}) *int64 {
 	if n.Valid {
-		return &n.Int64
+		v := n.Int64
+		return &v
 	}
 	return nil
 }

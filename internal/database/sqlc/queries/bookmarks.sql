@@ -15,6 +15,9 @@ DELETE FROM bookmarks WHERE id = ?;
 -- name: GetBookmarkByID :one
 SELECT * FROM bookmarks WHERE id = ?;
 
+-- name: GetBookmarkByURL :one
+SELECT * FROM bookmarks WHERE url = ? LIMIT 1;
+
 -- name: ListAllBookmarks :many
 SELECT * FROM bookmarks 
 ORDER BY sort_order, created_at DESC 

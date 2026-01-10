@@ -1,0 +1,149 @@
+package admin
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/internal/service"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+	"strconv"
+)
+
+templ ImportPage(collections []models.Collection) {
+	@layouts.Admin("Import Bookmarks") {
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">Import Bookmarks</h1>
+				<p class="text-muted-foreground">Import bookmarks from a Chrome/Firefox HTML export file.</p>
+			</div>
+
+			<div class="card">
+				<div class="card-content pt-6">
+					<form
+						action="/admin/import"
+						method="POST"
+						enctype="multipart/form-data"
+						class="space-y-6"
+					>
+						<div class="space-y-2">
+							<label for="file" class="label">Bookmarks File</label>
+							<input
+								type="file"
+								id="file"
+								name="file"
+								accept=".html,.htm"
+								required
+								class="input file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-muted file:text-foreground hover:file:bg-muted/80"
+							/>
+							<p class="text-xs text-muted-foreground">
+								Export from Chrome: Bookmarks Manager → ⋮ → Export bookmarks
+							</p>
+						</div>
+
+						<div class="space-y-2">
+							<label for="collection_id" class="label">Import to Collection (optional)</label>
+							<select id="collection_id" name="collection_id" class="input">
+								<option value="">No collection (unsorted)</option>
+								for _, collection := range collections {
+									<option value={ strconv.FormatInt(collection.ID, 10) }>
+										{ collection.Name }
+									</option>
+								}
+							</select>
+							<p class="text-xs text-muted-foreground">
+								All imported bookmarks will be added to this collection.
+							</p>
+						</div>
+
+						<div class="flex items-center gap-4">
+							<button type="submit" class="btn-default">
+								@importUploadIcon()
+								Import Bookmarks
+							</button>
+							<a href="/admin/bookmarks" class="btn-outline">Cancel</a>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Instructions -->
+			<div class="card">
+				<div class="card-header pb-4">
+					<h2 class="text-lg font-semibold text-foreground">How to export bookmarks</h2>
+				</div>
+				<div class="card-content text-sm text-muted-foreground space-y-4">
+					<div>
+						<p class="font-medium text-foreground">Chrome:</p>
+						<ol class="list-decimal list-inside mt-1 space-y-1">
+							<li>Open Bookmarks Manager (Ctrl+Shift+O)</li>
+							<li>Click the ⋮ menu in the top right</li>
+							<li>Select "Export bookmarks"</li>
+							<li>Save the HTML file</li>
+						</ol>
+					</div>
+					<div>
+						<p class="font-medium text-foreground">Firefox:</p>
+						<ol class="list-decimal list-inside mt-1 space-y-1">
+							<li>Open Bookmarks Library (Ctrl+Shift+O)</li>
+							<li>Click "Import and Backup"</li>
+							<li>Select "Export Bookmarks to HTML"</li>
+							<li>Save the HTML file</li>
+						</ol>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ ImportResult(result *service.ImportResult) {
+	@layouts.Admin("Import Results") {
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">Import Complete</h1>
+				<p class="text-muted-foreground">Your bookmarks have been processed.</p>
+			</div>
+
+			<div class="card">
+				<div class="card-content pt-6">
+					<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+						<div class="text-center p-4 bg-muted">
+							<div class="text-2xl font-bold text-foreground">{ strconv.Itoa(result.Total) }</div>
+							<div class="text-sm text-muted-foreground">Total</div>
+						</div>
+						<div class="text-center p-4 bg-green-50">
+							<div class="text-2xl font-bold text-green-700">{ strconv.Itoa(result.Created) }</div>
+							<div class="text-sm text-green-600">Created</div>
+						</div>
+						<div class="text-center p-4 bg-blue-50">
+							<div class="text-2xl font-bold text-blue-700">{ strconv.Itoa(result.Updated) }</div>
+							<div class="text-sm text-blue-600">Updated</div>
+						</div>
+						<div class="text-center p-4 bg-muted">
+							<div class="text-2xl font-bold text-muted-foreground">{ strconv.Itoa(result.Skipped) }</div>
+							<div class="text-sm text-muted-foreground">Skipped</div>
+						</div>
+					</div>
+
+					if len(result.Errors) > 0 {
+						<div class="mt-6 p-4 bg-red-50 border border-red-200">
+							<p class="font-medium text-red-700 mb-2">Some bookmarks failed to import:</p>
+							<ul class="text-sm text-red-600 space-y-1">
+								for _, err := range result.Errors {
+									<li>{ err }</li>
+								}
+							</ul>
+						</div>
+					}
+
+					<div class="mt-6 flex gap-4">
+						<a href="/admin/bookmarks" class="btn-default">View Bookmarks</a>
+						<a href="/admin/import" class="btn-outline">Import More</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ importUploadIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+}
