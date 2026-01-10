@@ -106,6 +106,7 @@ func main() {
 		}
 	})
 	adminMux.HandleFunc("/admin/bookmarks/new", h.AdminBookmarkNew)
+	adminMux.HandleFunc("/admin/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)
 	adminMux.HandleFunc("/admin/bookmarks/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		switch {

@@ -570,6 +570,17 @@
 }
 
 @layer utilities {
+  /* HTMX loading indicator */
+  .htmx-indicator {
+    display: none;
+  }
+  .htmx-request .htmx-indicator {
+    display: block;
+  }
+  .htmx-request.htmx-indicator {
+    display: block;
+  }
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

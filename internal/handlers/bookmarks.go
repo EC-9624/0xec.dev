@@ -257,3 +257,41 @@ func getPageParam(r *http.Request) int {
 	}
 	return page
 }
+
+// AdminBookmarkFetchMetadata handles fetching metadata for a URL via HTMX
+func (h *Handlers) AdminBookmarkFetchMetadata(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	url := r.FormValue("url")
+	if url == "" {
+		// Return empty fields
+		render(w, r, admin.BookmarkMetadataFields(nil))
+		return
+	}
+
+	metadata, err := h.service.FetchPageMetadata(r.Context(), url)
+	if err != nil {
+		// On error, return empty fields (user can fill manually)
+		render(w, r, admin.BookmarkMetadataFields(nil))
+		return
+	}
+
+	// Create a temporary bookmark struct to populate the form
+	bookmark := &models.Bookmark{
+		Title: metadata.Title,
+	}
+	// Set description and cover image via the nullable fields
+	if metadata.Description != "" {
+		bookmark.Description.String = metadata.Description
+		bookmark.Description.Valid = true
+	}
+	if metadata.Image != "" {
+		bookmark.CoverImage.String = metadata.Image
+		bookmark.CoverImage.Valid = true
+	}
+
+	render(w, r, admin.BookmarkMetadataFields(bookmark))
+}

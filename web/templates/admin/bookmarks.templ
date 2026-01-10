@@ -422,8 +422,13 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 									hx-trigger="blur"
 									hx-target="#metadata-fields"
 									hx-swap="innerHTML"
+									hx-indicator="#metadata-loading"
 								}
 							/>
+						</div>
+
+						<div id="metadata-loading" class="htmx-indicator text-sm text-muted-foreground py-2">
+							Fetching page metadata...
 						</div>
 
 						<div id="metadata-fields">
