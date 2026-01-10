@@ -6,89 +6,380 @@ import (
 	"strconv"
 )
 
-templ BookmarksList(bookmarks []models.Bookmark) {
+// BookmarksListData contains data for the bookmarks list page
+type BookmarksListData struct {
+	Bookmarks   []models.Bookmark
+	Collections []models.Collection
+}
+
+templ BookmarksList(data BookmarksListData) {
 	@layouts.Admin("Bookmarks") {
-		<div class="space-y-6">
+		<div class="space-y-4">
+			<!-- Header -->
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-2xl font-bold tracking-tight text-foreground">Bookmarks</h1>
-					<p class="text-muted-foreground">Manage your saved links.</p>
+					<p class="text-muted-foreground">
+						{ strconv.Itoa(len(data.Bookmarks)) } bookmarks
+					</p>
 				</div>
 				<a href="/admin/bookmarks/new" class="btn-default">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+					@plusIcon()
 					New Bookmark
 				</a>
 			</div>
 
-			if len(bookmarks) > 0 {
+			<!-- Filters Bar -->
+			<div class="flex flex-wrap items-center gap-3 py-3 border-b border-border">
+				<!-- Search -->
+				<div class="flex-1 min-w-[200px] max-w-md">
+					<input
+						type="text"
+						id="bookmark-search"
+						placeholder="Search bookmarks..."
+						class="input h-9"
+						oninput="filterBookmarks()"
+					/>
+				</div>
+
+				<!-- Collection Filter -->
+				<select
+					id="collection-filter"
+					class="input h-9 w-auto"
+					onchange="filterBookmarks()"
+				>
+					<option value="">All Collections</option>
+					<option value="none">Unsorted</option>
+					for _, collection := range data.Collections {
+						<option value={ strconv.FormatInt(collection.ID, 10) }>
+							{ collection.Name }
+						</option>
+					}
+				</select>
+
+				<!-- Status Filter -->
+				<select
+					id="status-filter"
+					class="input h-9 w-auto"
+					onchange="filterBookmarks()"
+				>
+					<option value="">All Status</option>
+					<option value="public">Public</option>
+					<option value="private">Private</option>
+					<option value="favorite">Favorites</option>
+				</select>
+
+				<!-- Clear Filters -->
+				<button
+					type="button"
+					class="btn-ghost btn-sm text-muted-foreground"
+					onclick="clearFilters()"
+				>
+					Clear
+				</button>
+			</div>
+
+			<!-- Table -->
+			if len(data.Bookmarks) > 0 {
 				<div class="card overflow-hidden">
-					<table class="table">
+					<table class="table" id="bookmarks-table">
 						<thead class="table-header bg-muted/50">
 							<tr class="table-row">
-								<th class="table-head">Title</th>
-								<th class="table-head">Domain</th>
-								<th class="table-head">Status</th>
-								<th class="table-head text-right">Actions</th>
+								<th class="table-head w-[40%]">Title</th>
+								<th class="table-head w-[20%]">Collection</th>
+								<th class="table-head w-[15%]">Domain</th>
+								<th class="table-head w-[10%]">Status</th>
+								<th class="table-head w-[15%] text-right">Actions</th>
 							</tr>
 						</thead>
-						<tbody class="table-body">
-							for _, bookmark := range bookmarks {
-								<tr class="table-row">
-									<td class="table-cell">
-										<a href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } class="font-medium text-foreground hover:underline">
-											{ bookmark.Title }
-										</a>
-									</td>
-									<td class="table-cell text-muted-foreground">
-										{ bookmark.GetDomain() }
-									</td>
-									<td class="table-cell">
-										<div class="flex items-center gap-2">
-											if bookmark.IsPublic {
-												<span class="badge-outline text-green-600 border-green-200 bg-green-50">
-													Public
-												</span>
-											} else {
-												<span class="badge-secondary">
-													Private
-												</span>
-											}
-											if bookmark.IsFavorite {
-												<span title="Favorite">&#11088;</span>
-											}
-										</div>
-									</td>
-									<td class="table-cell text-right">
-										<div class="flex items-center justify-end gap-2">
-											<a href={ templ.URL(bookmark.URL) } class="btn-ghost btn-sm" target="_blank">
-												Visit
-											</a>
-											<a href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } class="btn-ghost btn-sm">
-												Edit
-											</a>
-										</div>
-									</td>
-								</tr>
+						<tbody class="table-body" id="bookmarks-tbody">
+							for _, bookmark := range data.Bookmarks {
+								@bookmarkRow(bookmark, data.Collections)
 							}
 						</tbody>
 					</table>
 				</div>
-			} else {
-				<div class="card">
-					<div class="flex flex-col items-center justify-center py-12 text-center">
-						<div class="rounded-full bg-muted p-4 mb-4">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-						</div>
-						<h3 class="font-semibold text-foreground mb-1">No bookmarks yet</h3>
-						<p class="text-muted-foreground mb-4">Start saving interesting links.</p>
-						<a href="/admin/bookmarks/new" class="btn-default">
-							Add your first bookmark
-						</a>
-					</div>
+
+				<!-- No results message (hidden by default) -->
+				<div id="no-results" class="hidden card py-12 text-center">
+					<p class="text-muted-foreground">No bookmarks match your filters</p>
+					<button type="button" class="btn-ghost btn-sm mt-2" onclick="clearFilters()">
+						Clear filters
+					</button>
 				</div>
+			} else {
+				@emptyBookmarks()
 			}
 		</div>
+
+		<!-- Client-side filtering script -->
+		@bookmarksFilterScript()
 	}
+}
+
+templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
+	<tr 
+		class="table-row group" 
+		data-title={ bookmark.Title }
+		data-url={ bookmark.URL }
+		data-domain={ bookmark.GetDomain() }
+		data-collection-id={ getCollectionID(bookmark) }
+		data-is-public={ strconv.FormatBool(bookmark.IsPublic) }
+		data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
+	>
+		<!-- Title -->
+		<td class="table-cell">
+			<div class="flex items-center gap-3">
+				<!-- Favicon placeholder -->
+				<div class="w-8 h-8 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0">
+					{ string([]rune(bookmark.GetDomain())[0:1]) }
+				</div>
+				<div class="min-w-0">
+					<a 
+						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } 
+						class="font-medium text-foreground hover:underline block truncate"
+						title={ bookmark.Title }
+					>
+						{ bookmark.Title }
+					</a>
+					<a 
+						href={ templ.URL(bookmark.URL) }
+						target="_blank"
+						class="text-xs text-muted-foreground hover:underline truncate block"
+						title={ bookmark.URL }
+					>
+						{ truncateURL(bookmark.URL, 50) }
+					</a>
+				</div>
+			</div>
+		</td>
+
+		<!-- Collection -->
+		<td class="table-cell">
+			if bookmark.CollectionID.Valid {
+				<span class="badge-secondary text-xs">
+					{ getCollectionName(bookmark.CollectionID.Int64, collections) }
+				</span>
+			} else {
+				<span class="text-muted-foreground text-sm">—</span>
+			}
+		</td>
+
+		<!-- Domain -->
+		<td class="table-cell text-muted-foreground text-sm">
+			{ bookmark.GetDomain() }
+		</td>
+
+		<!-- Status -->
+		<td class="table-cell">
+			<div class="flex items-center gap-1.5">
+				if bookmark.IsPublic {
+					<span class="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5">
+						@globeIcon()
+						Public
+					</span>
+				} else {
+					<span class="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-1.5 py-0.5">
+						@lockIcon()
+						Private
+					</span>
+				}
+				if bookmark.IsFavorite {
+					<span class="text-amber-500" title="Favorite">
+						@starIcon()
+					</span>
+				}
+			</div>
+		</td>
+
+		<!-- Actions -->
+		<td class="table-cell text-right">
+			<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+				<a 
+					href={ templ.URL(bookmark.URL) } 
+					class="btn-ghost btn-xs" 
+					target="_blank"
+					title="Open link"
+				>
+					@externalLinkIcon()
+				</a>
+				<a 
+					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } 
+					class="btn-ghost btn-xs"
+					title="Edit"
+				>
+					@editIcon()
+				</a>
+				<button
+					type="button"
+					hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+					hx-confirm="Delete this bookmark?"
+					hx-target="closest tr"
+					hx-swap="outerHTML swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@trashIcon()
+				</button>
+			</div>
+		</td>
+	</tr>
+}
+
+templ emptyBookmarks() {
+	<div class="card">
+		<div class="flex flex-col items-center justify-center py-12 text-center">
+			<div class="bg-muted p-4 mb-4">
+				@bookmarkIconLarge()
+			</div>
+			<h3 class="font-semibold text-foreground mb-1">No bookmarks yet</h3>
+			<p class="text-muted-foreground mb-4">Start saving interesting links.</p>
+			<a href="/admin/bookmarks/new" class="btn-default">
+				Add your first bookmark
+			</a>
+		</div>
+	</div>
+}
+
+templ bookmarksFilterScript() {
+	<script>
+		function filterBookmarks() {
+			const search = document.getElementById('bookmark-search').value.toLowerCase();
+			const collectionFilter = document.getElementById('collection-filter').value;
+			const statusFilter = document.getElementById('status-filter').value;
+			
+			const rows = document.querySelectorAll('#bookmarks-tbody tr');
+			let visibleCount = 0;
+			
+			rows.forEach(row => {
+				const title = row.dataset.title?.toLowerCase() || '';
+				const url = row.dataset.url?.toLowerCase() || '';
+				const domain = row.dataset.domain?.toLowerCase() || '';
+				const collectionId = row.dataset.collectionId || '';
+				const isPublic = row.dataset.isPublic === 'true';
+				const isFavorite = row.dataset.isFavorite === 'true';
+				
+				let visible = true;
+				
+				// Search filter
+				if (search && !title.includes(search) && !url.includes(search) && !domain.includes(search)) {
+					visible = false;
+				}
+				
+				// Collection filter
+				if (collectionFilter) {
+					if (collectionFilter === 'none' && collectionId !== '') {
+						visible = false;
+					} else if (collectionFilter !== 'none' && collectionId !== collectionFilter) {
+						visible = false;
+					}
+				}
+				
+				// Status filter
+				if (statusFilter === 'public' && !isPublic) visible = false;
+				if (statusFilter === 'private' && isPublic) visible = false;
+				if (statusFilter === 'favorite' && !isFavorite) visible = false;
+				
+				row.style.display = visible ? '' : 'none';
+				if (visible) visibleCount++;
+			});
+			
+			// Show/hide no results message
+			const noResults = document.getElementById('no-results');
+			const table = document.querySelector('.card:has(#bookmarks-table)');
+			if (visibleCount === 0 && rows.length > 0) {
+				noResults?.classList.remove('hidden');
+				table?.classList.add('hidden');
+			} else {
+				noResults?.classList.add('hidden');
+				table?.classList.remove('hidden');
+			}
+			
+			// Save to session storage
+			sessionStorage.setItem('bookmarkFilters', JSON.stringify({
+				search, collectionFilter, statusFilter
+			}));
+		}
+		
+		function clearFilters() {
+			document.getElementById('bookmark-search').value = '';
+			document.getElementById('collection-filter').value = '';
+			document.getElementById('status-filter').value = '';
+			sessionStorage.removeItem('bookmarkFilters');
+			filterBookmarks();
+		}
+		
+		// Restore filters on page load
+		document.addEventListener('DOMContentLoaded', () => {
+			const saved = sessionStorage.getItem('bookmarkFilters');
+			if (saved) {
+				try {
+					const filters = JSON.parse(saved);
+					document.getElementById('bookmark-search').value = filters.search || '';
+					document.getElementById('collection-filter').value = filters.collectionFilter || '';
+					document.getElementById('status-filter').value = filters.statusFilter || '';
+					filterBookmarks();
+				} catch (e) {}
+			}
+		});
+	</script>
+}
+
+// Helper functions
+func getCollectionID(bookmark models.Bookmark) string {
+	if bookmark.CollectionID.Valid {
+		return strconv.FormatInt(bookmark.CollectionID.Int64, 10)
+	}
+	return ""
+}
+
+func getCollectionName(id int64, collections []models.Collection) string {
+	for _, c := range collections {
+		if c.ID == id {
+			return c.Name
+		}
+	}
+	return "Unknown"
+}
+
+func truncateURL(url string, maxLen int) string {
+	if len(url) <= maxLen {
+		return url
+	}
+	return url[:maxLen-3] + "..."
+}
+
+// Icons
+templ plusIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+}
+
+templ globeIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+}
+
+templ lockIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+}
+
+templ starIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+}
+
+templ externalLinkIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+}
+
+templ editIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+}
+
+templ trashIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+}
+
+templ bookmarkIconLarge() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
 }
 
 templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool) {
