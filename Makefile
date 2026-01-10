@@ -1,4 +1,4 @@
-.PHONY: dev build run clean templ css install setup
+.PHONY: dev build run clean templ css install setup sqlc
 
 # Tailwind standalone CLI
 TAILWIND := ./bin/tailwindcss
@@ -36,6 +36,10 @@ dev:
 templ:
 	templ generate
 
+# Generate sqlc code
+sqlc:
+	cd internal/database/sqlc && sqlc generate
+
 # Build CSS
 css:
 	$(TAILWIND) -i ./web/static/css/input.css -o ./web/static/css/output.css --minify
@@ -45,7 +49,7 @@ css-watch:
 	$(TAILWIND) -i ./web/static/css/input.css -o ./web/static/css/output.css --watch
 
 # Build for production
-build: templ css
+build: templ css sqlc
 	CGO_ENABLED=1 go build -o bin/server ./cmd/server
 
 # Run without hot reload
@@ -83,6 +87,7 @@ help:
 	@echo "  make build      - Build for production"
 	@echo "  make run        - Run without hot reload"
 	@echo "  make templ      - Generate templ templates"
+	@echo "  make sqlc       - Generate sqlc database code"
 	@echo "  make css        - Build CSS"
 	@echo "  make css-watch  - Watch CSS for changes"
 	@echo "  make clean      - Clean build artifacts"

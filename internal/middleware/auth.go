@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
-	"github.com/EC-9624/0xec.dev/internal/repository"
+	"github.com/EC-9624/0xec.dev/internal/service"
 )
 
 type contextKey string
@@ -13,16 +13,17 @@ type contextKey string
 const UserContextKey contextKey = "user"
 
 // Auth middleware checks for valid session
-func Auth(userRepo *repository.UserRepository) func(http.Handler) http.Handler {
+func Auth(svc *service.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
 			cookie, err := r.Cookie("session")
 			if err != nil {
 				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 				return
 			}
 
-			session, err := userRepo.GetSession(cookie.Value)
+			session, err := svc.GetSession(ctx, cookie.Value)
 			if err != nil {
 				// Invalid or expired session
 				http.SetCookie(w, &http.Cookie{
@@ -35,14 +36,14 @@ func Auth(userRepo *repository.UserRepository) func(http.Handler) http.Handler {
 				return
 			}
 
-			user, err := userRepo.GetByID(session.UserID)
+			user, err := svc.GetUserByID(ctx, session.UserID)
 			if err != nil {
 				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 				return
 			}
 
 			// Add user to context
-			ctx := context.WithValue(r.Context(), UserContextKey, user)
+			ctx = context.WithValue(ctx, UserContextKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

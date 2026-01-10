@@ -11,7 +11,7 @@ import (
 
 // AdminCollectionsList handles the admin collections listing
 func (h *Handlers) AdminCollectionsList(w http.ResponseWriter, r *http.Request) {
-	collections, err := h.collectionRepo.List(false)
+	collections, err := h.service.ListCollections(r.Context(), false)
 	if err != nil {
 		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
 		return
@@ -41,7 +41,7 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 
-	_, err := h.collectionRepo.Create(input)
+	_, err := h.service.CreateCollection(r.Context(), input)
 	if err != nil {
 		http.Error(w, "Failed to create collection", http.StatusInternalServerError)
 		return
@@ -59,7 +59,7 @@ func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection, err := h.collectionRepo.GetByID(id)
+	collection, err := h.service.GetCollectionByID(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -91,7 +91,7 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 
-	_, err = h.collectionRepo.Update(id, input)
+	_, err = h.service.UpdateCollection(r.Context(), id, input)
 	if err != nil {
 		http.Error(w, "Failed to update collection", http.StatusInternalServerError)
 		return
@@ -109,7 +109,7 @@ func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.collectionRepo.Delete(id); err != nil {
+	if err := h.service.DeleteCollection(r.Context(), id); err != nil {
 		http.Error(w, "Failed to delete collection", http.StatusInternalServerError)
 		return
 	}

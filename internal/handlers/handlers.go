@@ -7,36 +7,28 @@ import (
 	"net/http"
 
 	"github.com/EC-9624/0xec.dev/internal/config"
-	"github.com/EC-9624/0xec.dev/internal/repository"
+	"github.com/EC-9624/0xec.dev/internal/service"
 
 	"github.com/a-h/templ"
 )
 
 // Handlers contains all HTTP handlers and their dependencies
 type Handlers struct {
-	config         *config.Config
-	userRepo       *repository.UserRepository
-	postRepo       *repository.PostRepository
-	bookmarkRepo   *repository.BookmarkRepository
-	collectionRepo *repository.CollectionRepository
-	tagRepo        *repository.TagRepository
+	config  *config.Config
+	service *service.Service
 }
 
 // New creates a new Handlers instance with all dependencies
 func New(cfg *config.Config, db *sql.DB) *Handlers {
 	return &Handlers{
-		config:         cfg,
-		userRepo:       repository.NewUserRepository(db),
-		postRepo:       repository.NewPostRepository(db),
-		bookmarkRepo:   repository.NewBookmarkRepository(db),
-		collectionRepo: repository.NewCollectionRepository(db),
-		tagRepo:        repository.NewTagRepository(db),
+		config:  cfg,
+		service: service.New(db),
 	}
 }
 
-// UserRepo returns the user repository for middleware use
-func (h *Handlers) UserRepo() *repository.UserRepository {
-	return h.userRepo
+// Service returns the service for middleware use
+func (h *Handlers) Service() *service.Service {
+	return h.service
 }
 
 // templComponent is an interface that matches templ.Component

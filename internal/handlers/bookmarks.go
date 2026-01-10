@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
-	"github.com/EC-9624/0xec.dev/internal/repository"
+	"github.com/EC-9624/0xec.dev/internal/service"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
 )
@@ -15,28 +15,29 @@ const bookmarksPerPage = 24
 
 // BookmarksIndex handles the bookmarks listing page
 func (h *Handlers) BookmarksIndex(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	page := getPageParam(r)
 	offset := (page - 1) * bookmarksPerPage
 
-	opts := repository.BookmarkListOptions{
+	opts := service.BookmarkListOptions{
 		PublicOnly: true,
 		Limit:      bookmarksPerPage,
 		Offset:     offset,
 	}
 
-	bookmarks, err := h.bookmarkRepo.List(opts)
+	bookmarks, err := h.service.ListBookmarks(ctx, opts)
 	if err != nil {
 		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
 		return
 	}
 
-	collections, err := h.collectionRepo.List(true)
+	collections, err := h.service.ListCollections(ctx, true)
 	if err != nil {
 		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
 		return
 	}
 
-	total, err := h.bookmarkRepo.Count(opts)
+	total, err := h.service.CountBookmarks(ctx, opts)
 	if err != nil {
 		http.Error(w, "Failed to count bookmarks", http.StatusInternalServerError)
 		return
@@ -49,13 +50,14 @@ func (h *Handlers) BookmarksIndex(w http.ResponseWriter, r *http.Request) {
 
 // BookmarksByCollection handles the bookmarks listing for a specific collection
 func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	slug := strings.TrimPrefix(r.URL.Path, "/bookmarks/")
 	if slug == "" {
 		h.BookmarksIndex(w, r)
 		return
 	}
 
-	collection, err := h.collectionRepo.GetBySlug(slug)
+	collection, err := h.service.GetCollectionBySlug(ctx, slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -69,26 +71,26 @@ func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request)
 	page := getPageParam(r)
 	offset := (page - 1) * bookmarksPerPage
 
-	opts := repository.BookmarkListOptions{
+	opts := service.BookmarkListOptions{
 		PublicOnly:   true,
 		CollectionID: &collection.ID,
 		Limit:        bookmarksPerPage,
 		Offset:       offset,
 	}
 
-	bookmarks, err := h.bookmarkRepo.List(opts)
+	bookmarks, err := h.service.ListBookmarks(ctx, opts)
 	if err != nil {
 		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
 		return
 	}
 
-	collections, err := h.collectionRepo.List(true)
+	collections, err := h.service.ListCollections(ctx, true)
 	if err != nil {
 		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
 		return
 	}
 
-	total, err := h.bookmarkRepo.Count(opts)
+	total, err := h.service.CountBookmarks(ctx, opts)
 	if err != nil {
 		http.Error(w, "Failed to count bookmarks", http.StatusInternalServerError)
 		return
@@ -101,7 +103,7 @@ func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request)
 
 // AdminBookmarksList handles the admin bookmarks listing
 func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
-	bookmarks, err := h.bookmarkRepo.List(repository.BookmarkListOptions{
+	bookmarks, err := h.service.ListBookmarks(r.Context(), service.BookmarkListOptions{
 		Limit:  100,
 		Offset: 0,
 	})
@@ -115,8 +117,9 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 
 // AdminBookmarkNew handles the new bookmark form
 func (h *Handlers) AdminBookmarkNew(w http.ResponseWriter, r *http.Request) {
-	collections, _ := h.collectionRepo.List(false)
-	tags, _ := h.tagRepo.List()
+	ctx := r.Context()
+	collections, _ := h.service.ListCollections(ctx, false)
+	tags, _ := h.service.ListTags(ctx)
 	render(w, r, admin.BookmarkForm(nil, collections, tags, true))
 }
 
@@ -145,7 +148,7 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}
 
-	_, err := h.bookmarkRepo.Create(input)
+	_, err := h.service.CreateBookmark(r.Context(), input)
 	if err != nil {
 		http.Error(w, "Failed to create bookmark", http.StatusInternalServerError)
 		return
@@ -156,6 +159,7 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 
 // AdminBookmarkEdit handles the edit bookmark form
 func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	idStr := extractSlugFromPath(r.URL.Path, "/admin/bookmarks/", "/edit")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -163,14 +167,14 @@ func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bookmark, err := h.bookmarkRepo.GetByID(id)
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	collections, _ := h.collectionRepo.List(false)
-	tags, _ := h.tagRepo.List()
+	collections, _ := h.service.ListCollections(ctx, false)
+	tags, _ := h.service.ListTags(ctx)
 	render(w, r, admin.BookmarkForm(bookmark, collections, tags, false))
 }
 
@@ -206,7 +210,7 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}
 
-	_, err = h.bookmarkRepo.Update(id, input)
+	_, err = h.service.UpdateBookmark(r.Context(), id, input)
 	if err != nil {
 		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
 		return
@@ -224,7 +228,7 @@ func (h *Handlers) AdminBookmarkDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.bookmarkRepo.Delete(id); err != nil {
+	if err := h.service.DeleteBookmark(r.Context(), id); err != nil {
 		http.Error(w, "Failed to delete bookmark", http.StatusInternalServerError)
 		return
 	}
