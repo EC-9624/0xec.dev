@@ -39,6 +39,9 @@ func (s *Service) CreatePost(ctx context.Context, input models.CreatePostInput) 
 		}
 	}
 
+	// Log activity
+	s.LogActivity(ctx, ActionPostCreated, EntityPost, post.ID, input.Title, nil)
+
 	return s.GetPostByID(ctx, post.ID)
 }
 
@@ -82,12 +85,35 @@ func (s *Service) UpdatePost(ctx context.Context, id int64, input models.UpdateP
 		return nil, err
 	}
 
+	// Log activity - check if this is a publish action
+	wasPublished := post.IsDraft && !input.IsDraft
+	if wasPublished {
+		s.LogActivity(ctx, ActionPostPublished, EntityPost, id, input.Title, nil)
+	} else {
+		s.LogActivity(ctx, ActionPostUpdated, EntityPost, id, input.Title, nil)
+	}
+
 	return s.GetPostByID(ctx, id)
 }
 
 // DeletePost deletes a post
 func (s *Service) DeletePost(ctx context.Context, id int64) error {
-	return s.queries.DeletePost(ctx, id)
+	// Get post title for activity log before deleting
+	post, _ := s.GetPostByID(ctx, id)
+	title := ""
+	if post != nil {
+		title = post.Title
+	}
+
+	err := s.queries.DeletePost(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Log activity
+	s.LogActivity(ctx, ActionPostDeleted, EntityPost, id, title, nil)
+
+	return nil
 }
 
 // GetPostByID retrieves a post by ID

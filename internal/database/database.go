@@ -13,6 +13,9 @@ import (
 //go:embed migrations/001_initial.sql
 var initialMigration string
 
+//go:embed migrations/002_activities.sql
+var activitiesMigration string
+
 // DB is the global database connection
 var DB *sql.DB
 
@@ -49,6 +52,12 @@ func runMigrations() error {
 	if err != nil {
 		return fmt.Errorf("failed to run initial migration: %w", err)
 	}
+
+	_, err = DB.Exec(activitiesMigration)
+	if err != nil {
+		return fmt.Errorf("failed to run activities migration: %w", err)
+	}
+
 	return nil
 }
 

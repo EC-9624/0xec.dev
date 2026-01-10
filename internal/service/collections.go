@@ -29,6 +29,9 @@ func (s *Service) CreateCollection(ctx context.Context, input models.CreateColle
 		return nil, err
 	}
 
+	// Log activity
+	s.LogActivity(ctx, ActionCollectionCreated, EntityCollection, collection.ID, input.Name, nil)
+
 	return s.GetCollectionByID(ctx, collection.ID)
 }
 
@@ -55,12 +58,30 @@ func (s *Service) UpdateCollection(ctx context.Context, id int64, input models.U
 		return nil, err
 	}
 
+	// Log activity
+	s.LogActivity(ctx, ActionCollectionUpdated, EntityCollection, id, input.Name, nil)
+
 	return s.GetCollectionByID(ctx, id)
 }
 
 // DeleteCollection deletes a collection
 func (s *Service) DeleteCollection(ctx context.Context, id int64) error {
-	return s.queries.DeleteCollection(ctx, id)
+	// Get collection name for activity log before deleting
+	collection, _ := s.GetCollectionByID(ctx, id)
+	name := ""
+	if collection != nil {
+		name = collection.Name
+	}
+
+	err := s.queries.DeleteCollection(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Log activity
+	s.LogActivity(ctx, ActionCollectionDeleted, EntityCollection, id, name, nil)
+
+	return nil
 }
 
 // GetCollectionByID retrieves a collection by ID
