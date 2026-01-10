@@ -1,0 +1,287 @@
+package admin
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+	"strconv"
+)
+
+templ BookmarksList(bookmarks []models.Bookmark) {
+	@layouts.Admin("Bookmarks") {
+		<div class="space-y-6">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-2xl font-bold tracking-tight text-foreground">Bookmarks</h1>
+					<p class="text-muted-foreground">Manage your saved links.</p>
+				</div>
+				<a href="/admin/bookmarks/new" class="btn-default">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+					New Bookmark
+				</a>
+			</div>
+
+			if len(bookmarks) > 0 {
+				<div class="card overflow-hidden">
+					<table class="table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head">Title</th>
+								<th class="table-head">Domain</th>
+								<th class="table-head">Status</th>
+								<th class="table-head text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body">
+							for _, bookmark := range bookmarks {
+								<tr class="table-row">
+									<td class="table-cell">
+										<a href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } class="font-medium text-foreground hover:underline">
+											{ bookmark.Title }
+										</a>
+									</td>
+									<td class="table-cell text-muted-foreground">
+										{ bookmark.GetDomain() }
+									</td>
+									<td class="table-cell">
+										<div class="flex items-center gap-2">
+											if bookmark.IsPublic {
+												<span class="badge-outline text-green-600 border-green-200 bg-green-50">
+													Public
+												</span>
+											} else {
+												<span class="badge-secondary">
+													Private
+												</span>
+											}
+											if bookmark.IsFavorite {
+												<span title="Favorite">&#11088;</span>
+											}
+										</div>
+									</td>
+									<td class="table-cell text-right">
+										<div class="flex items-center justify-end gap-2">
+											<a href={ templ.URL(bookmark.URL) } class="btn-ghost btn-sm" target="_blank">
+												Visit
+											</a>
+											<a href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } class="btn-ghost btn-sm">
+												Edit
+											</a>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} else {
+				<div class="card">
+					<div class="flex flex-col items-center justify-center py-12 text-center">
+						<div class="rounded-full bg-muted p-4 mb-4">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+						</div>
+						<h3 class="font-semibold text-foreground mb-1">No bookmarks yet</h3>
+						<p class="text-muted-foreground mb-4">Start saving interesting links.</p>
+						<a href="/admin/bookmarks/new" class="btn-default">
+							Add your first bookmark
+						</a>
+					</div>
+				</div>
+			}
+		</div>
+	}
+}
+
+templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool) {
+	@layouts.Admin(bookmarkFormTitle(bookmark, isNew)) {
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if isNew {
+						New Bookmark
+					} else {
+						Edit Bookmark
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if isNew {
+						Save a new link to your collection.
+					} else {
+						Update bookmark details.
+					}
+				</p>
+			</div>
+
+			<form
+				if isNew {
+					action="/admin/bookmarks"
+				} else {
+					action={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10)) }
+				}
+				method="POST"
+				class="space-y-6"
+			>
+				<div class="card">
+					<div class="card-content pt-6 space-y-6">
+						<div class="space-y-2">
+							<label for="url" class="label">URL</label>
+							<input
+								type="url"
+								id="url"
+								name="url"
+								class="input"
+								value={ bookmarkValue(bookmark, "url") }
+								placeholder="https://example.com"
+								required
+								if isNew {
+									hx-post="/admin/bookmarks/fetch-metadata"
+									hx-trigger="blur"
+									hx-target="#metadata-fields"
+									hx-swap="innerHTML"
+								}
+							/>
+						</div>
+
+						<div id="metadata-fields">
+							@BookmarkMetadataFields(bookmark)
+						</div>
+
+						<div class="space-y-2">
+							<label for="collection_id" class="label">Collection</label>
+							<select id="collection_id" name="collection_id" class="input">
+								<option value="">No collection</option>
+								for _, collection := range collections {
+									<option
+										value={ strconv.FormatInt(collection.ID, 10) }
+										if bookmark != nil && bookmark.CollectionID.Valid && bookmark.CollectionID.Int64 == collection.ID {
+											selected
+										}
+									>
+										{ collection.Name }
+									</option>
+								}
+							</select>
+						</div>
+
+						<div class="flex items-center gap-6">
+							<div class="flex items-center space-x-2">
+								<input
+									type="checkbox"
+									id="is_public"
+									name="is_public"
+									value="true"
+									if bookmark == nil || bookmark.IsPublic {
+										checked
+									}
+									class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+								/>
+								<label for="is_public" class="label">
+									Public
+								</label>
+							</div>
+							<div class="flex items-center space-x-2">
+								<input
+									type="checkbox"
+									id="is_favorite"
+									name="is_favorite"
+									value="true"
+									if bookmark != nil && bookmark.IsFavorite {
+										checked
+									}
+									class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+								/>
+								<label for="is_favorite" class="label">
+									Favorite
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex items-center gap-4">
+					<button type="submit" class="btn-default">
+						if isNew {
+							Add Bookmark
+						} else {
+							Save Changes
+						}
+					</button>
+					<a href="/admin/bookmarks" class="btn-outline">
+						Cancel
+					</a>
+					if !isNew {
+						<button
+							type="button"
+							hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+							hx-confirm="Are you sure you want to delete this bookmark?"
+							class="btn-destructive ml-auto"
+						>
+							Delete
+						</button>
+					}
+				</div>
+			</form>
+		</div>
+	}
+}
+
+templ BookmarkMetadataFields(bookmark *models.Bookmark) {
+	<div class="space-y-6">
+		<div class="space-y-2">
+			<label for="title" class="label">Title</label>
+			<input
+				type="text"
+				id="title"
+				name="title"
+				class="input"
+				value={ bookmarkValue(bookmark, "title") }
+				placeholder="Page title"
+				required
+			/>
+		</div>
+		<div class="space-y-2">
+			<label for="description" class="label">Description</label>
+			<textarea
+				id="description"
+				name="description"
+				rows="3"
+				class="textarea"
+				placeholder="Brief description"
+			>{ bookmarkValue(bookmark, "description") }</textarea>
+		</div>
+		<div class="space-y-2">
+			<label for="cover_image" class="label">Cover Image URL</label>
+			<input
+				type="url"
+				id="cover_image"
+				name="cover_image"
+				class="input"
+				value={ bookmarkValue(bookmark, "cover_image") }
+				placeholder="https://example.com/image.jpg"
+			/>
+		</div>
+	</div>
+}
+
+func bookmarkFormTitle(bookmark *models.Bookmark, isNew bool) string {
+	if isNew {
+		return "New Bookmark"
+	}
+	return "Edit: " + bookmark.Title
+}
+
+func bookmarkValue(bookmark *models.Bookmark, field string) string {
+	if bookmark == nil {
+		return ""
+	}
+	switch field {
+	case "url":
+		return bookmark.URL
+	case "title":
+		return bookmark.Title
+	case "description":
+		return bookmark.GetDescription()
+	case "cover_image":
+		return bookmark.GetCoverImage()
+	}
+	return ""
+}

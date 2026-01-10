@@ -1,0 +1,106 @@
+package components
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"strconv"
+)
+
+// CollectionListItem for middle column
+templ CollectionListItem(collection models.Collection, isActive bool) {
+	<a 
+		href={ templ.URL("/bookmarks/" + collection.Slug) } 
+		class={ collectionItemClass(isActive) }
+	>
+		<span class="list-item-title">{ collection.Name }</span>
+		<span class="list-item-meta">
+			{ strconv.Itoa(collection.BookmarkCount) } bookmarks
+		</span>
+	</a>
+}
+
+func collectionItemClass(isActive bool) string {
+	if isActive {
+		return "list-item-active"
+	}
+	return "list-item"
+}
+
+// CollectionListColumn is the middle column content for bookmarks pages
+templ CollectionListColumn(collections []models.Collection, activeSlug string, totalBookmarks int) {
+	<div class="middle-column-header">
+		<span class="text-sm font-semibold tracking-tight">Bookmarks</span>
+		<a 
+			href="/bookmarks/feed.xml" 
+			target="_blank" 
+			rel="noopener noreferrer"
+			class="btn-outline btn-xs"
+		>
+			@iconRadioSmall()
+			<span>RSS feed</span>
+		</a>
+	</div>
+	<div class="middle-column-content scrollable-area">
+		<div class="flex flex-col gap-1">
+			<!-- All Bookmarks -->
+			<a 
+				href="/bookmarks" 
+				class={ collectionItemClass(activeSlug == "") }
+			>
+				<span class="list-item-title">All Bookmarks</span>
+				<span class="list-item-meta">{ strconv.Itoa(totalBookmarks) } bookmarks</span>
+			</a>
+			<!-- Collections -->
+			for _, collection := range collections {
+				@CollectionListItem(collection, activeSlug == collection.Slug)
+			}
+		</div>
+	</div>
+}
+
+templ iconRadioSmall() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+		<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
+		<path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
+		<circle cx="12" cy="12" r="2"></circle>
+		<path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
+		<path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path>
+	</svg>
+}
+
+// Legacy CollectionSidebar (keeping for compatibility if needed)
+templ CollectionSidebar(collections []models.Collection, activeSlug string) {
+	<aside class="w-56 shrink-0 hidden md:block">
+		<div class="sticky top-20">
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-sm font-semibold text-foreground">Collections</h2>
+				<a href="/bookmarks/feed.xml" class="text-xs text-muted-foreground hover:text-foreground transition-colors" title="RSS feed">
+					RSS
+				</a>
+			</div>
+			<nav class="space-y-1">
+				<a
+					href="/bookmarks"
+					class={ sidebarLinkClass(activeSlug == "") }
+				>
+					<span>All Bookmarks</span>
+				</a>
+				for _, collection := range collections {
+					<a
+						href={ templ.URL("/bookmarks/" + collection.Slug) }
+						class={ sidebarLinkClass(activeSlug == collection.Slug) }
+					>
+						<span class="flex-1">{ collection.Name }</span>
+						<span class="text-xs text-muted-foreground">{ strconv.Itoa(collection.BookmarkCount) }</span>
+					</a>
+				}
+			</nav>
+		</div>
+	</aside>
+}
+
+func sidebarLinkClass(active bool) string {
+	if active {
+		return "sidebar-link-active"
+	}
+	return "sidebar-link"
+}

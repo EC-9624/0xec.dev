@@ -1,0 +1,41 @@
+package components
+
+import "github.com/EC-9624/0xec.dev/internal/models"
+
+templ BookmarkCard(bookmark models.Bookmark) {
+	<a href={ templ.URL(bookmark.URL) } target="_blank" rel="noopener noreferrer" class="bookmark-card group">
+		if bookmark.GetCoverImage() != "" {
+			<img
+				src={ bookmark.GetCoverImage() }
+				alt={ bookmark.Title }
+				class="bookmark-card-image"
+				loading="lazy"
+			/>
+		} else {
+			<div class="bookmark-card-image flex items-center justify-center bg-muted">
+				<span class="text-4xl font-medium text-muted-foreground">
+					{ string([]rune(bookmark.Title)[0]) }
+				</span>
+			</div>
+		}
+		<div class="bookmark-card-content">
+			<h3 class="bookmark-card-title group-hover:text-primary transition-colors">
+				{ bookmark.Title }
+			</h3>
+			<p class="bookmark-card-domain">{ bookmark.GetDomain() }</p>
+			if bookmark.GetDescription() != "" {
+				<p class="bookmark-card-description">{ bookmark.GetDescription() }</p>
+			}
+		</div>
+	</a>
+}
+
+templ BookmarkGrid(bookmarks []models.Bookmark) {
+	<div class="masonry-grid">
+		for _, bookmark := range bookmarks {
+			<div class="masonry-item">
+				@BookmarkCard(bookmark)
+			</div>
+		}
+	</div>
+}

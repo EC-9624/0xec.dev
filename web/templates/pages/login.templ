@@ -1,0 +1,53 @@
+package pages
+
+import "github.com/EC-9624/0xec.dev/web/templates/layouts"
+
+templ Login(errorMsg string) {
+	@layouts.Base("Login") {
+		<div class="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+			<div class="w-full max-w-sm">
+				<div class="card">
+					<div class="card-header text-center">
+						<h1 class="card-title text-xl">Admin Login</h1>
+						<p class="card-description">Enter your credentials to continue</p>
+					</div>
+					<div class="card-content">
+						if errorMsg != "" {
+							<div class="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+								{ errorMsg }
+							</div>
+						}
+						<form action="/admin/login" method="POST" class="space-y-4">
+							<div class="space-y-2">
+								<label for="username" class="label">Username</label>
+								<input
+									type="text"
+									id="username"
+									name="username"
+									class="input"
+									placeholder="Enter your username"
+									required
+									autofocus
+								/>
+							</div>
+							<div class="space-y-2">
+								<label for="password" class="label">Password</label>
+								<input
+									type="password"
+									id="password"
+									name="password"
+									class="input"
+									placeholder="Enter your password"
+									required
+								/>
+							</div>
+							<button type="submit" class="btn-default w-full">
+								Sign in
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

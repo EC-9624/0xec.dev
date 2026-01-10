@@ -1,0 +1,66 @@
+package pages
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// PostsIndex shows the post list in middle column with empty state in main
+templ PostsIndex(posts []models.Post) {
+	@layouts.ThreeColumn("Writing", "/posts", components.PostListColumn(posts, "")) {
+		@PostsEmptyState()
+	}
+}
+
+// PostsEmptyState shown when no post is selected
+templ PostsEmptyState() {
+	<div class="empty-state">
+		<div class="empty-state-icon">
+			@iconFile()
+		</div>
+		<h3 class="empty-state-title">Select a post to read</h3>
+		<p class="empty-state-description">
+			Choose an article from the list on the left
+		</p>
+	</div>
+}
+
+// PostShow shows the post list in middle column with article content in main
+templ PostShow(post models.Post, allPosts []models.Post, contentHTML string) {
+	@layouts.ThreeColumn(post.Title, "/posts", components.PostListColumn(allPosts, post.Slug)) {
+		<article class="max-w-3xl">
+			<header class="article-header">
+				<h1 class="article-title text-balance">
+					{ post.Title }
+				</h1>
+				<div class="article-meta flex items-center gap-2 text-sm">
+					if post.PublishedAt.Valid {
+						<time>{ post.PublishedAt.Time.Format("January 2, 2006") }</time>
+					}
+					if len(post.Tags) > 0 {
+						<span class="text-border">&bull;</span>
+						<div class="flex items-center gap-1.5">
+							for _, tag := range post.Tags {
+								<span class="badge-secondary">{ tag.Name }</span>
+							}
+						</div>
+					}
+				</div>
+			</header>
+			<div class="separator-horizontal"></div>
+			<div class="article-content">
+				@templ.Raw(contentHTML)
+			</div>
+		</article>
+	}
+}
+
+templ iconFile() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
+		<path d="M18 14h-8"></path>
+		<path d="M18 18h-8"></path>
+		<path d="M18 10h-8"></path>
+	</svg>
+}

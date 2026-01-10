@@ -1,0 +1,87 @@
+package admin
+
+import (
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+	"strconv"
+)
+
+type DashboardStats struct {
+	PostCount       int
+	BookmarkCount   int
+	CollectionCount int
+	TagCount        int
+}
+
+templ Dashboard(stats DashboardStats) {
+	@layouts.Admin("Dashboard") {
+		<div class="space-y-8">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+				<p class="text-muted-foreground">Overview of your content.</p>
+			</div>
+
+			<!-- Stats Grid -->
+			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				@statCard("Posts", stats.PostCount, "/admin/posts", postsIcon())
+				@statCard("Bookmarks", stats.BookmarkCount, "/admin/bookmarks", bookmarksIcon())
+				@statCard("Collections", stats.CollectionCount, "/admin/collections", collectionsIcon())
+				@statCard("Tags", stats.TagCount, "/admin/tags", tagsIcon())
+			</div>
+
+			<!-- Quick Actions -->
+			<div class="grid gap-4 md:grid-cols-2">
+				<div class="card">
+					<div class="card-header">
+						<h2 class="text-lg font-semibold text-foreground">Quick Actions</h2>
+					</div>
+					<div class="card-content">
+						<div class="flex flex-col gap-2">
+							<a href="/admin/posts/new" class="btn-outline justify-start">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+								New Post
+							</a>
+							<a href="/admin/bookmarks/new" class="btn-outline justify-start">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+								New Bookmark
+							</a>
+							<a href="/admin/collections/new" class="btn-outline justify-start">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+								New Collection
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ statCard(title string, count int, href string, icon templ.Component) {
+	<a href={ templ.URL(href) } class="card hover:bg-muted/50 transition-colors">
+		<div class="card-header flex-row items-center justify-between space-y-0 pb-2">
+			<h3 class="text-sm font-medium text-muted-foreground">{ title }</h3>
+			<div class="text-muted-foreground">
+				@icon
+			</div>
+		</div>
+		<div class="card-content">
+			<div class="text-3xl font-bold text-foreground">{ strconv.Itoa(count) }</div>
+		</div>
+	</a>
+}
+
+templ postsIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M18 18h-8"/><path d="M18 10h-8"/></svg>
+}
+
+templ bookmarksIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+}
+
+templ collectionsIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+}
+
+templ tagsIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+}

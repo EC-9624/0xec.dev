@@ -1,0 +1,96 @@
+package pages
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+	"strconv"
+)
+
+templ BookmarksIndex(bookmarks []models.Bookmark, collections []models.Collection, activeCollection *models.Collection, total int, page int, hasMore bool) {
+	@layouts.ThreeColumn(
+		bookmarksTitle(activeCollection),
+		"/bookmarks",
+		components.CollectionListColumn(collections, activeCollectionSlug(activeCollection), total),
+	) {
+		<div class="space-y-8">
+			<!-- Header -->
+			<div class="space-y-2">
+				<h1 class="text-3xl font-bold tracking-tight text-foreground">
+					if activeCollection != nil {
+						if activeCollection.GetIcon() != "" {
+							<span class="mr-2">{ activeCollection.GetIcon() }</span>
+						}
+						{ activeCollection.Name }
+					} else {
+						Bookmarks
+					}
+				</h1>
+				<p class="text-muted-foreground">{ strconv.Itoa(total) } bookmarks</p>
+			</div>
+			
+			<div class="separator-horizontal"></div>
+			
+			<!-- Bookmark Grid -->
+			if len(bookmarks) > 0 {
+				<div id="bookmarks-container">
+					@components.BookmarkGrid(bookmarks)
+				</div>
+				if hasMore {
+					<div class="pt-4 text-center">
+						<button
+							hx-get={ loadMoreURL(activeCollection, page+1) }
+							hx-target="#bookmarks-container"
+							hx-swap="beforeend"
+							hx-select=".masonry-item"
+							class="btn-outline"
+						>
+							Load more
+						</button>
+					</div>
+				}
+			} else {
+				@BookmarksEmptyState()
+			}
+		</div>
+	}
+}
+
+templ BookmarksEmptyState() {
+	<div class="empty-state">
+		<div class="empty-state-icon">
+			@iconBookmarkEmpty()
+		</div>
+		<h3 class="empty-state-title">No bookmarks yet</h3>
+		<p class="empty-state-description">
+			Start saving interesting links to see them here
+		</p>
+	</div>
+}
+
+templ iconBookmarkEmpty() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+	</svg>
+}
+
+func bookmarksTitle(collection *models.Collection) string {
+	if collection != nil {
+		return collection.Name + " | Bookmarks"
+	}
+	return "Bookmarks"
+}
+
+func activeCollectionSlug(collection *models.Collection) string {
+	if collection != nil {
+		return collection.Slug
+	}
+	return ""
+}
+
+func loadMoreURL(collection *models.Collection, page int) string {
+	if collection != nil {
+		return "/bookmarks/" + collection.Slug + "?page=" + strconv.Itoa(page)
+	}
+	return "/bookmarks?page=" + strconv.Itoa(page)
+}

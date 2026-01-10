@@ -1,0 +1,258 @@
+package admin
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+	"strconv"
+)
+
+templ CollectionsList(collections []models.Collection) {
+	@layouts.Admin("Collections") {
+		<div class="space-y-6">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-2xl font-bold tracking-tight text-foreground">Collections</h1>
+					<p class="text-muted-foreground">Organize your bookmarks into groups.</p>
+				</div>
+				<a href="/admin/collections/new" class="btn-default">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+					New Collection
+				</a>
+			</div>
+
+			if len(collections) > 0 {
+				<div class="card overflow-hidden">
+					<table class="table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head">Name</th>
+								<th class="table-head">Bookmarks</th>
+								<th class="table-head">Status</th>
+								<th class="table-head text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body">
+							for _, collection := range collections {
+								<tr class="table-row">
+									<td class="table-cell">
+										<a href={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit") } class="font-medium text-foreground hover:underline">
+											if collection.GetIcon() != "" {
+												<span class="mr-1.5">{ collection.GetIcon() }</span>
+											}
+											{ collection.Name }
+										</a>
+									</td>
+									<td class="table-cell text-muted-foreground">
+										{ strconv.Itoa(collection.BookmarkCount) }
+									</td>
+									<td class="table-cell">
+										if collection.IsPublic {
+											<span class="badge-outline text-green-600 border-green-200 bg-green-50">
+												Public
+											</span>
+										} else {
+											<span class="badge-secondary">
+												Private
+											</span>
+										}
+									</td>
+									<td class="table-cell text-right">
+										<div class="flex items-center justify-end gap-2">
+											<a href={ templ.URL("/bookmarks/" + collection.Slug) } class="btn-ghost btn-sm" target="_blank">
+												View
+											</a>
+											<a href={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit") } class="btn-ghost btn-sm">
+												Edit
+											</a>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} else {
+				<div class="card">
+					<div class="flex flex-col items-center justify-center py-12 text-center">
+						<div class="rounded-full bg-muted p-4 mb-4">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+						</div>
+						<h3 class="font-semibold text-foreground mb-1">No collections yet</h3>
+						<p class="text-muted-foreground mb-4">Create collections to organize your bookmarks.</p>
+						<a href="/admin/collections/new" class="btn-default">
+							Create your first collection
+						</a>
+					</div>
+				</div>
+			}
+		</div>
+	}
+}
+
+templ CollectionForm(collection *models.Collection, isNew bool) {
+	@layouts.Admin(collectionFormTitle(collection, isNew)) {
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if isNew {
+						New Collection
+					} else {
+						Edit Collection
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if isNew {
+						Create a new collection for your bookmarks.
+					} else {
+						Update collection details.
+					}
+				</p>
+			</div>
+
+			<form
+				if isNew {
+					action="/admin/collections"
+				} else {
+					action={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10)) }
+				}
+				method="POST"
+				class="space-y-6"
+			>
+				<div class="card">
+					<div class="card-content pt-6 space-y-6">
+						<div class="space-y-2">
+							<label for="name" class="label">Name</label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								class="input"
+								value={ collectionValue(collection, "name") }
+								placeholder="Collection name"
+								required
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<label for="slug" class="label">Slug</label>
+							<input
+								type="text"
+								id="slug"
+								name="slug"
+								class="input"
+								value={ collectionValue(collection, "slug") }
+								placeholder="collection-url-slug"
+								required
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<label for="description" class="label">Description</label>
+							<textarea
+								id="description"
+								name="description"
+								rows="3"
+								class="textarea"
+								placeholder="What is this collection about?"
+							>{ collectionValue(collection, "description") }</textarea>
+						</div>
+
+						<div class="grid grid-cols-2 gap-4">
+							<div class="space-y-2">
+								<label for="icon" class="label">Icon (emoji)</label>
+								<input
+									type="text"
+									id="icon"
+									name="icon"
+									class="input"
+									value={ collectionValue(collection, "icon") }
+									placeholder="&#128218;"
+								/>
+							</div>
+							<div class="space-y-2">
+								<label for="color" class="label">Color</label>
+								<input
+									type="color"
+									id="color"
+									name="color"
+									class="input h-10 p-1"
+									value={ collectionColorValue(collection) }
+								/>
+							</div>
+						</div>
+
+						<div class="flex items-center space-x-2">
+							<input
+								type="checkbox"
+								id="is_public"
+								name="is_public"
+								value="true"
+								if collection == nil || collection.IsPublic {
+									checked
+								}
+								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+							/>
+							<label for="is_public" class="label">
+								Public
+							</label>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex items-center gap-4">
+					<button type="submit" class="btn-default">
+						if isNew {
+							Create Collection
+						} else {
+							Save Changes
+						}
+					</button>
+					<a href="/admin/collections" class="btn-outline">
+						Cancel
+					</a>
+					if !isNew {
+						<button
+							type="button"
+							hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+							hx-confirm="Are you sure you want to delete this collection?"
+							class="btn-destructive ml-auto"
+						>
+							Delete
+						</button>
+					}
+				</div>
+			</form>
+		</div>
+	}
+}
+
+func collectionFormTitle(collection *models.Collection, isNew bool) string {
+	if isNew {
+		return "New Collection"
+	}
+	return "Edit: " + collection.Name
+}
+
+func collectionValue(collection *models.Collection, field string) string {
+	if collection == nil {
+		return ""
+	}
+	switch field {
+	case "name":
+		return collection.Name
+	case "slug":
+		return collection.Slug
+	case "description":
+		return collection.GetDescription()
+	case "icon":
+		return collection.GetIcon()
+	}
+	return ""
+}
+
+func collectionColorValue(collection *models.Collection) string {
+	if collection == nil || !collection.Color.Valid {
+		return "#000000"
+	}
+	return collection.Color.String
+}

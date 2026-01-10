@@ -1,0 +1,124 @@
+package handlers
+
+import (
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/admin"
+)
+
+// AdminCollectionsList handles the admin collections listing
+func (h *Handlers) AdminCollectionsList(w http.ResponseWriter, r *http.Request) {
+	collections, err := h.collectionRepo.List(false)
+	if err != nil {
+		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
+		return
+	}
+
+	render(w, r, admin.CollectionsList(collections))
+}
+
+// AdminCollectionNew handles the new collection form
+func (h *Handlers) AdminCollectionNew(w http.ResponseWriter, r *http.Request) {
+	render(w, r, admin.CollectionForm(nil, true))
+}
+
+// AdminCollectionCreate handles creating a new collection
+func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	input := models.CreateCollectionInput{
+		Name:        r.FormValue("name"),
+		Slug:        r.FormValue("slug"),
+		Description: r.FormValue("description"),
+		Icon:        r.FormValue("icon"),
+		Color:       r.FormValue("color"),
+		IsPublic:    r.FormValue("is_public") == "true",
+	}
+
+	_, err := h.collectionRepo.Create(input)
+	if err != nil {
+		http.Error(w, "Failed to create collection", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/collections", http.StatusSeeOther)
+}
+
+// AdminCollectionEdit handles the edit collection form
+func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
+	idStr := extractSlugFromPath(r.URL.Path, "/admin/collections/", "/edit")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	collection, err := h.collectionRepo.GetByID(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	render(w, r, admin.CollectionForm(collection, false))
+}
+
+// AdminCollectionUpdate handles updating a collection
+func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/admin/collections/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	input := models.UpdateCollectionInput{
+		Name:        r.FormValue("name"),
+		Slug:        r.FormValue("slug"),
+		Description: r.FormValue("description"),
+		Icon:        r.FormValue("icon"),
+		Color:       r.FormValue("color"),
+		IsPublic:    r.FormValue("is_public") == "true",
+	}
+
+	_, err = h.collectionRepo.Update(id, input)
+	if err != nil {
+		http.Error(w, "Failed to update collection", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/collections", http.StatusSeeOther)
+}
+
+// AdminCollectionDelete handles deleting a collection
+func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/admin/collections/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := h.collectionRepo.Delete(id); err != nil {
+		http.Error(w, "Failed to delete collection", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/admin/collections")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/collections", http.StatusSeeOther)
+}

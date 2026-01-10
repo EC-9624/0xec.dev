@@ -1,0 +1,55 @@
+package pages
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+templ Home(recentPosts []models.Post, recentBookmarks []models.Bookmark) {
+	@layouts.TwoColumn("0xec - Home", "/") {
+		<div class="space-y-16">
+			<!-- Hero Section -->
+			<section class="space-y-4">
+				<h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-5xl text-balance">
+					Welcome
+				</h1>
+				<p class="text-xl text-muted-foreground prose-width">
+					A personal space for writing and collecting interesting things from the web.
+				</p>
+			</section>
+
+			<!-- Recent Posts -->
+			if len(recentPosts) > 0 {
+				<section class="space-y-6">
+					<div class="flex items-center justify-between">
+						<h2 class="text-2xl font-semibold tracking-tight text-foreground">
+							Recent Writing
+						</h2>
+						<a href="/posts" class="text-sm text-muted-foreground hover:text-foreground transition-colors">
+							View all &rarr;
+						</a>
+					</div>
+					<div class="separator-horizontal"></div>
+					@components.PostList(recentPosts)
+				</section>
+			}
+
+			<!-- Recent Bookmarks -->
+			if len(recentBookmarks) > 0 {
+				<section class="space-y-6">
+					<div class="flex items-center justify-between">
+						<h2 class="text-2xl font-semibold tracking-tight text-foreground">
+							Recent Bookmarks
+						</h2>
+						<a href="/bookmarks" class="text-sm text-muted-foreground hover:text-foreground transition-colors">
+							View all &rarr;
+						</a>
+					</div>
+					<div class="separator-horizontal"></div>
+					@components.BookmarkGrid(recentBookmarks)
+				</section>
+			}
+		</div>
+	}
+}

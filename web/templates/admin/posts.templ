@@ -1,0 +1,253 @@
+package admin
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+templ PostsList(posts []models.Post) {
+	@layouts.Admin("Posts") {
+		<div class="space-y-6">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-2xl font-bold tracking-tight text-foreground">Posts</h1>
+					<p class="text-muted-foreground">Manage your blog posts.</p>
+				</div>
+				<a href="/admin/posts/new" class="btn-default">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+					New Post
+				</a>
+			</div>
+
+			if len(posts) > 0 {
+				<div class="card overflow-hidden">
+					<table class="table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head">Title</th>
+								<th class="table-head">Status</th>
+								<th class="table-head">Date</th>
+								<th class="table-head text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body">
+							for _, post := range posts {
+								<tr class="table-row">
+									<td class="table-cell">
+										<a href={ templ.URL("/admin/posts/" + post.Slug + "/edit") } class="font-medium text-foreground hover:underline">
+											{ post.Title }
+										</a>
+									</td>
+									<td class="table-cell">
+										if post.IsDraft {
+											<span class="badge-outline text-amber-600 border-amber-200 bg-amber-50">
+												Draft
+											</span>
+										} else {
+											<span class="badge-outline text-green-600 border-green-200 bg-green-50">
+												Published
+											</span>
+										}
+									</td>
+									<td class="table-cell text-muted-foreground">
+										if post.PublishedAt.Valid {
+											{ post.PublishedAt.Time.Format("Jan 2, 2006") }
+										} else {
+											{ post.CreatedAt.Format("Jan 2, 2006") }
+										}
+									</td>
+									<td class="table-cell text-right">
+										<div class="flex items-center justify-end gap-2">
+											<a href={ templ.URL("/posts/" + post.Slug) } class="btn-ghost btn-sm" target="_blank">
+												View
+											</a>
+											<a href={ templ.URL("/admin/posts/" + post.Slug + "/edit") } class="btn-ghost btn-sm">
+												Edit
+											</a>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} else {
+				<div class="card">
+					<div class="flex flex-col items-center justify-center py-12 text-center">
+						<div class="rounded-full bg-muted p-4 mb-4">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M18 18h-8"/><path d="M18 10h-8"/></svg>
+						</div>
+						<h3 class="font-semibold text-foreground mb-1">No posts yet</h3>
+						<p class="text-muted-foreground mb-4">Get started by creating your first post.</p>
+						<a href="/admin/posts/new" class="btn-default">
+							Create your first post
+						</a>
+					</div>
+				</div>
+			}
+		</div>
+	}
+}
+
+templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool) {
+	@layouts.Admin(postFormTitle(post, isNew)) {
+		<div class="max-w-3xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if isNew {
+						New Post
+					} else {
+						Edit Post
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if isNew {
+						Create a new blog post.
+					} else {
+						Make changes to your post.
+					}
+				</p>
+			</div>
+
+			<form
+				if isNew {
+					action="/admin/posts"
+				} else {
+					action={ templ.URL("/admin/posts/" + post.Slug) }
+				}
+				method="POST"
+				class="space-y-6"
+			>
+				<div class="card">
+					<div class="card-content pt-6 space-y-6">
+						<div class="space-y-2">
+							<label for="title" class="label">Title</label>
+							<input
+								type="text"
+								id="title"
+								name="title"
+								class="input"
+								value={ postValue(post, "title") }
+								placeholder="Enter post title"
+								required
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<label for="slug" class="label">Slug</label>
+							<input
+								type="text"
+								id="slug"
+								name="slug"
+								class="input"
+								value={ postValue(post, "slug") }
+								placeholder="post-url-slug"
+								required
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<label for="excerpt" class="label">Excerpt</label>
+							<textarea
+								id="excerpt"
+								name="excerpt"
+								rows="2"
+								class="textarea"
+								placeholder="Brief description of your post"
+							>{ postValue(post, "excerpt") }</textarea>
+						</div>
+
+						<div class="space-y-2">
+							<label for="content" class="label">Content (Markdown)</label>
+							<textarea
+								id="content"
+								name="content"
+								rows="20"
+								class="textarea font-mono text-sm"
+								placeholder="Write your post content in Markdown..."
+								required
+							>{ postValue(post, "content") }</textarea>
+						</div>
+
+						<div class="space-y-2">
+							<label for="cover_image" class="label">Cover Image URL</label>
+							<input
+								type="url"
+								id="cover_image"
+								name="cover_image"
+								class="input"
+								value={ postValue(post, "cover_image") }
+								placeholder="https://example.com/image.jpg"
+							/>
+						</div>
+
+						<div class="flex items-center space-x-2">
+							<input
+								type="checkbox"
+								id="is_draft"
+								name="is_draft"
+								value="true"
+								if post == nil || post.IsDraft {
+									checked
+								}
+								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+							/>
+							<label for="is_draft" class="label">
+								Save as draft
+							</label>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex items-center gap-4">
+					<button type="submit" class="btn-default">
+						if isNew {
+							Create Post
+						} else {
+							Save Changes
+						}
+					</button>
+					<a href="/admin/posts" class="btn-outline">
+						Cancel
+					</a>
+					if !isNew {
+						<button
+							type="button"
+							hx-delete={ "/admin/posts/" + post.Slug }
+							hx-confirm="Are you sure you want to delete this post?"
+							class="btn-destructive ml-auto"
+						>
+							Delete
+						</button>
+					}
+				</div>
+			</form>
+		</div>
+	}
+}
+
+func postFormTitle(post *models.Post, isNew bool) string {
+	if isNew {
+		return "New Post"
+	}
+	return "Edit: " + post.Title
+}
+
+func postValue(post *models.Post, field string) string {
+	if post == nil {
+		return ""
+	}
+	switch field {
+	case "title":
+		return post.Title
+	case "slug":
+		return post.Slug
+	case "content":
+		return post.Content
+	case "excerpt":
+		return post.GetExcerpt()
+	case "cover_image":
+		return post.GetCoverImage()
+	}
+	return ""
+}
