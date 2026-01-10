@@ -17,21 +17,17 @@ type DashboardStats struct {
 	BookmarksThisWeek int
 	PostsThisWeek     int
 
+	// Draft posts count
+	DraftPosts int
+
 	// Distribution data
 	BookmarksByCollection []CollectionCount
-	TopDomains            []DomainCount
 }
 
 // CollectionCount represents bookmarks count per collection
 type CollectionCount struct {
 	Name  string
 	Count int
-}
-
-// DomainCount represents bookmarks count per domain
-type DomainCount struct {
-	Domain string
-	Count  int
 }
 
 // GetDashboardStats retrieves all stats needed for the dashboard
@@ -73,20 +69,10 @@ func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStats, error
 		}
 	}
 
-	// Get top domains (top 5)
-	topDomains, err := s.queries.GetTopDomains(ctx, 5)
+	// Get draft posts count
+	draftCount, err := s.queries.CountDraftPosts(ctx)
 	if err == nil {
-		stats.TopDomains = make([]DomainCount, 0, len(topDomains))
-		for _, d := range topDomains {
-			domain := ""
-			if d.Domain != nil {
-				domain = *d.Domain
-			}
-			stats.TopDomains = append(stats.TopDomains, DomainCount{
-				Domain: domain,
-				Count:  int(d.Count),
-			})
-		}
+		stats.DraftPosts = int(draftCount)
 	}
 
 	return stats, nil

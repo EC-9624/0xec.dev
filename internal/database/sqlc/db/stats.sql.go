@@ -10,6 +10,17 @@ import (
 	"time"
 )
 
+const countDraftPosts = `-- name: CountDraftPosts :one
+SELECT COUNT(*) FROM posts WHERE is_draft = 1
+`
+
+func (q *Queries) CountDraftPosts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countDraftPosts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getBookmarkCountsByCollection = `-- name: GetBookmarkCountsByCollection :many
 SELECT 
     COALESCE(c.name, 'Unsorted') as collection_name,

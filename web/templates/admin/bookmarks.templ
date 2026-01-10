@@ -85,10 +85,9 @@ templ BookmarksList(data BookmarksListData) {
 					<table class="table" id="bookmarks-table">
 						<thead class="table-header bg-muted/50">
 							<tr class="table-row">
-								<th class="table-head w-[40%]">Title</th>
+								<th class="table-head w-[50%]">Title</th>
 								<th class="table-head w-[20%]">Collection</th>
-								<th class="table-head w-[15%]">Domain</th>
-								<th class="table-head w-[10%]">Status</th>
+								<th class="table-head w-[15%]">Status</th>
 								<th class="table-head w-[15%] text-right">Actions</th>
 							</tr>
 						</thead>
@@ -163,11 +162,6 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 			} else {
 				<span class="text-muted-foreground text-sm">—</span>
 			}
-		</td>
-
-		<!-- Domain -->
-		<td class="table-cell text-muted-foreground text-sm">
-			{ bookmark.GetDomain() }
 		</td>
 
 		<!-- Status -->

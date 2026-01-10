@@ -32,3 +32,6 @@ SELECT
     (SELECT COUNT(*) FROM posts) as total_posts,
     (SELECT COUNT(*) FROM collections) as total_collections,
     (SELECT COUNT(*) FROM tags) as total_tags;
+
+-- name: CountDraftPosts :one
+SELECT COUNT(*) FROM posts WHERE is_draft = 1;

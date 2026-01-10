@@ -58,6 +58,22 @@ templ Dashboard(data DashboardData) {
 
 				<!-- Right Column: Distribution + Quick Actions -->
 				<div class="space-y-6">
+					<!-- Draft Posts Alert -->
+					if data.Stats.DraftPosts > 0 {
+						<a href="/admin/posts?status=draft" class="card hover:bg-muted/50 transition-colors block">
+							<div class="card-header pb-2">
+								<div class="flex items-center gap-2">
+									@draftAlertIcon()
+									<h2 class="text-lg font-semibold text-foreground">Drafts</h2>
+								</div>
+							</div>
+							<div class="card-content">
+								<p class="text-2xl font-bold text-amber-600">{ strconv.Itoa(data.Stats.DraftPosts) }</p>
+								<p class="text-sm text-muted-foreground">posts waiting to be published</p>
+							</div>
+						</a>
+					}
+
 					<!-- Bookmarks by Collection -->
 					if len(data.Stats.BookmarksByCollection) > 0 {
 						<div class="card">
@@ -68,25 +84,6 @@ templ Dashboard(data DashboardData) {
 								<div class="space-y-3">
 									for _, c := range data.Stats.BookmarksByCollection {
 										@barChartItem(c.Name, c.Count, maxCount(data.Stats.BookmarksByCollection))
-									}
-								</div>
-							</div>
-						</div>
-					}
-
-					<!-- Top Domains -->
-					if len(data.Stats.TopDomains) > 0 {
-						<div class="card">
-							<div class="card-header pb-4">
-								<h2 class="text-lg font-semibold text-foreground">Top Domains</h2>
-							</div>
-							<div class="card-content">
-								<div class="space-y-2">
-									for _, d := range data.Stats.TopDomains {
-										<div class="flex items-center justify-between text-sm">
-											<span class="text-muted-foreground truncate">{ d.Domain }</span>
-											<span class="font-medium text-foreground">{ strconv.Itoa(d.Count) }</span>
-										</div>
 									}
 								</div>
 							</div>
@@ -292,4 +289,8 @@ templ tagsIcon() {
 
 templ dashPlusIcon() {
 	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+}
+
+templ draftAlertIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
 }
