@@ -11,7 +11,7 @@ import (
 
 // PostsIndex handles the posts listing page
 func (h *Handlers) PostsIndex(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.postRepo.List(true, 100, 0)
+	posts, err := h.service.ListPosts(r.Context(), true, 100, 0)
 	if err != nil {
 		http.Error(w, "Failed to load posts", http.StatusInternalServerError)
 		return
@@ -28,7 +28,7 @@ func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postRepo.GetBySlug(slug)
+	post, err := h.service.GetPostBySlug(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -41,7 +41,7 @@ func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch all posts for the sidebar
-	allPosts, err := h.postRepo.List(true, 100, 0)
+	allPosts, err := h.service.ListPosts(r.Context(), true, 100, 0)
 	if err != nil {
 		allPosts = []models.Post{}
 	}
@@ -61,7 +61,7 @@ func markdownToHTML(content string) string {
 
 // AdminPostsList handles the admin posts listing
 func (h *Handlers) AdminPostsList(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.postRepo.List(false, 100, 0)
+	posts, err := h.service.ListPosts(r.Context(), false, 100, 0)
 	if err != nil {
 		http.Error(w, "Failed to load posts", http.StatusInternalServerError)
 		return
@@ -72,7 +72,7 @@ func (h *Handlers) AdminPostsList(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostNew handles the new post form
 func (h *Handlers) AdminPostNew(w http.ResponseWriter, r *http.Request) {
-	tags, _ := h.tagRepo.List()
+	tags, _ := h.service.ListTags(r.Context())
 	render(w, r, admin.PostForm(nil, nil, tags, true))
 }
 
@@ -92,7 +92,7 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 		IsDraft:    r.FormValue("is_draft") == "true",
 	}
 
-	_, err := h.postRepo.Create(input)
+	_, err := h.service.CreatePost(r.Context(), input)
 	if err != nil {
 		http.Error(w, "Failed to create post", http.StatusInternalServerError)
 		return
@@ -109,13 +109,13 @@ func (h *Handlers) AdminPostEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postRepo.GetBySlug(slug)
+	post, err := h.service.GetPostBySlug(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	tags, _ := h.tagRepo.List()
+	tags, _ := h.service.ListTags(r.Context())
 	render(w, r, admin.PostForm(post, post.Tags, tags, false))
 }
 
@@ -127,7 +127,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postRepo.GetBySlug(slug)
+	post, err := h.service.GetPostBySlug(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -147,7 +147,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 		IsDraft:    r.FormValue("is_draft") == "true",
 	}
 
-	_, err = h.postRepo.Update(post.ID, input)
+	_, err = h.service.UpdatePost(r.Context(), post.ID, input)
 	if err != nil {
 		http.Error(w, "Failed to update post", http.StatusInternalServerError)
 		return
@@ -164,13 +164,13 @@ func (h *Handlers) AdminPostDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postRepo.GetBySlug(slug)
+	post, err := h.service.GetPostBySlug(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	if err := h.postRepo.Delete(post.ID); err != nil {
+	if err := h.service.DeletePost(r.Context(), post.ID); err != nil {
 		http.Error(w, "Failed to delete post", http.StatusInternalServerError)
 		return
 	}

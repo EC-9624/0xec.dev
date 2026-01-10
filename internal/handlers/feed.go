@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/EC-9624/0xec.dev/internal/repository"
+	"github.com/EC-9624/0xec.dev/internal/service"
 )
 
 // RSS feed structures
@@ -33,7 +33,7 @@ type RSSItem struct {
 
 // PostsFeed generates RSS feed for posts
 func (h *Handlers) PostsFeed(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.postRepo.List(true, 20, 0)
+	posts, err := h.service.ListPosts(r.Context(), true, 20, 0)
 	if err != nil {
 		http.Error(w, "Failed to load posts", http.StatusInternalServerError)
 		return
@@ -73,7 +73,7 @@ func (h *Handlers) PostsFeed(w http.ResponseWriter, r *http.Request) {
 
 // BookmarksFeed generates RSS feed for bookmarks
 func (h *Handlers) BookmarksFeed(w http.ResponseWriter, r *http.Request) {
-	bookmarks, err := h.bookmarkRepo.List(repository.BookmarkListOptions{
+	bookmarks, err := h.service.ListBookmarks(r.Context(), service.BookmarkListOptions{
 		PublicOnly: true,
 		Limit:      50,
 		Offset:     0,

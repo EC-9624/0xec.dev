@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -27,7 +28,7 @@ func main() {
 	h := handlers.New(cfg, database.DB)
 
 	// Ensure admin user exists
-	if err := h.UserRepo().EnsureAdminExists(cfg.AdminUser, cfg.AdminPass); err != nil {
+	if err := h.Service().EnsureAdminExists(context.Background(), cfg.AdminUser, cfg.AdminPass); err != nil {
 		log.Printf("Warning: Failed to ensure admin user exists: %v", err)
 	}
 
@@ -143,7 +144,7 @@ func main() {
 	})
 
 	// Wrap admin routes with auth middleware
-	authMiddleware := middleware.Auth(h.UserRepo())
+	authMiddleware := middleware.Auth(h.Service())
 	mux.Handle("/admin", authMiddleware(adminMux))
 	mux.Handle("/admin/", authMiddleware(adminMux))
 
