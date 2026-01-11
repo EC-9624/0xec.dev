@@ -353,6 +353,14 @@ func (s *Service) fetchMetadataForBookmarks(ids []int64) {
 		}
 
 		s.UpdateBookmark(ctx, id, input)
+
+		// Download and store images locally for CSP compliance
+		coverURL := input.CoverImage
+		faviconURL := input.Favicon
+		if coverURL != "" || faviconURL != "" {
+			// Attempt to download and store images
+			s.DownloadAndStoreBookmarkImages(ctx, id, coverURL, faviconURL)
+		}
 	}
 }
 

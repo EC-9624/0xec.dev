@@ -79,10 +79,14 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     is_public       INTEGER DEFAULT 1,
     is_favorite     INTEGER DEFAULT 0,
     sort_order      INTEGER DEFAULT 0,
+    cover_image_id  INTEGER,
+    favicon_id      INTEGER,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
+    FOREIGN KEY (cover_image_id) REFERENCES images(id) ON DELETE SET NULL,
+    FOREIGN KEY (favicon_id) REFERENCES images(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookmarks_collection ON bookmarks(collection_id);
@@ -148,3 +152,18 @@ CREATE TABLE IF NOT EXISTS activities (
 
 CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_activities_entity ON activities(entity_type, entity_id);
+
+-- ============================================
+-- IMAGES (stored binary image data for CSP compliance)
+-- ============================================
+CREATE TABLE IF NOT EXISTS images (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    hash            TEXT NOT NULL UNIQUE,
+    content_type    TEXT NOT NULL,
+    data            BLOB NOT NULL,
+    size            INTEGER NOT NULL,
+    source_url      TEXT,
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_images_hash ON images(hash);

@@ -45,6 +45,19 @@ func (q *Queries) CountBookmarksByCollection(ctx context.Context, collectionID *
 	return count, err
 }
 
+const countBookmarksWithExternalImages = `-- name: CountBookmarksWithExternalImages :one
+SELECT COUNT(*) FROM bookmarks 
+WHERE (cover_image IS NOT NULL AND cover_image != '' AND cover_image_id IS NULL)
+   OR (favicon IS NOT NULL AND favicon != '' AND favicon_id IS NULL)
+`
+
+func (q *Queries) CountBookmarksWithExternalImages(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countBookmarksWithExternalImages)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countFavoriteBookmarks = `-- name: CountFavoriteBookmarks :one
 SELECT COUNT(*) FROM bookmarks WHERE is_favorite = 1
 `
@@ -92,7 +105,7 @@ func (q *Queries) CountPublicFavoriteBookmarks(ctx context.Context) (int64, erro
 const createBookmark = `-- name: CreateBookmark :one
 INSERT INTO bookmarks (url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-RETURNING id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at
+RETURNING id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at
 `
 
 type CreateBookmarkParams struct {
@@ -137,6 +150,8 @@ func (q *Queries) CreateBookmark(ctx context.Context, arg CreateBookmarkParams) 
 		&i.IsPublic,
 		&i.IsFavorite,
 		&i.SortOrder,
+		&i.CoverImageID,
+		&i.FaviconID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -162,7 +177,7 @@ func (q *Queries) DeleteBookmarkTags(ctx context.Context, bookmarkID int64) erro
 }
 
 const getBookmarkByID = `-- name: GetBookmarkByID :one
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks WHERE id = ?
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks WHERE id = ?
 `
 
 func (q *Queries) GetBookmarkByID(ctx context.Context, id int64) (Bookmark, error) {
@@ -181,6 +196,8 @@ func (q *Queries) GetBookmarkByID(ctx context.Context, id int64) (Bookmark, erro
 		&i.IsPublic,
 		&i.IsFavorite,
 		&i.SortOrder,
+		&i.CoverImageID,
+		&i.FaviconID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -188,7 +205,7 @@ func (q *Queries) GetBookmarkByID(ctx context.Context, id int64) (Bookmark, erro
 }
 
 const getBookmarkByURL = `-- name: GetBookmarkByURL :one
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks WHERE url = ? LIMIT 1
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks WHERE url = ? LIMIT 1
 `
 
 func (q *Queries) GetBookmarkByURL(ctx context.Context, url string) (Bookmark, error) {
@@ -207,6 +224,8 @@ func (q *Queries) GetBookmarkByURL(ctx context.Context, url string) (Bookmark, e
 		&i.IsPublic,
 		&i.IsFavorite,
 		&i.SortOrder,
+		&i.CoverImageID,
+		&i.FaviconID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -250,7 +269,7 @@ func (q *Queries) GetBookmarkTags(ctx context.Context, bookmarkID int64) ([]Tag,
 }
 
 const listAllBookmarks = `-- name: ListAllBookmarks :many
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
 ORDER BY sort_order, created_at DESC 
 LIMIT ? OFFSET ?
 `
@@ -282,6 +301,8 @@ func (q *Queries) ListAllBookmarks(ctx context.Context, arg ListAllBookmarksPara
 			&i.IsPublic,
 			&i.IsFavorite,
 			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -299,7 +320,7 @@ func (q *Queries) ListAllBookmarks(ctx context.Context, arg ListAllBookmarksPara
 }
 
 const listBookmarksByCollection = `-- name: ListBookmarksByCollection :many
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
 WHERE collection_id = ? 
 ORDER BY sort_order, created_at DESC 
 LIMIT ? OFFSET ?
@@ -333,6 +354,55 @@ func (q *Queries) ListBookmarksByCollection(ctx context.Context, arg ListBookmar
 			&i.IsPublic,
 			&i.IsFavorite,
 			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBookmarksWithExternalImages = `-- name: ListBookmarksWithExternalImages :many
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
+WHERE (cover_image IS NOT NULL AND cover_image != '' AND cover_image_id IS NULL)
+   OR (favicon IS NOT NULL AND favicon != '' AND favicon_id IS NULL)
+ORDER BY id
+`
+
+func (q *Queries) ListBookmarksWithExternalImages(ctx context.Context) ([]Bookmark, error) {
+	rows, err := q.db.QueryContext(ctx, listBookmarksWithExternalImages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Bookmark{}
+	for rows.Next() {
+		var i Bookmark
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.Title,
+			&i.Description,
+			&i.Excerpt,
+			&i.CoverImage,
+			&i.Favicon,
+			&i.Domain,
+			&i.CollectionID,
+			&i.IsPublic,
+			&i.IsFavorite,
+			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -350,7 +420,7 @@ func (q *Queries) ListBookmarksByCollection(ctx context.Context, arg ListBookmar
 }
 
 const listFavoriteBookmarks = `-- name: ListFavoriteBookmarks :many
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
 WHERE is_favorite = 1 
 ORDER BY sort_order, created_at DESC 
 LIMIT ? OFFSET ?
@@ -383,6 +453,8 @@ func (q *Queries) ListFavoriteBookmarks(ctx context.Context, arg ListFavoriteBoo
 			&i.IsPublic,
 			&i.IsFavorite,
 			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -400,7 +472,7 @@ func (q *Queries) ListFavoriteBookmarks(ctx context.Context, arg ListFavoriteBoo
 }
 
 const listPublicBookmarks = `-- name: ListPublicBookmarks :many
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
 WHERE is_public = 1 
 ORDER BY sort_order, created_at DESC 
 LIMIT ? OFFSET ?
@@ -433,6 +505,8 @@ func (q *Queries) ListPublicBookmarks(ctx context.Context, arg ListPublicBookmar
 			&i.IsPublic,
 			&i.IsFavorite,
 			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -450,7 +524,7 @@ func (q *Queries) ListPublicBookmarks(ctx context.Context, arg ListPublicBookmar
 }
 
 const listPublicBookmarksByCollection = `-- name: ListPublicBookmarksByCollection :many
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
 WHERE is_public = 1 AND collection_id = ? 
 ORDER BY sort_order, created_at DESC 
 LIMIT ? OFFSET ?
@@ -484,6 +558,8 @@ func (q *Queries) ListPublicBookmarksByCollection(ctx context.Context, arg ListP
 			&i.IsPublic,
 			&i.IsFavorite,
 			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -501,7 +577,7 @@ func (q *Queries) ListPublicBookmarksByCollection(ctx context.Context, arg ListP
 }
 
 const listPublicFavoriteBookmarks = `-- name: ListPublicFavoriteBookmarks :many
-SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
+SELECT id, url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, cover_image_id, favicon_id, created_at, updated_at FROM bookmarks 
 WHERE is_public = 1 AND is_favorite = 1 
 ORDER BY sort_order, created_at DESC 
 LIMIT ? OFFSET ?
@@ -534,6 +610,8 @@ func (q *Queries) ListPublicFavoriteBookmarks(ctx context.Context, arg ListPubli
 			&i.IsPublic,
 			&i.IsFavorite,
 			&i.SortOrder,
+			&i.CoverImageID,
+			&i.FaviconID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -600,6 +678,38 @@ func (q *Queries) UpdateBookmarkCollection(ctx context.Context, arg UpdateBookma
 	return err
 }
 
+const updateBookmarkCoverImageID = `-- name: UpdateBookmarkCoverImageID :exec
+
+UPDATE bookmarks SET cover_image_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type UpdateBookmarkCoverImageIDParams struct {
+	CoverImageID *int64 `json:"cover_image_id"`
+	ID           int64  `json:"id"`
+}
+
+// ============================================
+// IMAGE ID UPDATES (for self-hosted images)
+// ============================================
+func (q *Queries) UpdateBookmarkCoverImageID(ctx context.Context, arg UpdateBookmarkCoverImageIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateBookmarkCoverImageID, arg.CoverImageID, arg.ID)
+	return err
+}
+
+const updateBookmarkFaviconID = `-- name: UpdateBookmarkFaviconID :exec
+UPDATE bookmarks SET favicon_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type UpdateBookmarkFaviconIDParams struct {
+	FaviconID *int64 `json:"favicon_id"`
+	ID        int64  `json:"id"`
+}
+
+func (q *Queries) UpdateBookmarkFaviconID(ctx context.Context, arg UpdateBookmarkFaviconIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateBookmarkFaviconID, arg.FaviconID, arg.ID)
+	return err
+}
+
 const updateBookmarkFavorite = `-- name: UpdateBookmarkFavorite :exec
 UPDATE bookmarks SET is_favorite = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
 `
@@ -611,6 +721,21 @@ type UpdateBookmarkFavoriteParams struct {
 
 func (q *Queries) UpdateBookmarkFavorite(ctx context.Context, arg UpdateBookmarkFavoriteParams) error {
 	_, err := q.db.ExecContext(ctx, updateBookmarkFavorite, arg.IsFavorite, arg.ID)
+	return err
+}
+
+const updateBookmarkImageIDs = `-- name: UpdateBookmarkImageIDs :exec
+UPDATE bookmarks SET cover_image_id = ?, favicon_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type UpdateBookmarkImageIDsParams struct {
+	CoverImageID *int64 `json:"cover_image_id"`
+	FaviconID    *int64 `json:"favicon_id"`
+	ID           int64  `json:"id"`
+}
+
+func (q *Queries) UpdateBookmarkImageIDs(ctx context.Context, arg UpdateBookmarkImageIDsParams) error {
+	_, err := q.db.ExecContext(ctx, updateBookmarkImageIDs, arg.CoverImageID, arg.FaviconID, arg.ID)
 	return err
 }
 

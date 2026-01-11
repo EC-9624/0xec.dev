@@ -174,8 +174,8 @@ templ barChartItem(name string, count int, maxCount int) {
 		</div>
 		<div class="h-1.5 bg-muted overflow-hidden">
 			<div
-				class="h-full bg-foreground"
-				style={ "width: " + strconv.Itoa(percentage(count, maxCount)) + "%" }
+				class="h-full bg-foreground bar-chart-fill"
+				style={ "--bar-width: " + strconv.Itoa(percentage(count, maxCount)) + "%" }
 			></div>
 		</div>
 	</div>

@@ -12,10 +12,10 @@ templ BookmarkCard(bookmark models.Bookmark) {
 					class="bookmark-card-image"
 					loading="lazy"
 					decoding="async"
-					onload="this.parentElement.classList.add('loaded')"
-					onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+					data-loaded-class
+					data-show-fallback
 				/>
-				<div class="bookmark-card-fallback" style="display:none">
+				<div class="bookmark-card-fallback hidden">
 					<span>{ getFirstChar(bookmark.Title) }</span>
 				</div>
 			} else {
@@ -30,7 +30,7 @@ templ BookmarkCard(bookmark models.Bookmark) {
 			</h3>
 			<p class="bookmark-card-domain">
 				<img
-					src={ getGoogleFaviconURL(bookmark.GetDomain()) }
+					src={ bookmark.GetFaviconURL() }
 					alt=""
 					class="inline-block w-4 h-4 mr-1 align-text-bottom"
 					loading="lazy"
@@ -52,13 +52,7 @@ func getFirstChar(s string) string {
 	return ""
 }
 
-// getGoogleFaviconURL returns Google's favicon service URL for a domain
-func getGoogleFaviconURL(domain string) string {
-	if domain == "" {
-		return ""
-	}
-	return "https://www.google.com/s2/favicons?sz=32&domain=" + domain
-}
+
 
 templ BookmarkGrid(bookmarks []models.Bookmark) {
 	<div class="masonry-grid" id="bookmark-grid">

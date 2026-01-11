@@ -1,11 +1,23 @@
 package admin
 
 import (
+	"context"
+
+	"github.com/EC-9624/0xec.dev/internal/middleware"
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/components"
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 	"strconv"
 )
+
+// getPostCSRFToken retrieves the CSRF token from context
+func getPostCSRFToken(ctx context.Context) string {
+	token, ok := ctx.Value(middleware.CSRFTokenContextKey).(string)
+	if !ok {
+		return ""
+	}
+	return token
+}
 
 templ PostsList(posts []models.Post) {
 	@layouts.Admin("Posts") {
@@ -145,7 +157,7 @@ templ postRow(post models.Post) {
 }
 
 templ postsFilterScript() {
-	<script>
+	<script nonce={ getCSPNonce(ctx) }>
 		// Initialize table filter using the reusable TableFilter class
 		const postsFilter = new TableFilter({
 			tableBodyId: 'posts-tbody',
@@ -199,6 +211,7 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 				method="POST"
 				class="space-y-6"
 			>
+				<input type="hidden" name="csrf_token" value={ getPostCSRFToken(ctx) }/>
 				<div class="card">
 					<div class="card-content pt-6 space-y-6">
 						<div class="space-y-2">

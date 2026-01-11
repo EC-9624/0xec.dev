@@ -4,6 +4,31 @@
 @source "../../templates/**/*.templ";
 @source "../../templates/**/*_templ.go";
 
+/* Self-hosted JetBrains Mono font */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/static/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/static/fonts/jetbrains-mono-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/static/fonts/jetbrains-mono-600.woff2') format('woff2');
+}
+
 /* Boxy, monospace theme */
 @theme {
   /* Monospace font stack */
@@ -529,6 +554,11 @@
     width: auto !important;
     left: auto !important;
     top: auto !important;
+  }
+
+  /* ===== BAR CHART ===== */
+  .bar-chart-fill {
+    width: var(--bar-width, 0%);
   }
 
   /* ===== STAT CARD ===== */

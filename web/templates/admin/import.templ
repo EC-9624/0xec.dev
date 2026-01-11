@@ -1,11 +1,23 @@
 package admin
 
 import (
+	"context"
+
+	"github.com/EC-9624/0xec.dev/internal/middleware"
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/internal/service"
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 	"strconv"
 )
+
+// getCSRFToken retrieves the CSRF token from context
+func getCSRFToken(ctx context.Context) string {
+	token, ok := ctx.Value(middleware.CSRFTokenContextKey).(string)
+	if !ok {
+		return ""
+	}
+	return token
+}
 
 templ ImportPage(collections []models.Collection) {
 	@layouts.Admin("Import Bookmarks") {
@@ -22,6 +34,7 @@ templ ImportPage(collections []models.Collection) {
 						enctype="multipart/form-data"
 						class="space-y-6"
 					>
+						<input type="hidden" name="csrf_token" value={ getCSRFToken(ctx) }/>
 						<div class="space-y-2">
 							<label for="file" class="label">Bookmarks File</label>
 							<input
