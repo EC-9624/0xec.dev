@@ -15,15 +15,6 @@ func getCSRFToken(ctx context.Context) string {
 	return token
 }
 
-// getCSPNonce retrieves the CSP nonce from context
-func getCSPNonce(ctx context.Context) string {
-	nonce, ok := ctx.Value(middleware.CSPNonceContextKey).(string)
-	if !ok {
-		return ""
-	}
-	return nonce
-}
-
 templ Admin(title string) {
 	@adminBase(title) {
 		<div class="flex min-h-screen">
@@ -37,7 +28,7 @@ templ Admin(title string) {
 	}
 }
 
-// adminBase is the base layout for admin pages with CSRF token in hx-headers and CSP nonce
+// adminBase is the base layout for admin pages with CSRF token in hx-headers
 templ adminBase(title string) {
 	<!DOCTYPE html>
 	<html lang="en" class="antialiased">
@@ -47,10 +38,9 @@ templ adminBase(title string) {
 			<meta name="htmx-config" content='{"scrollBehavior":"smooth"}'/>
 			<title>{ title } | Admin</title>
 			<link rel="stylesheet" href="/static/css/output.css"/>
-			<script nonce={ getCSPNonce(ctx) } src="/static/js/htmx.min.js"></script>
-			<script nonce={ getCSPNonce(ctx) } src="/static/js/dropdown.js"></script>
-			<script nonce={ getCSPNonce(ctx) } src="/static/js/filter.js"></script>
-			<script nonce={ getCSPNonce(ctx) } src="/static/js/image-handlers.js"></script>
+			<script src="/static/js/htmx.min.js"></script>
+			<script src="/static/js/dropdown.js"></script>
+			<script src="/static/js/filter.js"></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }

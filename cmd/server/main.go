@@ -40,18 +40,9 @@ func main() {
 	}
 	csrfMiddleware := middleware.CSRF(csrfConfig)
 
-	// CSP middleware configuration (report-only in development for testing)
-	cspConfig := middleware.CSPConfig{
-		ReportOnly: cfg.IsDevelopment(), // Report-only in dev, enforce in production
-	}
-	cspMiddleware := middleware.CSP(cspConfig)
-
-	// Static files (no CSP needed - served directly)
+	// Static files
 	staticDir := "./web/static"
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
-
-	// Image serving route (self-hosted images for CSP compliance)
-	mux.HandleFunc("GET /images/{id}", h.ServeImage)
 
 	// ============================================
 	// PUBLIC ROUTES
@@ -147,9 +138,8 @@ func main() {
 	mux.Handle("/admin/", protectedAdmin)
 
 	// Apply global middleware
-	// CSP is applied globally to set Content-Security-Policy headers
-	// Order: CSP → Logger → Recoverer → Router
-	handler := cspMiddleware(middleware.Logger(middleware.Recoverer(mux)))
+	// Order: Logger → Recoverer → Router
+	handler := middleware.Logger(middleware.Recoverer(mux))
 
 	// Get absolute path for static directory
 	if absPath, err := filepath.Abs(staticDir); err == nil {

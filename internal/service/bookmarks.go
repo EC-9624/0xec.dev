@@ -55,11 +55,6 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 		}
 	}
 
-	// Download and store images locally for CSP compliance (async, don't fail creation)
-	if input.CoverImage != "" || input.Favicon != "" {
-		go s.DownloadAndStoreBookmarkImages(context.Background(), bookmark.ID, input.CoverImage, input.Favicon)
-	}
-
 	// Log activity
 	s.LogActivity(ctx, ActionBookmarkCreated, EntityBookmark, bookmark.ID, input.Title, nil)
 
@@ -282,13 +277,6 @@ func dbBookmarkToModel(b db.Bookmark, tags []db.Tag) *models.Bookmark {
 	}
 	if b.CollectionID != nil {
 		bookmark.CollectionID = sql.NullInt64{Int64: *b.CollectionID, Valid: true}
-	}
-	// Image IDs for self-hosted images
-	if b.CoverImageID != nil {
-		bookmark.CoverImageID = sql.NullInt64{Int64: *b.CoverImageID, Valid: true}
-	}
-	if b.FaviconID != nil {
-		bookmark.FaviconID = sql.NullInt64{Int64: *b.FaviconID, Valid: true}
 	}
 
 	bookmark.Tags = make([]models.Tag, 0, len(tags))

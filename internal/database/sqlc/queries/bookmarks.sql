@@ -98,27 +98,3 @@ UPDATE bookmarks SET collection_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
 
 -- name: UpdateBookmarkTitle :exec
 UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
-
--- ============================================
--- IMAGE ID UPDATES (for self-hosted images)
--- ============================================
-
--- name: UpdateBookmarkCoverImageID :exec
-UPDATE bookmarks SET cover_image_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
-
--- name: UpdateBookmarkFaviconID :exec
-UPDATE bookmarks SET favicon_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
-
--- name: UpdateBookmarkImageIDs :exec
-UPDATE bookmarks SET cover_image_id = ?, favicon_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
-
--- name: ListBookmarksWithExternalImages :many
-SELECT * FROM bookmarks 
-WHERE (cover_image IS NOT NULL AND cover_image != '' AND cover_image_id IS NULL)
-   OR (favicon IS NOT NULL AND favicon != '' AND favicon_id IS NULL)
-ORDER BY id;
-
--- name: CountBookmarksWithExternalImages :one
-SELECT COUNT(*) FROM bookmarks 
-WHERE (cover_image IS NOT NULL AND cover_image != '' AND cover_image_id IS NULL)
-   OR (favicon IS NOT NULL AND favicon != '' AND favicon_id IS NULL);

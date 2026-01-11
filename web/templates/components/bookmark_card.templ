@@ -12,10 +12,10 @@ templ BookmarkCard(bookmark models.Bookmark) {
 					class="bookmark-card-image"
 					loading="lazy"
 					decoding="async"
-					data-loaded-class
-					data-show-fallback
+					onload="this.parentElement.classList.add('loaded')"
+					onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
 				/>
-				<div class="bookmark-card-fallback hidden">
+				<div class="bookmark-card-fallback" style="display:none">
 					<span>{ getFirstChar(bookmark.Title) }</span>
 				</div>
 			} else {
@@ -51,8 +51,6 @@ func getFirstChar(s string) string {
 	}
 	return ""
 }
-
-
 
 templ BookmarkGrid(bookmarks []models.Bookmark) {
 	<div class="masonry-grid" id="bookmark-grid">

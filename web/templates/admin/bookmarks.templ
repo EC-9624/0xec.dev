@@ -10,15 +10,6 @@ import (
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 )
 
-// getCSPNonce retrieves the CSP nonce from context for inline scripts
-func getCSPNonce(ctx context.Context) string {
-	nonce, ok := ctx.Value(middleware.CSPNonceContextKey).(string)
-	if !ok {
-		return ""
-	}
-	return nonce
-}
-
 // getCSRFToken retrieves the CSRF token from context
 func getBookmarkCSRFToken(ctx context.Context) string {
 	token, ok := ctx.Value(middleware.CSRFTokenContextKey).(string)
@@ -129,9 +120,9 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 						alt=""
 						class="w-4 h-4 object-contain"
 						loading="lazy"
-						data-show-fallback
+						onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
 					/>
-					<span class="bookmark-card-fallback hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
+					<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
 				</div>
 				@BookmarkTitleDisplay(bookmark.ID, bookmark.Title, bookmark.URL, false)
 			</div>
@@ -182,7 +173,7 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 }
 
 templ bookmarksFilterScript() {
-	<script nonce={ getCSPNonce(ctx) }>
+	<script>
 		// Initialize table filter using the reusable TableFilter class
 		const bookmarksFilter = new TableFilter({
 			tableBodyId: 'bookmarks-tbody',

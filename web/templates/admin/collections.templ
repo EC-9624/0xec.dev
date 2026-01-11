@@ -149,7 +149,7 @@ templ collectionRow(collection models.Collection) {
 }
 
 templ collectionsFilterScript() {
-	<script nonce={ getCSPNonce(ctx) }>
+	<script>
 		// Initialize table filter using the reusable TableFilter class
 		const collectionsFilter = new TableFilter({
 			tableBodyId: 'collections-tbody',

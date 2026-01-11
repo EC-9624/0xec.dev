@@ -157,7 +157,7 @@ templ postRow(post models.Post) {
 }
 
 templ postsFilterScript() {
-	<script nonce={ getCSPNonce(ctx) }>
+	<script>
 		// Initialize table filter using the reusable TableFilter class
 		const postsFilter = new TableFilter({
 			tableBodyId: 'posts-tbody',

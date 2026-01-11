@@ -31,8 +31,6 @@ type Bookmark struct {
 	IsPublic     *int64     `json:"is_public"`
 	IsFavorite   *int64     `json:"is_favorite"`
 	SortOrder    *int64     `json:"sort_order"`
-	CoverImageID *int64     `json:"cover_image_id"`
-	FaviconID    *int64     `json:"favicon_id"`
 	CreatedAt    *time.Time `json:"created_at"`
 	UpdatedAt    *time.Time `json:"updated_at"`
 }
@@ -53,16 +51,6 @@ type Collection struct {
 	IsPublic    *int64     `json:"is_public"`
 	CreatedAt   *time.Time `json:"created_at"`
 	UpdatedAt   *time.Time `json:"updated_at"`
-}
-
-type Image struct {
-	ID          int64      `json:"id"`
-	Hash        string     `json:"hash"`
-	ContentType string     `json:"content_type"`
-	Data        []byte     `json:"data"`
-	Size        int64      `json:"size"`
-	SourceUrl   *string    `json:"source_url"`
-	CreatedAt   *time.Time `json:"created_at"`
 }
 
 type Post struct {
