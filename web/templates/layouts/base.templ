@@ -40,10 +40,10 @@ templ ThreeColumn(title string, currentPath string, middleColumn templ.Component
 	@Base(title) {
 		<div class="layout-container">
 			@leftSidebar(currentPath)
-			<div class="middle-column">
+			<div class="middle-column" id="middle-column">
 				@middleColumn
 			</div>
-			<div class="main-content main-content-dots">
+			<div class="main-content main-content-dots" id="main-content">
 				<div class="main-content-scroll scrollable-area">
 					<div class="main-content-inner">
 						{ children... }
