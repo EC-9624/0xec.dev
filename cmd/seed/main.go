@@ -44,15 +44,10 @@ func seed(sqlDB *sql.DB) error {
 	queries := db.New(sqlDB)
 
 	// Clear existing data (respect FK constraints - delete in reverse order)
-	log.Println("Clearing existing data...")
+	// Note: We don't clear users, bookmarks, bookmark_tags, or sessions
+	log.Println("Clearing existing data (posts, tags, collections, activities)...")
 	if err := clearData(sqlDB); err != nil {
 		return fmt.Errorf("failed to clear data: %w", err)
-	}
-
-	// Seed users
-	log.Println("Seeding users...")
-	if err := seedUsers(ctx, sqlDB); err != nil {
-		return fmt.Errorf("failed to seed users: %w", err)
 	}
 
 	// Seed tags
@@ -64,7 +59,7 @@ func seed(sqlDB *sql.DB) error {
 
 	// Seed collections
 	log.Println("Seeding collections...")
-	collections, err := seedCollections(ctx, queries)
+	_, err = seedCollections(ctx, queries)
 	if err != nil {
 		return fmt.Errorf("failed to seed collections: %w", err)
 	}
@@ -76,28 +71,15 @@ func seed(sqlDB *sql.DB) error {
 		return fmt.Errorf("failed to seed posts: %w", err)
 	}
 
-	// Seed bookmarks
-	log.Println("Seeding bookmarks...")
-	bookmarks, err := seedBookmarks(ctx, queries, collections)
-	if err != nil {
-		return fmt.Errorf("failed to seed bookmarks: %w", err)
-	}
-
-	// Seed bookmark_tags
-	log.Println("Seeding bookmark tags...")
-	if err := seedBookmarkTags(ctx, sqlDB, bookmarks, tags); err != nil {
-		return fmt.Errorf("failed to seed bookmark tags: %w", err)
-	}
-
 	// Seed post_tags
 	log.Println("Seeding post tags...")
 	if err := seedPostTags(ctx, sqlDB, posts, tags); err != nil {
 		return fmt.Errorf("failed to seed post tags: %w", err)
 	}
 
-	// Seed activities
+	// Seed activities (post-related only)
 	log.Println("Seeding activities...")
-	if err := seedActivities(ctx, queries, bookmarks, posts); err != nil {
+	if err := seedActivities(ctx, queries, posts); err != nil {
 		return fmt.Errorf("failed to seed activities: %w", err)
 	}
 
@@ -105,16 +87,13 @@ func seed(sqlDB *sql.DB) error {
 }
 
 func clearData(sqlDB *sql.DB) error {
+	// Only clear tables we're seeding - preserve users, bookmarks, bookmark_tags, sessions
 	tables := []string{
-		"bookmark_tags",
 		"post_tags",
 		"activities",
-		"sessions",
-		"bookmarks",
 		"posts",
 		"collections",
 		"tags",
-		"users",
 	}
 
 	for _, table := range tables {
@@ -124,18 +103,6 @@ func clearData(sqlDB *sql.DB) error {
 	}
 
 	return nil
-}
-
-func seedUsers(ctx context.Context, sqlDB *sql.DB) error {
-	// Hash for "admin" password using bcrypt cost 10
-	// Generated with: bcrypt.GenerateFromPassword([]byte("admin"), 10)
-	passwordHash := "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
-
-	_, err := sqlDB.ExecContext(ctx, `
-		INSERT INTO users (username, password_hash) VALUES (?, ?)
-	`, "admin", passwordHash)
-
-	return err
 }
 
 func seedTags(ctx context.Context, queries *db.Queries) ([]db.Tag, error) {
@@ -182,16 +149,15 @@ func seedCollections(ctx context.Context, queries *db.Queries) ([]db.Collection,
 		name        string
 		slug        string
 		description string
-		icon        string
 	}{
-		{"Development", "development", "Programming tutorials, guides, and resources", "code"},
-		{"Design", "design", "UI/UX design resources and inspiration", "palette"},
-		{"Databases", "databases", "SQL, PostgreSQL, and data systems", "database"},
-		{"DevOps", "devops", "Infrastructure, deployment, and operations", "server"},
-		{"Learning", "learning", "Educational resources and courses", "book-open"},
-		{"Tools", "tools", "Useful utilities and applications", "wrench"},
-		{"Reading", "reading", "Articles, blogs, and interesting reads", "newspaper"},
-		{"Music", "music", "Audio, music production, and related", "music"},
+		{"Development", "development", "Programming tutorials, guides, and resources"},
+		{"Design", "design", "UI/UX design resources and inspiration"},
+		{"Databases", "databases", "SQL, PostgreSQL, and data systems"},
+		{"DevOps", "devops", "Infrastructure, deployment, and operations"},
+		{"Learning", "learning", "Educational resources and courses"},
+		{"Tools", "tools", "Useful utilities and applications"},
+		{"Reading", "reading", "Articles, blogs, and interesting reads"},
+		{"Music", "music", "Audio, music production, and related"},
 	}
 
 	var collections []db.Collection
@@ -200,7 +166,6 @@ func seedCollections(ctx context.Context, queries *db.Queries) ([]db.Collection,
 			Name:        c.name,
 			Slug:        c.slug,
 			Description: strPtr(c.description),
-			Icon:        strPtr(c.icon),
 			SortOrder:   int64Ptr(int64(i)),
 			IsPublic:    int64Ptr(1),
 		})
@@ -685,186 +650,6 @@ Go CLI tools are a joy to build and distribute!`,
 	return posts, nil
 }
 
-func seedBookmarks(ctx context.Context, queries *db.Queries, collections []db.Collection) ([]db.Bookmark, error) {
-	// Create a map for easy collection lookup
-	collectionMap := make(map[string]int64)
-	for _, c := range collections {
-		collectionMap[c.Slug] = c.ID
-	}
-
-	bookmarkData := []struct {
-		url         string
-		title       string
-		description string
-		domain      string
-		collection  string // collection slug
-		isPublic    int64
-		isFavorite  int64
-	}{
-		// Development
-		{"https://go.dev/doc/", "Go Documentation", "Official Go programming language documentation", "go.dev", "development", 1, 1},
-		{"https://gobyexample.com/", "Go by Example", "Hands-on introduction to Go using annotated example programs", "gobyexample.com", "development", 1, 1},
-		{"https://pkg.go.dev/", "Go Packages", "Search and browse Go packages", "pkg.go.dev", "development", 1, 0},
-		{"https://htmx.org/", "HTMX", "High power tools for HTML", "htmx.org", "development", 1, 1},
-		{"https://templ.guide/", "Templ", "A language for writing HTML user interfaces in Go", "templ.guide", "development", 1, 0},
-		{"https://developer.mozilla.org/", "MDN Web Docs", "Resources for developers, by developers", "developer.mozilla.org", "development", 1, 1},
-
-		// Databases
-		{"https://www.postgresql.org/docs/", "PostgreSQL Documentation", "Official PostgreSQL documentation", "postgresql.org", "databases", 1, 0},
-		{"https://sqlc.dev/", "sqlc", "Generate type-safe code from SQL", "sqlc.dev", "databases", 1, 1},
-		{"https://use-the-index-luke.com/", "Use The Index, Luke", "A guide to database performance for developers", "use-the-index-luke.com", "databases", 1, 1},
-		{"https://sqlite.org/docs.html", "SQLite Documentation", "Official SQLite documentation", "sqlite.org", "databases", 1, 0},
-		{"https://pgexercises.com/", "PostgreSQL Exercises", "Interactive PostgreSQL tutorial", "pgexercises.com", "databases", 1, 0},
-
-		// Design
-		{"https://tailwindcss.com/docs", "Tailwind CSS", "A utility-first CSS framework", "tailwindcss.com", "design", 1, 1},
-		{"https://ui.shadcn.com/", "shadcn/ui", "Beautifully designed components", "ui.shadcn.com", "design", 1, 1},
-		{"https://fonts.google.com/", "Google Fonts", "Free web fonts", "fonts.google.com", "design", 1, 0},
-		{"https://heroicons.com/", "Heroicons", "Beautiful hand-crafted SVG icons", "heroicons.com", "design", 1, 0},
-		{"https://colorhunt.co/", "Color Hunt", "Color palettes for designers", "colorhunt.co", "design", 1, 0},
-
-		// DevOps
-		{"https://docs.docker.com/", "Docker Documentation", "Official Docker documentation", "docs.docker.com", "devops", 1, 0},
-		{"https://kubernetes.io/docs/", "Kubernetes Documentation", "Official Kubernetes documentation", "kubernetes.io", "devops", 1, 0},
-		{"https://www.terraform.io/docs", "Terraform Documentation", "Infrastructure as Code", "terraform.io", "devops", 1, 0},
-		{"https://github.com/features/actions", "GitHub Actions", "Automate your workflow", "github.com", "devops", 1, 1},
-
-		// Learning
-		{"https://exercism.org/", "Exercism", "Code practice and mentorship for everyone", "exercism.org", "learning", 1, 1},
-		{"https://www.codecademy.com/", "Codecademy", "Learn to code interactively", "codecademy.com", "learning", 1, 0},
-		{"https://roadmap.sh/", "Developer Roadmaps", "Community driven roadmaps, articles and resources", "roadmap.sh", "learning", 1, 1},
-		{"https://missing.csail.mit.edu/", "The Missing Semester", "The missing semester of your CS education", "missing.csail.mit.edu", "learning", 1, 1},
-
-		// Tools
-		{"https://github.com/", "GitHub", "Where the world builds software", "github.com", "tools", 1, 1},
-		{"https://regex101.com/", "Regex101", "Online regex tester and debugger", "regex101.com", "tools", 1, 1},
-		{"https://crontab.guru/", "Crontab Guru", "The quick and simple editor for cron schedule expressions", "crontab.guru", "tools", 1, 0},
-		{"https://jsonformatter.org/", "JSON Formatter", "Format and validate JSON", "jsonformatter.org", "tools", 1, 0},
-		{"https://transform.tools/", "Transform", "A polyglot web converter", "transform.tools", "tools", 1, 0},
-
-		// Reading
-		{"https://news.ycombinator.com/", "Hacker News", "Social news website focusing on computer science", "news.ycombinator.com", "reading", 1, 1},
-		{"https://lobste.rs/", "Lobsters", "Computing-focused community", "lobste.rs", "reading", 1, 0},
-		{"https://blog.golang.org/", "The Go Blog", "Official Go blog", "blog.golang.org", "reading", 1, 1},
-		{"https://martinfowler.com/", "Martin Fowler", "Software design and architecture", "martinfowler.com", "reading", 1, 1},
-
-		// Music
-		{"https://learningmusic.ableton.com/", "Learning Music", "Learn the fundamentals of music making", "ableton.com", "music", 1, 1},
-		{"https://musictheory.net/", "Music Theory", "Free music theory lessons", "musictheory.net", "music", 1, 0},
-	}
-
-	var bookmarks []db.Bookmark
-	for i, b := range bookmarkData {
-		var collectionID *int64
-		if cid, ok := collectionMap[b.collection]; ok {
-			collectionID = &cid
-		}
-
-		bookmark, err := queries.CreateBookmark(ctx, db.CreateBookmarkParams{
-			Url:          b.url,
-			Title:        b.title,
-			Description:  strPtr(b.description),
-			Domain:       strPtr(b.domain),
-			CollectionID: collectionID,
-			IsPublic:     int64Ptr(b.isPublic),
-			IsFavorite:   int64Ptr(b.isFavorite),
-			SortOrder:    int64Ptr(int64(i)),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create bookmark %s: %w", b.url, err)
-		}
-		bookmarks = append(bookmarks, bookmark)
-	}
-
-	return bookmarks, nil
-}
-
-func seedBookmarkTags(ctx context.Context, sqlDB *sql.DB, bookmarks []db.Bookmark, tags []db.Tag) error {
-	// Create tag map by name for easy lookup
-	tagMap := make(map[string]int64)
-	for _, t := range tags {
-		tagMap[strings.ToLower(t.Name)] = t.ID
-	}
-
-	// Assign tags based on bookmark content/domain
-	for _, bookmark := range bookmarks {
-		var tagIDs []int64
-		title := strings.ToLower(bookmark.Title)
-		domain := ""
-		if bookmark.Domain != nil {
-			domain = strings.ToLower(*bookmark.Domain)
-		}
-
-		// Match tags based on content
-		if strings.Contains(title, "go") || strings.Contains(domain, "go.dev") || strings.Contains(domain, "gobyexample") {
-			if id, ok := tagMap["go"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "sql") || strings.Contains(title, "postgres") || strings.Contains(domain, "postgres") || strings.Contains(domain, "sqlite") {
-			if id, ok := tagMap["sql"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-			if id, ok := tagMap["database"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "css") || strings.Contains(title, "tailwind") || strings.Contains(domain, "tailwind") {
-			if id, ok := tagMap["css"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "docker") || strings.Contains(title, "kubernetes") || strings.Contains(domain, "docker") || strings.Contains(domain, "kubernetes") {
-			if id, ok := tagMap["devops"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "tutorial") || strings.Contains(title, "learn") || strings.Contains(title, "guide") {
-			if id, ok := tagMap["tutorial"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "docs") || strings.Contains(title, "documentation") || strings.Contains(title, "reference") {
-			if id, ok := tagMap["reference"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(domain, "github") {
-			if id, ok := tagMap["tool"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "design") || strings.Contains(title, "ui") || strings.Contains(title, "color") || strings.Contains(title, "font") {
-			if id, ok := tagMap["design"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-		if strings.Contains(title, "linux") {
-			if id, ok := tagMap["linux"]; ok {
-				tagIDs = append(tagIDs, id)
-			}
-		}
-
-		// Add 1-2 random tags if none matched
-		if len(tagIDs) == 0 {
-			randomTag := tags[rand.Intn(len(tags))]
-			tagIDs = append(tagIDs, randomTag.ID)
-		}
-
-		// Insert bookmark_tags
-		for _, tagID := range tagIDs {
-			_, err := sqlDB.ExecContext(ctx, `
-				INSERT OR IGNORE INTO bookmark_tags (bookmark_id, tag_id) VALUES (?, ?)
-			`, bookmark.ID, tagID)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func seedPostTags(ctx context.Context, sqlDB *sql.DB, posts []db.Post, tags []db.Tag) error {
 	// Create tag map by name for easy lookup
 	tagMap := make(map[string]int64)
@@ -978,64 +763,38 @@ func seedPostTags(ctx context.Context, sqlDB *sql.DB, posts []db.Post, tags []db
 	return nil
 }
 
-func seedActivities(ctx context.Context, queries *db.Queries, bookmarks []db.Bookmark, posts []db.Post) error {
+func seedActivities(ctx context.Context, queries *db.Queries, posts []db.Post) error {
+	// Post-related activities only (no bookmark activities)
 	activities := []struct {
 		action     string
 		entityType string
-		entityID   *int64
 		title      string
-		daysAgo    int
 	}{
-		{"login", "user", nil, "Admin logged in", 0},
-		{"create", "bookmark", nil, "", 1},
-		{"create", "bookmark", nil, "", 1},
-		{"create", "bookmark", nil, "", 2},
-		{"update", "bookmark", nil, "", 2},
-		{"create", "post", nil, "", 3},
-		{"publish", "post", nil, "", 3},
-		{"create", "collection", nil, "Created collection: Development", 4},
-		{"create", "collection", nil, "Created collection: Design", 4},
-		{"create", "bookmark", nil, "", 5},
-		{"create", "bookmark", nil, "", 5},
-		{"create", "bookmark", nil, "", 5},
-		{"update", "post", nil, "", 6},
-		{"create", "bookmark", nil, "", 7},
-		{"login", "user", nil, "Admin logged in", 7},
-		{"create", "post", nil, "", 8},
-		{"create", "bookmark", nil, "", 9},
-		{"create", "bookmark", nil, "", 10},
-		{"update", "bookmark", nil, "", 10},
-		{"delete", "bookmark", nil, "Deleted bookmark", 11},
-		{"create", "collection", nil, "Created collection: Tools", 12},
-		{"create", "bookmark", nil, "", 13},
-		{"create", "bookmark", nil, "", 14},
-		{"publish", "post", nil, "", 14},
-		{"login", "user", nil, "Admin logged in", 15},
-		{"create", "bookmark", nil, "", 16},
-		{"create", "bookmark", nil, "", 17},
-		{"update", "post", nil, "", 18},
-		{"create", "bookmark", nil, "", 19},
-		{"create", "bookmark", nil, "", 20},
+		{"create", "post", ""},
+		{"publish", "post", ""},
+		{"create", "collection", "Created collection: Development"},
+		{"create", "collection", "Created collection: Design"},
+		{"create", "collection", "Created collection: Databases"},
+		{"update", "post", ""},
+		{"create", "post", ""},
+		{"publish", "post", ""},
+		{"create", "collection", "Created collection: Tools"},
+		{"update", "post", ""},
+		{"create", "post", ""},
+		{"publish", "post", ""},
+		{"create", "collection", "Created collection: Learning"},
+		{"create", "collection", "Created collection: Reading"},
+		{"update", "post", ""},
 	}
 
-	bookmarkIdx := 0
 	postIdx := 0
 
 	for _, a := range activities {
 		var entityID *int64
 		title := a.title
 
-		// Assign actual entity IDs and titles
-		if a.entityType == "bookmark" && a.action == "create" && bookmarkIdx < len(bookmarks) {
-			id := bookmarks[bookmarkIdx].ID
-			entityID = &id
-			title = bookmarks[bookmarkIdx].Title
-			bookmarkIdx++
-		} else if a.entityType == "bookmark" && a.action == "update" && bookmarkIdx > 0 {
-			id := bookmarks[bookmarkIdx-1].ID
-			entityID = &id
-			title = "Updated: " + bookmarks[bookmarkIdx-1].Title
-		} else if a.entityType == "post" && (a.action == "create" || a.action == "publish") && postIdx < len(posts) {
+		// Assign actual entity IDs and titles for posts
+		if a.entityType == "post" && (a.action == "create" || a.action == "publish") && postIdx < len(posts) {
 			id := posts[postIdx].ID
 			entityID = &id
 			if a.action == "publish" {

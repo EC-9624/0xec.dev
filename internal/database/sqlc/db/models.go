@@ -46,8 +46,6 @@ type Collection struct {
 	Name        string     `json:"name"`
 	Slug        string     `json:"slug"`
 	Description *string    `json:"description"`
-	Icon        *string    `json:"icon"`
-	Color       *string    `json:"color"`
 	ParentID    *int64     `json:"parent_id"`
 	SortOrder   *int64     `json:"sort_order"`
 	IsPublic    *int64     `json:"is_public"`

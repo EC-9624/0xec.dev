@@ -35,9 +35,6 @@ templ CollectionsList(collections []models.Collection) {
 								<tr class="table-row">
 									<td class="table-cell">
 										<a href={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit") } class="font-medium text-foreground hover:underline">
-											if collection.GetIcon() != "" {
-												<span class="mr-1.5">{ collection.GetIcon() }</span>
-											}
 											{ collection.Name }
 										</a>
 									</td>
@@ -152,29 +149,7 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								placeholder="What is this collection about?"
 							>{ collectionValue(collection, "description") }</textarea>
 						</div>
-						<div class="grid grid-cols-2 gap-4">
-							<div class="space-y-2">
-								<label for="icon" class="label">Icon (emoji)</label>
-								<input
-									type="text"
-									id="icon"
-									name="icon"
-									class="input"
-									value={ collectionValue(collection, "icon") }
-									placeholder="&#128218;"
-								/>
-							</div>
-							<div class="space-y-2">
-								<label for="color" class="label">Color</label>
-								<input
-									type="color"
-									id="color"
-									name="color"
-									class="input h-10 p-1"
-									value={ collectionColorValue(collection) }
-								/>
-							</div>
-						</div>
+
 						<div class="flex items-center space-x-2">
 							<input
 								type="checkbox"
@@ -237,15 +212,6 @@ func collectionValue(collection *models.Collection, field string) string {
 		return collection.Slug
 	case "description":
 		return collection.GetDescription()
-	case "icon":
-		return collection.GetIcon()
 	}
 	return ""
-}
-
-func collectionColorValue(collection *models.Collection) string {
-	if collection == nil || !collection.Color.Valid {
-		return "#000000"
-	}
-	return collection.Color.String
 }

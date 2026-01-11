@@ -16,6 +16,9 @@ var initialMigration string
 //go:embed migrations/002_activities.sql
 var activitiesMigration string
 
+//go:embed migrations/003_remove_collection_icon_color.sql
+var removeCollectionIconColorMigration string
+
 // DB is the global database connection
 var DB *sql.DB
 
@@ -56,6 +59,14 @@ func runMigrations() error {
 	_, err = DB.Exec(activitiesMigration)
 	if err != nil {
 		return fmt.Errorf("failed to run activities migration: %w", err)
+	}
+
+	// Migration 003: Remove icon and color from collections
+	// This uses ALTER TABLE DROP COLUMN which requires SQLite 3.35.0+
+	_, err = DB.Exec(removeCollectionIconColorMigration)
+	if err != nil {
+		// Ignore error if columns don't exist (migration already ran)
+		// SQLite will error with "no such column" if already dropped
 	}
 
 	return nil

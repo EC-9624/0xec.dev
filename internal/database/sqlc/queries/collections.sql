@@ -1,11 +1,11 @@
 -- name: CreateCollection :one
-INSERT INTO collections (name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+INSERT INTO collections (name, slug, description, parent_id, sort_order, is_public, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING *;
 
 -- name: UpdateCollection :exec
 UPDATE collections 
-SET name = ?, slug = ?, description = ?, icon = ?, color = ?, 
+SET name = ?, slug = ?, description = ?, 
     parent_id = ?, sort_order = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP 
 WHERE id = ?;
 
