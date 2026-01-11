@@ -19,8 +19,6 @@ func (s *Service) CreateCollection(ctx context.Context, input models.CreateColle
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: strPtr(input.Description),
-		Icon:        strPtr(input.Icon),
-		Color:       strPtr(input.Color),
 		ParentID:    input.ParentID,
 		SortOrder:   nil,
 		IsPublic:    &isPublic,
@@ -47,8 +45,6 @@ func (s *Service) UpdateCollection(ctx context.Context, id int64, input models.U
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: strPtr(input.Description),
-		Icon:        strPtr(input.Icon),
-		Color:       strPtr(input.Color),
 		ParentID:    input.ParentID,
 		SortOrder:   &sortOrder,
 		IsPublic:    &isPublic,
@@ -129,8 +125,6 @@ func (s *Service) ListCollections(ctx context.Context, publicOnly bool) ([]model
 				Name:          r.Name,
 				Slug:          r.Slug,
 				Description:   r.Description,
-				Icon:          r.Icon,
-				Color:         r.Color,
 				ParentID:      r.ParentID,
 				SortOrder:     r.SortOrder,
 				IsPublic:      r.IsPublic,
@@ -171,12 +165,6 @@ func dbCollectionToModel(c db.Collection, bookmarkCount int) *models.Collection 
 	if c.Description != nil {
 		collection.Description = sql.NullString{String: *c.Description, Valid: true}
 	}
-	if c.Icon != nil {
-		collection.Icon = sql.NullString{String: *c.Icon, Valid: true}
-	}
-	if c.Color != nil {
-		collection.Color = sql.NullString{String: *c.Color, Valid: true}
-	}
 	if c.ParentID != nil {
 		collection.ParentID = sql.NullInt64{Int64: *c.ParentID, Valid: true}
 	}
@@ -199,12 +187,6 @@ func dbCollectionRowToModel(c db.ListAllCollectionsWithCountsRow) *models.Collec
 
 	if c.Description != nil {
 		collection.Description = sql.NullString{String: *c.Description, Valid: true}
-	}
-	if c.Icon != nil {
-		collection.Icon = sql.NullString{String: *c.Icon, Valid: true}
-	}
-	if c.Color != nil {
-		collection.Color = sql.NullString{String: *c.Color, Valid: true}
 	}
 	if c.ParentID != nil {
 		collection.ParentID = sql.NullInt64{Int64: *c.ParentID, Valid: true}

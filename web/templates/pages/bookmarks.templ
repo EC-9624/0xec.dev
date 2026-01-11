@@ -60,9 +60,6 @@ templ BookmarkHeader(collection *models.Collection, total int) {
 	<div class="space-y-2">
 		<h1 class="text-3xl font-bold tracking-tight text-foreground">
 			if collection != nil {
-				if collection.GetIcon() != "" {
-					<span class="mr-2">{ collection.GetIcon() }</span>
-				}
 				{ collection.Name }
 			} else {
 				Bookmarks

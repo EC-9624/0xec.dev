@@ -11,17 +11,15 @@ import (
 )
 
 const createCollection = `-- name: CreateCollection :one
-INSERT INTO collections (name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-RETURNING id, name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at
+INSERT INTO collections (name, slug, description, parent_id, sort_order, is_public, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+RETURNING id, name, slug, description, parent_id, sort_order, is_public, created_at, updated_at
 `
 
 type CreateCollectionParams struct {
 	Name        string  `json:"name"`
 	Slug        string  `json:"slug"`
 	Description *string `json:"description"`
-	Icon        *string `json:"icon"`
-	Color       *string `json:"color"`
 	ParentID    *int64  `json:"parent_id"`
 	SortOrder   *int64  `json:"sort_order"`
 	IsPublic    *int64  `json:"is_public"`
@@ -32,8 +30,6 @@ func (q *Queries) CreateCollection(ctx context.Context, arg CreateCollectionPara
 		arg.Name,
 		arg.Slug,
 		arg.Description,
-		arg.Icon,
-		arg.Color,
 		arg.ParentID,
 		arg.SortOrder,
 		arg.IsPublic,
@@ -44,8 +40,6 @@ func (q *Queries) CreateCollection(ctx context.Context, arg CreateCollectionPara
 		&i.Name,
 		&i.Slug,
 		&i.Description,
-		&i.Icon,
-		&i.Color,
 		&i.ParentID,
 		&i.SortOrder,
 		&i.IsPublic,
@@ -76,7 +70,7 @@ func (q *Queries) GetCollectionBookmarkCount(ctx context.Context, collectionID *
 }
 
 const getCollectionByID = `-- name: GetCollectionByID :one
-SELECT id, name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at FROM collections WHERE id = ?
+SELECT id, name, slug, description, parent_id, sort_order, is_public, created_at, updated_at FROM collections WHERE id = ?
 `
 
 func (q *Queries) GetCollectionByID(ctx context.Context, id int64) (Collection, error) {
@@ -87,8 +81,6 @@ func (q *Queries) GetCollectionByID(ctx context.Context, id int64) (Collection, 
 		&i.Name,
 		&i.Slug,
 		&i.Description,
-		&i.Icon,
-		&i.Color,
 		&i.ParentID,
 		&i.SortOrder,
 		&i.IsPublic,
@@ -99,7 +91,7 @@ func (q *Queries) GetCollectionByID(ctx context.Context, id int64) (Collection, 
 }
 
 const getCollectionBySlug = `-- name: GetCollectionBySlug :one
-SELECT id, name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at FROM collections WHERE slug = ?
+SELECT id, name, slug, description, parent_id, sort_order, is_public, created_at, updated_at FROM collections WHERE slug = ?
 `
 
 func (q *Queries) GetCollectionBySlug(ctx context.Context, slug string) (Collection, error) {
@@ -110,8 +102,6 @@ func (q *Queries) GetCollectionBySlug(ctx context.Context, slug string) (Collect
 		&i.Name,
 		&i.Slug,
 		&i.Description,
-		&i.Icon,
-		&i.Color,
 		&i.ParentID,
 		&i.SortOrder,
 		&i.IsPublic,
@@ -122,7 +112,7 @@ func (q *Queries) GetCollectionBySlug(ctx context.Context, slug string) (Collect
 }
 
 const listAllCollections = `-- name: ListAllCollections :many
-SELECT id, name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at FROM collections ORDER BY sort_order, name
+SELECT id, name, slug, description, parent_id, sort_order, is_public, created_at, updated_at FROM collections ORDER BY sort_order, name
 `
 
 func (q *Queries) ListAllCollections(ctx context.Context) ([]Collection, error) {
@@ -139,8 +129,6 @@ func (q *Queries) ListAllCollections(ctx context.Context) ([]Collection, error) 
 			&i.Name,
 			&i.Slug,
 			&i.Description,
-			&i.Icon,
-			&i.Color,
 			&i.ParentID,
 			&i.SortOrder,
 			&i.IsPublic,
@@ -161,7 +149,7 @@ func (q *Queries) ListAllCollections(ctx context.Context) ([]Collection, error) 
 }
 
 const listAllCollectionsWithCounts = `-- name: ListAllCollectionsWithCounts :many
-SELECT c.id, c.name, c.slug, c.description, c.icon, c.color, c.parent_id, c.sort_order, c.is_public, c.created_at, c.updated_at, 
+SELECT c.id, c.name, c.slug, c.description, c.parent_id, c.sort_order, c.is_public, c.created_at, c.updated_at, 
     (SELECT COUNT(*) FROM bookmarks b WHERE b.collection_id = c.id) as bookmark_count
 FROM collections c
 ORDER BY c.sort_order, c.name
@@ -172,8 +160,6 @@ type ListAllCollectionsWithCountsRow struct {
 	Name          string     `json:"name"`
 	Slug          string     `json:"slug"`
 	Description   *string    `json:"description"`
-	Icon          *string    `json:"icon"`
-	Color         *string    `json:"color"`
 	ParentID      *int64     `json:"parent_id"`
 	SortOrder     *int64     `json:"sort_order"`
 	IsPublic      *int64     `json:"is_public"`
@@ -196,8 +182,6 @@ func (q *Queries) ListAllCollectionsWithCounts(ctx context.Context) ([]ListAllCo
 			&i.Name,
 			&i.Slug,
 			&i.Description,
-			&i.Icon,
-			&i.Color,
 			&i.ParentID,
 			&i.SortOrder,
 			&i.IsPublic,
@@ -219,7 +203,7 @@ func (q *Queries) ListAllCollectionsWithCounts(ctx context.Context) ([]ListAllCo
 }
 
 const listPublicCollections = `-- name: ListPublicCollections :many
-SELECT id, name, slug, description, icon, color, parent_id, sort_order, is_public, created_at, updated_at FROM collections WHERE is_public = 1 ORDER BY sort_order, name
+SELECT id, name, slug, description, parent_id, sort_order, is_public, created_at, updated_at FROM collections WHERE is_public = 1 ORDER BY sort_order, name
 `
 
 func (q *Queries) ListPublicCollections(ctx context.Context) ([]Collection, error) {
@@ -236,8 +220,6 @@ func (q *Queries) ListPublicCollections(ctx context.Context) ([]Collection, erro
 			&i.Name,
 			&i.Slug,
 			&i.Description,
-			&i.Icon,
-			&i.Color,
 			&i.ParentID,
 			&i.SortOrder,
 			&i.IsPublic,
@@ -258,7 +240,7 @@ func (q *Queries) ListPublicCollections(ctx context.Context) ([]Collection, erro
 }
 
 const listPublicCollectionsWithCounts = `-- name: ListPublicCollectionsWithCounts :many
-SELECT c.id, c.name, c.slug, c.description, c.icon, c.color, c.parent_id, c.sort_order, c.is_public, c.created_at, c.updated_at, 
+SELECT c.id, c.name, c.slug, c.description, c.parent_id, c.sort_order, c.is_public, c.created_at, c.updated_at, 
     (SELECT COUNT(*) FROM bookmarks b WHERE b.collection_id = c.id) as bookmark_count
 FROM collections c
 WHERE c.is_public = 1
@@ -270,8 +252,6 @@ type ListPublicCollectionsWithCountsRow struct {
 	Name          string     `json:"name"`
 	Slug          string     `json:"slug"`
 	Description   *string    `json:"description"`
-	Icon          *string    `json:"icon"`
-	Color         *string    `json:"color"`
 	ParentID      *int64     `json:"parent_id"`
 	SortOrder     *int64     `json:"sort_order"`
 	IsPublic      *int64     `json:"is_public"`
@@ -294,8 +274,6 @@ func (q *Queries) ListPublicCollectionsWithCounts(ctx context.Context) ([]ListPu
 			&i.Name,
 			&i.Slug,
 			&i.Description,
-			&i.Icon,
-			&i.Color,
 			&i.ParentID,
 			&i.SortOrder,
 			&i.IsPublic,
@@ -318,7 +296,7 @@ func (q *Queries) ListPublicCollectionsWithCounts(ctx context.Context) ([]ListPu
 
 const updateCollection = `-- name: UpdateCollection :exec
 UPDATE collections 
-SET name = ?, slug = ?, description = ?, icon = ?, color = ?, 
+SET name = ?, slug = ?, description = ?, 
     parent_id = ?, sort_order = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP 
 WHERE id = ?
 `
@@ -327,8 +305,6 @@ type UpdateCollectionParams struct {
 	Name        string  `json:"name"`
 	Slug        string  `json:"slug"`
 	Description *string `json:"description"`
-	Icon        *string `json:"icon"`
-	Color       *string `json:"color"`
 	ParentID    *int64  `json:"parent_id"`
 	SortOrder   *int64  `json:"sort_order"`
 	IsPublic    *int64  `json:"is_public"`
@@ -340,8 +316,6 @@ func (q *Queries) UpdateCollection(ctx context.Context, arg UpdateCollectionPara
 		arg.Name,
 		arg.Slug,
 		arg.Description,
-		arg.Icon,
-		arg.Color,
 		arg.ParentID,
 		arg.SortOrder,
 		arg.IsPublic,
