@@ -114,9 +114,12 @@ func main() {
 	})
 	adminMux.HandleFunc("/admin/bookmarks/new", h.AdminBookmarkNew)
 	adminMux.HandleFunc("/admin/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)
+	adminMux.HandleFunc("/admin/bookmarks/refresh-all", h.AdminRefreshAllMetadata)
 	adminMux.HandleFunc("/admin/bookmarks/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		switch {
+		case strings.HasSuffix(path, "/refresh"):
+			h.AdminRefreshBookmarkMetadata(w, r)
 		case strings.HasSuffix(path, "/edit"):
 			h.AdminBookmarkEdit(w, r)
 		case r.Method == http.MethodPost:

@@ -7,8 +7,10 @@
 /* Boxy, monospace theme */
 @theme {
   /* Monospace font stack */
-  --font-sans: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Monaco, Consolas, monospace;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Monaco, Consolas, monospace;
+  --font-sans: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Monaco,
+    Consolas, monospace;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Monaco,
+    Consolas, monospace;
 
   /* Neutral color palette - sharper contrast */
   --color-background: hsl(0 0% 100%);
@@ -103,7 +105,11 @@
 
   .main-content-dots {
     @apply flex-1;
-    background-image: radial-gradient(circle, hsl(0 0% 90%) 1px, transparent 1px);
+    background-image: radial-gradient(
+      circle,
+      hsl(0 0% 90%) 1px,
+      transparent 1px
+    );
     background-size: 24px 24px;
   }
 
@@ -382,11 +388,57 @@
   /* ===== BOOKMARK CARD ===== */
   .bookmark-card {
     @apply block overflow-hidden border border-border bg-card
-           transition-all hover:shadow-md hover:border-border/80;
+           transition-all duration-200 hover:shadow-md hover:border-border/80;
+
+    &:hover {
+      transform: scale(1.02);
+    }
   }
 
+  /* Image wrapper for loading states */
+  .bookmark-card-image-wrapper {
+    @apply relative aspect-video w-full bg-muted overflow-hidden;
+  }
+
+  /* Skeleton pulse animation */
+  .bookmark-card-image-wrapper::before {
+    content: "";
+    @apply absolute inset-0 bg-muted;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+
+  .bookmark-card-image-wrapper.loaded::before {
+    display: none;
+  }
+
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Image with fade-in - use object-cover for better cropping */
   .bookmark-card-image {
-    @apply aspect-video w-full object-cover bg-muted;
+    @apply absolute inset-0 w-full h-full object-cover object-center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .bookmark-card-image-wrapper.loaded .bookmark-card-image {
+    opacity: 1;
+  }
+
+  /* Fallback when no image or error */
+  .bookmark-card-fallback {
+    @apply absolute inset-0 flex items-center justify-center bg-muted;
+  }
+
+  .bookmark-card-fallback span {
+    @apply text-4xl font-medium text-muted-foreground;
   }
 
   .bookmark-card-content {
@@ -394,7 +446,8 @@
   }
 
   .bookmark-card-title {
-    @apply font-medium text-foreground line-clamp-2;
+    @apply font-medium text-foreground line-clamp-2 
+           group-hover:text-primary transition-colors;
   }
 
   .bookmark-card-domain {
@@ -580,26 +633,27 @@
   .htmx-request.htmx-indicator {
     display: inline-block;
   }
-  
+
   /* Hide elements during HTMX request */
   .htmx-request .htmx-hide-on-request {
     display: none;
   }
-  
+
   /* Pulse animation for skeleton loaders */
   .animate-pulse {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  
+
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
       opacity: 0.5;
     }
   }
-  
+
   /* Loading state for main content during HTMX request */
   #main-content.htmx-request > * {
     opacity: 0.6;

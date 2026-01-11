@@ -2,12 +2,18 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
 )
+
+// intToStr converts int to string (avoiding strconv import)
+func intToStr(i int) string {
+	return fmt.Sprintf("%d", i)
+}
 
 // ImportedBookmark represents a bookmark parsed from an import file
 type ImportedBookmark struct {
@@ -97,10 +103,14 @@ func ParseChromeBookmarks(html string) ([]ImportedBookmark, error) {
 }
 
 // ImportBookmarks imports a list of bookmarks, handling duplicates
+// It fetches metadata for each bookmark in the background
 func (s *Service) ImportBookmarks(ctx context.Context, bookmarks []ImportedBookmark, defaultCollectionID *int64) (*ImportResult, error) {
 	result := &ImportResult{
 		Total: len(bookmarks),
 	}
+
+	// Collect IDs of newly created bookmarks for metadata fetching
+	var createdIDs []int64
 
 	for _, ib := range bookmarks {
 		// Skip empty URLs
@@ -140,7 +150,7 @@ func (s *Service) ImportBookmarks(ctx context.Context, bookmarks []ImportedBookm
 			title = ib.URL // Fallback to URL if no title
 		}
 
-		_, err = s.CreateBookmark(ctx, models.CreateBookmarkInput{
+		bookmark, err := s.CreateBookmark(ctx, models.CreateBookmarkInput{
 			URL:          ib.URL,
 			Title:        title,
 			CollectionID: defaultCollectionID,
@@ -151,10 +161,199 @@ func (s *Service) ImportBookmarks(ctx context.Context, bookmarks []ImportedBookm
 			result.Errors = append(result.Errors, "Failed to create: "+ib.URL)
 		} else {
 			result.Created++
+			createdIDs = append(createdIDs, bookmark.ID)
 		}
 	}
 
+	// Fetch metadata for newly created bookmarks in background
+	if len(createdIDs) > 0 {
+		go s.fetchMetadataForBookmarks(createdIDs)
+	}
+
 	return result, nil
+}
+
+// RefreshBookmarkMetadata re-fetches metadata for a single bookmark
+func (s *Service) RefreshBookmarkMetadata(ctx context.Context, id int64) error {
+	bookmark, err := s.GetBookmarkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	metadata, err := s.FetchPageMetadata(ctx, bookmark.URL)
+	if err != nil {
+		return err
+	}
+
+	input := models.UpdateBookmarkInput{
+		URL:          bookmark.URL,
+		Title:        bookmark.Title,
+		Description:  bookmark.GetDescription(),
+		CoverImage:   bookmark.GetCoverImage(),
+		Favicon:      bookmark.GetFavicon(),
+		CollectionID: getInt64Ptr(bookmark.CollectionID),
+		IsPublic:     bookmark.IsPublic,
+		IsFavorite:   bookmark.IsFavorite,
+	}
+
+	// Update with fetched data (overwrite if we got new data)
+	if metadata.Title != "" {
+		input.Title = metadata.Title
+	}
+	if metadata.Description != "" {
+		input.Description = metadata.Description
+	}
+	if metadata.Image != "" {
+		input.CoverImage = metadata.Image
+	}
+	if metadata.Favicon != "" {
+		input.Favicon = metadata.Favicon
+	}
+
+	_, err = s.UpdateBookmark(ctx, id, input)
+	return err
+}
+
+// RefreshResult contains the result of a metadata refresh operation
+type RefreshResult struct {
+	Total     int
+	Processed int
+	Updated   int
+	Failed    int
+}
+
+// RefreshAllMissingMetadata refreshes metadata for all bookmarks missing cover images
+// Returns the result after completion
+func (s *Service) RefreshAllMissingMetadata(ctx context.Context) (*RefreshResult, error) {
+	result := &RefreshResult{}
+
+	// Get all bookmarks
+	bookmarks, err := s.ListBookmarks(ctx, BookmarkListOptions{
+		Limit:      1000,
+		PublicOnly: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Count bookmarks needing refresh
+	var toRefresh []models.Bookmark
+	for _, bookmark := range bookmarks {
+		if bookmark.GetCoverImage() == "" {
+			toRefresh = append(toRefresh, bookmark)
+		}
+	}
+	result.Total = len(toRefresh)
+
+	for _, bookmark := range toRefresh {
+		err := s.RefreshBookmarkMetadata(ctx, bookmark.ID)
+		result.Processed++
+		if err != nil {
+			result.Failed++
+		} else {
+			result.Updated++
+		}
+		// Small delay to avoid hammering servers
+		time.Sleep(300 * time.Millisecond)
+	}
+
+	return result, nil
+}
+
+// RefreshAllMissingMetadataAsync refreshes metadata in background with progress callback
+func (s *Service) RefreshAllMissingMetadataAsync(progressChan chan<- string) {
+	go func() {
+		defer close(progressChan)
+		ctx := context.Background()
+
+		// Get all bookmarks
+		bookmarks, err := s.ListBookmarks(ctx, BookmarkListOptions{
+			Limit:      1000,
+			PublicOnly: false,
+		})
+		if err != nil {
+			progressChan <- "error:Failed to list bookmarks"
+			return
+		}
+
+		// Count bookmarks needing refresh
+		var toRefresh []models.Bookmark
+		for _, bookmark := range bookmarks {
+			if bookmark.GetCoverImage() == "" {
+				toRefresh = append(toRefresh, bookmark)
+			}
+		}
+
+		total := len(toRefresh)
+		if total == 0 {
+			progressChan <- "done:0:0:All bookmarks already have cover images"
+			return
+		}
+
+		progressChan <- fmt.Sprintf("start:%d", total)
+
+		updated := 0
+		failed := 0
+		for i, bookmark := range toRefresh {
+			err := s.RefreshBookmarkMetadata(ctx, bookmark.ID)
+			if err != nil {
+				failed++
+			} else {
+				updated++
+			}
+			progressChan <- fmt.Sprintf("progress:%d:%d:%s", i+1, total, bookmark.Title)
+			time.Sleep(300 * time.Millisecond)
+		}
+
+		progressChan <- fmt.Sprintf("done:%d:%d:Completed", updated, failed)
+	}()
+}
+
+// fetchMetadataForBookmarks fetches and updates metadata for a list of bookmark IDs
+func (s *Service) fetchMetadataForBookmarks(ids []int64) {
+	ctx := context.Background()
+
+	for _, id := range ids {
+		// Get the bookmark
+		bookmark, err := s.GetBookmarkByID(ctx, id)
+		if err != nil {
+			continue
+		}
+
+		// Fetch metadata from URL
+		metadata, err := s.FetchPageMetadata(ctx, bookmark.URL)
+		if err != nil {
+			continue
+		}
+
+		// Update bookmark with fetched metadata
+		input := models.UpdateBookmarkInput{
+			URL:          bookmark.URL,
+			Title:        bookmark.Title,
+			Description:  bookmark.GetDescription(),
+			CoverImage:   bookmark.GetCoverImage(),
+			Favicon:      bookmark.GetFavicon(),
+			CollectionID: getInt64Ptr(bookmark.CollectionID),
+			IsPublic:     bookmark.IsPublic,
+			IsFavorite:   bookmark.IsFavorite,
+		}
+
+		// Only update if we got better data
+		if metadata.Title != "" && bookmark.Title == bookmark.URL {
+			input.Title = metadata.Title
+		}
+		if metadata.Description != "" && bookmark.GetDescription() == "" {
+			input.Description = metadata.Description
+		}
+		if metadata.Image != "" && bookmark.GetCoverImage() == "" {
+			input.CoverImage = metadata.Image
+		}
+		if metadata.Favicon != "" && bookmark.GetFavicon() == "" {
+			input.Favicon = metadata.Favicon
+		}
+
+		s.UpdateBookmark(ctx, id, input)
+	}
 }
 
 // GetBookmarkByURL finds a bookmark by its URL

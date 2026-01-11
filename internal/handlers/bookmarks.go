@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -380,4 +381,50 @@ func (h *Handlers) AdminBookmarkFetchMetadata(w http.ResponseWriter, r *http.Req
 	}
 
 	render(w, r, admin.BookmarkMetadataFields(bookmark))
+}
+
+// AdminRefreshAllMetadata streams progress of metadata refresh using SSE
+func (h *Handlers) AdminRefreshAllMetadata(w http.ResponseWriter, r *http.Request) {
+	// Set SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "SSE not supported", http.StatusInternalServerError)
+		return
+	}
+
+	// Create progress channel
+	progressChan := make(chan string, 10)
+	h.service.RefreshAllMissingMetadataAsync(progressChan)
+
+	// Stream progress to client
+	for msg := range progressChan {
+		fmt.Fprintf(w, "data: %s\n\n", msg)
+		flusher.Flush()
+	}
+}
+
+// AdminRefreshBookmarkMetadata refreshes metadata for a single bookmark
+func (h *Handlers) AdminRefreshBookmarkMetadata(w http.ResponseWriter, r *http.Request) {
+	// Extract ID from path: /admin/bookmarks/{id}/refresh
+	path := r.URL.Path
+	path = strings.TrimPrefix(path, "/admin/bookmarks/")
+	path = strings.TrimSuffix(path, "/refresh")
+
+	id, err := strconv.ParseInt(path, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.RefreshBookmarkMetadata(r.Context(), id); err != nil {
+		http.Error(w, "Failed to refresh metadata", http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect back to edit page
+	http.Redirect(w, r, fmt.Sprintf("/admin/bookmarks/%d/edit", id), http.StatusSeeOther)
 }
