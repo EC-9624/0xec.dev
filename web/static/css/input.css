@@ -755,24 +755,36 @@
   }
 
   /* ===== INLINE EDIT FEEDBACK ===== */
-  /* Success flash - subtle green fade */
+  /* Success flash - subtle green fade with outline */
   .save-success {
-    animation: save-flash-success 0.8s ease-out;
+    animation: save-flash-success 1s ease-out;
   }
 
   @keyframes save-flash-success {
-    0% { background-color: hsl(142 76% 90%); }
-    100% { background-color: transparent; }
+    0% { 
+      outline: 2px solid hsl(142 76% 50%);
+      outline-offset: 1px;
+    }
+    100% { 
+      outline: 2px solid transparent;
+      outline-offset: 1px;
+    }
   }
 
-  /* Error flash - subtle red fade */
+  /* Error flash - subtle red fade with outline */
   .save-error {
-    animation: save-flash-error 0.8s ease-out;
+    animation: save-flash-error 1s ease-out;
   }
 
   @keyframes save-flash-error {
-    0% { background-color: hsl(0 76% 90%); }
-    100% { background-color: transparent; }
+    0% { 
+      outline: 2px solid hsl(0 76% 50%);
+      outline-offset: 1px;
+    }
+    100% { 
+      outline: 2px solid transparent;
+      outline-offset: 1px;
+    }
   }
 
   /* Inline editable elements */
