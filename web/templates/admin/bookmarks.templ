@@ -148,8 +148,8 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 		data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
 	>
 		<!-- Title -->
-		<td class="table-cell">
-			<div class="flex items-center gap-3">
+		<td class="table-cell overflow-hidden">
+			<div class="flex items-center gap-3 min-w-0">
 				<!-- Favicon using Google's favicon service -->
 				<div class="w-8 h-8 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 overflow-hidden">
 					<img
@@ -161,7 +161,7 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 					/>
 					<span class="hidden items-center justify-center w-full h-full">{ getFirstLetter(bookmark.GetDomain()) }</span>
 				</div>
-				<div class="min-w-0">
+				<div class="min-w-0 flex-1">
 					<a
 						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
 						class="font-medium text-foreground hover:underline block truncate"
