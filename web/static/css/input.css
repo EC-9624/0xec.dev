@@ -507,7 +507,7 @@
 
   /* ===== TABLE ===== */
   .table {
-    @apply w-full caption-bottom text-sm;
+    @apply w-full caption-bottom text-xs;
     table-layout: fixed;
   }
 
@@ -524,11 +524,40 @@
   }
 
   .table-head {
-    @apply h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
+    @apply h-9 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
   }
 
   .table-cell {
-    @apply p-4 align-middle [&:has([role=checkbox])]:pr-0;
+    @apply px-3 py-2 align-middle [&:has([role=checkbox])]:pr-0;
+  }
+
+  /* ===== CUSTOM DROPDOWN ===== */
+  .dropdown {
+    @apply relative w-36;
+  }
+
+  .dropdown-trigger {
+    @apply flex items-center justify-between gap-2 w-full
+           bg-background border border-input px-2 h-8 text-xs text-left
+           hover:bg-muted cursor-pointer;
+  }
+
+  .dropdown-trigger [data-dropdown-label] {
+    @apply truncate;
+  }
+
+  .dropdown-menu {
+    @apply absolute top-full left-0 mt-0.5 w-full z-50
+           bg-card border border-border shadow-md max-h-60 overflow-y-auto;
+  }
+
+  .dropdown-option {
+    @apply block w-full px-2 py-1.5 text-xs text-left text-foreground
+           hover:bg-muted cursor-pointer truncate;
+  }
+
+  .dropdown-option[data-selected="true"] {
+    @apply bg-muted font-medium;
   }
 
   /* ===== AVATAR ===== */
