@@ -1,60 +1,138 @@
 package pages
 
 import (
+	"strconv"
+
 	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates"
 	"github.com/EC-9624/0xec.dev/web/templates/components"
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
-	"strconv"
 )
 
-templ BookmarksIndex(bookmarks []models.Bookmark, collections []models.Collection, activeCollection *models.Collection, total int, page int, hasMore bool) {
+// ============================================
+// FULL PAGE & PARTIAL (use shared content)
+// ============================================
+
+// BookmarksIndex renders the full bookmarks page
+templ BookmarksIndex(data templates.BookmarksData) {
 	@layouts.ThreeColumn(
-		bookmarksTitle(activeCollection),
+		bookmarksTitle(data.ActiveCollection),
 		"/bookmarks",
-		components.CollectionListColumn(collections, activeCollectionSlug(activeCollection), total),
+		components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.Total),
 	) {
-		<div class="space-y-8">
-			<!-- Header -->
-			<div class="space-y-2">
-				<h1 class="text-3xl font-bold tracking-tight text-foreground">
-					if activeCollection != nil {
-						if activeCollection.GetIcon() != "" {
-							<span class="mr-2">{ activeCollection.GetIcon() }</span>
-						}
-						{ activeCollection.Name }
-					} else {
-						Bookmarks
-					}
-				</h1>
-				<p class="text-muted-foreground">{ strconv.Itoa(total) } bookmarks</p>
-			</div>
-			
-			<div class="separator-horizontal"></div>
-			
-			<!-- Bookmark Grid -->
-			if len(bookmarks) > 0 {
-				<div id="bookmarks-container">
-					@components.BookmarkGrid(bookmarks)
-				</div>
-				if hasMore {
-					<div class="pt-4 text-center">
-						<button
-							hx-get={ loadMoreURL(activeCollection, page+1) }
-							hx-target="#bookmarks-container"
-							hx-swap="beforeend"
-							hx-select=".masonry-item"
-							class="btn-outline"
-						>
-							Load more
-						</button>
-					</div>
-				}
-			} else {
-				@BookmarksEmptyState()
-			}
-		</div>
+		@BookmarkContent(data)
 	}
 }
+
+// BookmarksContentPartial is the partial template for HTMX requests
+// It returns the main content area + OOB swap for middle column
+templ BookmarksContentPartial(data templates.BookmarksData) {
+	<div class="main-content-scroll scrollable-area">
+		<div class="main-content-inner">
+			@BookmarkContent(data)
+		</div>
+	</div>
+	<!-- OOB swap for middle column to update active state -->
+	<div id="middle-column" hx-swap-oob="innerHTML">
+		@components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.Total)
+	</div>
+}
+
+// ============================================
+// SHARED CONTENT (eliminates duplication)
+// ============================================
+
+// BookmarkContent is the shared content used by both full page and partial
+templ BookmarkContent(data templates.BookmarksData) {
+	<div class="space-y-8">
+		@BookmarkHeader(data.ActiveCollection, data.Total)
+		<div class="separator-horizontal"></div>
+		if len(data.Bookmarks) > 0 {
+			@BookmarkGrid(data.Bookmarks, data.ActiveCollection, data.Page, data.HasMore)
+		} else {
+			@BookmarksEmptyState()
+		}
+	</div>
+}
+
+// BookmarkHeader renders the page header with title and count
+templ BookmarkHeader(collection *models.Collection, total int) {
+	<div class="space-y-2">
+		<h1 class="text-3xl font-bold tracking-tight text-foreground">
+			if collection != nil {
+				if collection.GetIcon() != "" {
+					<span class="mr-2">{ collection.GetIcon() }</span>
+				}
+				{ collection.Name }
+			} else {
+				Bookmarks
+			}
+		</h1>
+		<p class="text-muted-foreground">{ strconv.Itoa(total) } bookmarks</p>
+	</div>
+}
+
+// ============================================
+// INFINITE SCROLL (append-only pattern)
+// ============================================
+
+// BookmarkGrid renders the initial grid with load more button
+templ BookmarkGrid(bookmarks []models.Bookmark, collection *models.Collection, page int, hasMore bool) {
+	<div id="bookmark-section">
+		<div id="bookmark-grid" class="masonry-grid">
+			for _, bookmark := range bookmarks {
+				@BookmarkGridItem(bookmark)
+			}
+		</div>
+		if hasMore {
+			@LoadMoreButton(collection, page+1)
+		}
+	</div>
+}
+
+// BookmarkGridItem renders a single bookmark card wrapped in masonry item
+templ BookmarkGridItem(bookmark models.Bookmark) {
+	<div class="masonry-item">
+		@components.BookmarkCard(bookmark)
+	</div>
+}
+
+// BookmarkGridAppend returns ONLY new items for appending via OOB swap
+// This is the key to efficient infinite scroll - no re-rendering of existing items
+templ BookmarkGridAppend(bookmarks []models.Bookmark, collection *models.Collection, page int, hasMore bool) {
+	// Append new items to grid via OOB
+	<div id="bookmark-grid" hx-swap-oob="beforeend">
+		for _, bookmark := range bookmarks {
+			@BookmarkGridItem(bookmark)
+		}
+	</div>
+	// Replace or remove load-more button
+	if hasMore {
+		@LoadMoreButton(collection, page+1)
+	} else {
+		<div id="load-more-container" hx-swap-oob="true"></div>
+	}
+}
+
+// LoadMoreButton renders the load more button with loading indicator
+templ LoadMoreButton(collection *models.Collection, nextPage int) {
+	<div id="load-more-container" class="pt-4 text-center">
+		<button
+			hx-get={ loadMoreURL(collection, nextPage) }
+			hx-target="this"
+			hx-swap="outerHTML"
+			hx-indicator="this"
+			class="btn-outline"
+		>
+			<span class="htmx-indicator">Loading...</span>
+			<span class="htmx-hide-on-request">Load more</span>
+		</button>
+	</div>
+}
+
+// ============================================
+// EMPTY STATE & ICONS
+// ============================================
 
 templ BookmarksEmptyState() {
 	<div class="empty-state">
@@ -74,6 +152,10 @@ templ iconBookmarkEmpty() {
 	</svg>
 }
 
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
 func bookmarksTitle(collection *models.Collection) string {
 	if collection != nil {
 		return collection.Name + " | Bookmarks"
@@ -90,7 +172,7 @@ func activeCollectionSlug(collection *models.Collection) string {
 
 func loadMoreURL(collection *models.Collection, page int) string {
 	if collection != nil {
-		return "/bookmarks/" + collection.Slug + "?page=" + strconv.Itoa(page)
+		return "/bookmarks/" + collection.Slug + "?page=" + strconv.Itoa(page) + "&partial=append"
 	}
-	return "/bookmarks?page=" + strconv.Itoa(page)
+	return "/bookmarks?page=" + strconv.Itoa(page) + "&partial=append"
 }

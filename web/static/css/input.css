@@ -405,13 +405,13 @@
     @apply mt-2 text-sm text-muted-foreground line-clamp-2;
   }
 
-  /* ===== MASONRY GRID ===== */
+  /* ===== BOOKMARK GRID ===== */
   .masonry-grid {
-    @apply columns-1 sm:columns-2 lg:columns-3 gap-4;
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
   }
 
   .masonry-item {
-    @apply break-inside-avoid mb-4;
+    /* Grid items - no special styles needed */
   }
 
   /* ===== STAT CARD ===== */
@@ -575,10 +575,35 @@
     display: none;
   }
   .htmx-request .htmx-indicator {
-    display: block;
+    display: inline-block;
   }
   .htmx-request.htmx-indicator {
-    display: block;
+    display: inline-block;
+  }
+  
+  /* Hide elements during HTMX request */
+  .htmx-request .htmx-hide-on-request {
+    display: none;
+  }
+  
+  /* Pulse animation for skeleton loaders */
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  /* Loading state for main content during HTMX request */
+  #main-content.htmx-request > * {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
   }
 
   .line-clamp-2 {

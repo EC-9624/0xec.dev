@@ -42,10 +42,16 @@ templ PostList(posts []models.Post) {
 }
 
 // PostListItem for middle column (compact: title + date only)
+// Uses HTMX to load post content without full page reload
 templ PostListItem(post models.Post, isActive bool) {
 	<a 
 		href={ templ.URL("/posts/" + post.Slug) } 
 		class={ listItemClass(isActive) }
+		hx-get={ "/posts/" + post.Slug }
+		hx-target="#main-content"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+		hx-indicator="#main-content"
 	>
 		<span class="list-item-title">{ post.Title }</span>
 		<span class="list-item-meta">

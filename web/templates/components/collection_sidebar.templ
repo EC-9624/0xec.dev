@@ -6,10 +6,16 @@ import (
 )
 
 // CollectionListItem for middle column
+// Uses HTMX to load collection bookmarks without full page reload
 templ CollectionListItem(collection models.Collection, isActive bool) {
 	<a 
 		href={ templ.URL("/bookmarks/" + collection.Slug) } 
 		class={ collectionItemClass(isActive) }
+		hx-get={ "/bookmarks/" + collection.Slug }
+		hx-target="#main-content"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+		hx-indicator="#main-content"
 	>
 		<span class="list-item-title">{ collection.Name }</span>
 		<span class="list-item-meta">
@@ -45,6 +51,11 @@ templ CollectionListColumn(collections []models.Collection, activeSlug string, t
 			<a 
 				href="/bookmarks" 
 				class={ collectionItemClass(activeSlug == "") }
+				hx-get="/bookmarks"
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url="true"
+				hx-indicator="#main-content"
 			>
 				<span class="list-item-title">All Bookmarks</span>
 				<span class="list-item-meta">{ strconv.Itoa(totalBookmarks) } bookmarks</span>

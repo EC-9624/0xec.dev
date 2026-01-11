@@ -6,12 +6,73 @@ import (
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 )
 
+// ============================================
+// FULL PAGE & PARTIAL (use shared content)
+// ============================================
+
 // PostsIndex shows the post list in middle column with empty state in main
 templ PostsIndex(posts []models.Post) {
 	@layouts.ThreeColumn("Writing", "/posts", components.PostListColumn(posts, "")) {
 		@PostsEmptyState()
 	}
 }
+
+// PostShow shows the post list in middle column with article content in main
+templ PostShow(post models.Post, allPosts []models.Post, contentHTML string) {
+	@layouts.ThreeColumn(post.Title, "/posts", components.PostListColumn(allPosts, post.Slug)) {
+		@PostArticle(post, contentHTML)
+	}
+}
+
+// PostContentPartial is the partial template for HTMX requests
+// It returns the main content area + OOB swap for middle column
+templ PostContentPartial(post models.Post, contentHTML string, allPosts []models.Post) {
+	<div class="main-content-scroll scrollable-area">
+		<div class="main-content-inner">
+			@PostArticle(post, contentHTML)
+		</div>
+	</div>
+	<!-- OOB swap for middle column to update active state -->
+	<div id="middle-column" hx-swap-oob="innerHTML">
+		@components.PostListColumn(allPosts, post.Slug)
+	</div>
+}
+
+// ============================================
+// SHARED CONTENT (eliminates duplication)
+// ============================================
+
+// PostArticle renders the article content - shared by full page and partial
+templ PostArticle(post models.Post, contentHTML string) {
+	<article class="max-w-3xl">
+		<header class="article-header">
+			<h1 class="article-title text-balance">
+				{ post.Title }
+			</h1>
+			<div class="article-meta flex items-center gap-2 text-sm">
+				if post.PublishedAt.Valid {
+					<time>{ post.PublishedAt.Time.Format("January 2, 2006") }</time>
+				}
+				if len(post.Tags) > 0 {
+					<span class="text-border">&bull;</span>
+					<div class="flex items-center gap-1.5">
+						for _, tag := range post.Tags {
+							<span class="badge-secondary">{ tag.Name }</span>
+						}
+					</div>
+				}
+			</div>
+		</header>
+		<div class="separator-horizontal"></div>
+		<div class="article-content">
+			@templ.Raw(contentHTML)
+		</div>
+	</article>
+}
+
+// ============================================
+// EMPTY STATE & ICONS
+// ============================================
 
 // PostsEmptyState shown when no post is selected
 templ PostsEmptyState() {
@@ -24,36 +85,6 @@ templ PostsEmptyState() {
 			Choose an article from the list on the left
 		</p>
 	</div>
-}
-
-// PostShow shows the post list in middle column with article content in main
-templ PostShow(post models.Post, allPosts []models.Post, contentHTML string) {
-	@layouts.ThreeColumn(post.Title, "/posts", components.PostListColumn(allPosts, post.Slug)) {
-		<article class="max-w-3xl">
-			<header class="article-header">
-				<h1 class="article-title text-balance">
-					{ post.Title }
-				</h1>
-				<div class="article-meta flex items-center gap-2 text-sm">
-					if post.PublishedAt.Valid {
-						<time>{ post.PublishedAt.Time.Format("January 2, 2006") }</time>
-					}
-					if len(post.Tags) > 0 {
-						<span class="text-border">&bull;</span>
-						<div class="flex items-center gap-1.5">
-							for _, tag := range post.Tags {
-								<span class="badge-secondary">{ tag.Name }</span>
-							}
-						</div>
-					}
-				</div>
-			</header>
-			<div class="separator-horizontal"></div>
-			<div class="article-content">
-				@templ.Raw(contentHTML)
-			</div>
-		</article>
-	}
 }
 
 templ iconFile() {

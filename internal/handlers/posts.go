@@ -49,6 +49,13 @@ func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
 	// TODO: Convert markdown to HTML
 	contentHTML := markdownToHTML(post.Content)
 
+	// For HTMX requests, return partial content + OOB swap for middle column
+	if r.Header.Get("HX-Request") == "true" {
+		render(w, r, pages.PostContentPartial(*post, contentHTML, allPosts))
+		return
+	}
+
+	// Full page for direct navigation
 	render(w, r, pages.PostShow(*post, allPosts, contentHTML))
 }
 
