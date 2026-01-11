@@ -82,3 +82,19 @@ DELETE FROM bookmark_tags WHERE bookmark_id = ?;
 
 -- name: AddBookmarkTag :exec
 INSERT INTO bookmark_tags (bookmark_id, tag_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP);
+
+-- ============================================
+-- INLINE EDITING QUERIES
+-- ============================================
+
+-- name: UpdateBookmarkPublic :exec
+UPDATE bookmarks SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+
+-- name: UpdateBookmarkFavorite :exec
+UPDATE bookmarks SET is_favorite = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+
+-- name: UpdateBookmarkCollection :exec
+UPDATE bookmarks SET collection_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+
+-- name: UpdateBookmarkTitle :exec
+UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;

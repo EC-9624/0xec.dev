@@ -153,7 +153,7 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 		data-is-public={ strconv.FormatBool(bookmark.IsPublic) }
 		data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
 	>
-		<!-- Title -->
+		<!-- Title (inline editable) -->
 		<td class="table-cell overflow-hidden">
 			<div class="flex items-center gap-2 min-w-0">
 				<!-- Favicon using Google's favicon service -->
@@ -167,59 +167,23 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 					/>
 					<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
 				</div>
-				<div class="min-w-0 flex-1">
-					<a
-						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
-						class="font-medium text-foreground hover:underline block truncate"
-						title={ bookmark.Title }
-					>
-						{ bookmark.Title }
-					</a>
-					<a
-						href={ templ.URL(bookmark.URL) }
-						target="_blank"
-						class="text-[11px] text-muted-foreground hover:underline truncate block"
-						title={ bookmark.URL }
-					>
-						{ truncateURL(bookmark.URL, 50) }
-					</a>
-				</div>
+				@BookmarkTitleDisplay(bookmark.ID, bookmark.Title, bookmark.URL, false)
 			</div>
 		</td>
-		<!-- Collection -->
+		<!-- Collection (inline dropdown) -->
 		<td class="table-cell">
-			if bookmark.CollectionID.Valid {
-				<span class="badge-secondary text-[10px] px-1.5 py-0.5">
-					{ getCollectionName(bookmark.CollectionID.Int64, collections) }
-				</span>
-			} else {
-				<span class="text-muted-foreground">—</span>
-			}
+			@BookmarkCollectionDropdown(bookmark.ID, bookmark.CollectionID.Int64, bookmark.CollectionID.Valid, collections, false)
 		</td>
-		<!-- Status -->
+		<!-- Status (inline toggles) -->
 		<td class="table-cell">
 			<div class="flex items-center gap-1">
-				if bookmark.IsPublic {
-					<span class="inline-flex items-center gap-0.5 text-[10px] text-green-700 bg-green-50 border border-green-200 px-1 py-0.5">
-						@globeIcon()
-						Public
-					</span>
-				} else {
-					<span class="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground bg-muted px-1 py-0.5">
-						@lockIcon()
-						Private
-					</span>
-				}
-				if bookmark.IsFavorite {
-					<span class="text-amber-500" title="Favorite">
-						@starIcon()
-					</span>
-				}
+				@BookmarkPublicBadge(bookmark.ID, bookmark.IsPublic, false)
+				@BookmarkFavoriteStar(bookmark.ID, bookmark.IsFavorite, false)
 			</div>
 		</td>
 		<!-- Actions -->
 		<td class="table-cell text-right">
-			<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+			<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
 				<a
 					href={ templ.URL(bookmark.URL) }
 					class="btn-ghost btn-xs"
@@ -231,7 +195,7 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 				<a
 					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
 					class="btn-ghost btn-xs"
-					title="Edit"
+					title="Full edit"
 				>
 					@editIcon()
 				</a>
@@ -717,4 +681,188 @@ func bookmarkValue(bookmark *models.Bookmark, field string) string {
 		return bookmark.GetCoverImage()
 	}
 	return ""
+}
+
+// ============================================
+// INLINE EDIT PARTIALS (for HTMX responses)
+// ============================================
+
+// BookmarkPublicBadge renders the public/private toggle badge
+templ BookmarkPublicBadge(id int64, isPublic bool, success bool) {
+	if isPublic {
+		<button
+			type="button"
+			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-swap="outerHTML"
+			class={ "inline-flex items-center gap-0.5 text-[10px] text-green-700 bg-green-50 border border-green-200 px-1 py-0.5 cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
+			title="Click to make private"
+		>
+			@globeIcon()
+			Public
+		</button>
+	} else {
+		<button
+			type="button"
+			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-swap="outerHTML"
+			class={ "inline-flex items-center gap-0.5 text-[10px] text-muted-foreground bg-muted px-1 py-0.5 cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
+			title="Click to make public"
+		>
+			@lockIcon()
+			Private
+		</button>
+	}
+}
+
+// BookmarkFavoriteStar renders the favorite toggle star
+templ BookmarkFavoriteStar(id int64, isFavorite bool, success bool) {
+	if isFavorite {
+		<button
+			type="button"
+			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-favorite" }
+			hx-swap="outerHTML"
+			class={ "text-amber-500 cursor-pointer hover:text-amber-600", templ.KV("save-success", success) }
+			title="Remove from favorites"
+		>
+			@starFilledIcon()
+		</button>
+	} else {
+		<button
+			type="button"
+			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-favorite" }
+			hx-swap="outerHTML"
+			class={ "text-muted-foreground/40 cursor-pointer hover:text-amber-500", templ.KV("save-success", success) }
+			title="Add to favorites"
+		>
+			@starOutlineIcon()
+		</button>
+	}
+}
+
+// BookmarkCollectionDropdown renders the inline collection selector
+templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollection bool, collections []models.Collection, success bool) {
+	<div 
+		data-dropdown 
+		class={ "dropdown w-28", templ.KV("save-success", success) }
+		data-bookmark-id={ strconv.FormatInt(id, 10) }
+	>
+		<input type="hidden" id={ "collection-" + strconv.FormatInt(id, 10) } value={ getCurrentCollectionValue(currentCollectionID, hasCollection) }/>
+		<button type="button" data-dropdown-trigger class="dropdown-trigger h-6 text-[10px]" aria-expanded="false">
+			<span data-dropdown-label class="truncate">{ getCurrentCollectionLabel(currentCollectionID, hasCollection, collections) }</span>
+			@chevronDownIcon()
+		</button>
+		<div data-dropdown-menu class="dropdown-menu hidden">
+			<button 
+				type="button" 
+				data-dropdown-option 
+				data-value="" 
+				class="dropdown-option"
+				hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
+				hx-vals='{"collection_id": ""}'
+				hx-target="closest [data-dropdown]"
+				hx-swap="outerHTML"
+				if !hasCollection {
+					data-selected="true"
+				}
+			>
+				—
+			</button>
+			for _, collection := range collections {
+				<button 
+					type="button" 
+					data-dropdown-option 
+					data-value={ strconv.FormatInt(collection.ID, 10) }
+					class="dropdown-option"
+					hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
+					hx-vals={ `{"collection_id": "` + strconv.FormatInt(collection.ID, 10) + `"}` }
+					hx-target="closest [data-dropdown]"
+					hx-swap="outerHTML"
+					if hasCollection && currentCollectionID == collection.ID {
+						data-selected="true"
+					}
+				>
+					{ collection.Name }
+				</button>
+			}
+		</div>
+	</div>
+}
+
+// BookmarkTitleDisplay renders the clickable title (display mode)
+templ BookmarkTitleDisplay(id int64, title string, url string, success bool) {
+	<div class={ "min-w-0 flex-1", templ.KV("save-success", success) }>
+		<span
+			class="font-medium text-foreground block truncate inline-editable"
+			tabindex="0"
+			hx-get={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/edit-title" }
+			hx-trigger="click, keydown[key=='Enter']"
+			hx-swap="outerHTML"
+			hx-target="closest div"
+			title={ "Click to edit: " + title }
+		>
+			{ title }
+		</span>
+		<a
+			href={ templ.URL(url) }
+			target="_blank"
+			class="text-[11px] text-muted-foreground hover:underline truncate block"
+			title={ url }
+		>
+			{ truncateURL(url, 50) }
+		</a>
+	</div>
+}
+
+// BookmarkTitleEdit renders the input field (edit mode)
+templ BookmarkTitleEdit(id int64, title string, url string) {
+	<div class="min-w-0 flex-1">
+		<input
+			type="text"
+			value={ title }
+			class="inline-edit-input w-full"
+			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/title" }
+			hx-trigger="blur, keyup[key=='Enter']"
+			hx-swap="outerHTML"
+			hx-target="closest div"
+			name="title"
+			autofocus
+		/>
+		<a
+			href={ templ.URL(url) }
+			target="_blank"
+			class="text-[11px] text-muted-foreground hover:underline truncate block"
+			title={ url }
+		>
+			{ truncateURL(url, 50) }
+		</a>
+	</div>
+}
+
+// Helper functions for collection dropdown
+func getCurrentCollectionValue(collectionID int64, hasCollection bool) string {
+	if hasCollection {
+		return strconv.FormatInt(collectionID, 10)
+	}
+	return ""
+}
+
+func getCurrentCollectionLabel(collectionID int64, hasCollection bool, collections []models.Collection) string {
+	if !hasCollection {
+		return "—"
+	}
+	for _, c := range collections {
+		if c.ID == collectionID {
+			return c.Name
+		}
+	}
+	return "—"
+}
+
+// Star icons
+templ starFilledIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+}
+
+templ starOutlineIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
 }

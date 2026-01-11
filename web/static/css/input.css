@@ -523,6 +523,11 @@
     @apply border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted;
   }
 
+  /* Show row actions on focus-within (keyboard navigation) */
+  .table-row:focus-within .row-actions {
+    opacity: 1;
+  }
+
   .table-head {
     @apply h-9 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
   }
@@ -747,5 +752,36 @@
 
   .scrollable-area::-webkit-scrollbar-thumb {
     background-color: hsl(0 0% 90%);
+  }
+
+  /* ===== INLINE EDIT FEEDBACK ===== */
+  /* Success flash - subtle green fade */
+  .save-success {
+    animation: save-flash-success 0.8s ease-out;
+  }
+
+  @keyframes save-flash-success {
+    0% { background-color: hsl(142 76% 90%); }
+    100% { background-color: transparent; }
+  }
+
+  /* Error flash - subtle red fade */
+  .save-error {
+    animation: save-flash-error 0.8s ease-out;
+  }
+
+  @keyframes save-flash-error {
+    0% { background-color: hsl(0 76% 90%); }
+    100% { background-color: transparent; }
+  }
+
+  /* Inline editable elements */
+  .inline-editable {
+    @apply cursor-pointer hover:bg-muted/50 px-1 -mx-1;
+  }
+
+  .inline-edit-input {
+    @apply h-6 text-xs px-1 py-0 w-full border border-input bg-background
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
