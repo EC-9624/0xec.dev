@@ -18,7 +18,7 @@ templ BookmarksIndex(data templates.BookmarksData) {
 	@layouts.ThreeColumn(
 		bookmarksTitle(data.ActiveCollection),
 		"/bookmarks",
-		components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.Total),
+		components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks),
 	) {
 		@BookmarkContent(data)
 	}
@@ -34,7 +34,7 @@ templ BookmarksContentPartial(data templates.BookmarksData) {
 	</div>
 	<!-- OOB swap for middle column to update active state -->
 	<div id="middle-column" hx-swap-oob="innerHTML">
-		@components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.Total)
+		@components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks)
 	</div>
 }
 

@@ -118,15 +118,23 @@ func (h *Handlers) getBookmarksData(r *http.Request, collection *models.Collecti
 		return templates.BookmarksData{}, err
 	}
 
+	// Always fetch global count for "All Bookmarks" sidebar item
+	globalCountOpts := service.BookmarkListOptions{PublicOnly: true}
+	totalAllBookmarks, err := h.service.CountBookmarks(ctx, globalCountOpts)
+	if err != nil {
+		return templates.BookmarksData{}, err
+	}
+
 	hasMore := (page * bookmarksPerPage) < total
 
 	return templates.BookmarksData{
-		Bookmarks:        bookmarks,
-		Collections:      collections,
-		ActiveCollection: collection,
-		Total:            total,
-		Page:             page,
-		HasMore:          hasMore,
+		Bookmarks:         bookmarks,
+		Collections:       collections,
+		ActiveCollection:  collection,
+		Total:             total,
+		TotalAllBookmarks: totalAllBookmarks,
+		Page:              page,
+		HasMore:           hasMore,
 	}, nil
 }
 
