@@ -446,7 +446,7 @@
   }
 
   .bookmark-card-title {
-    @apply font-medium text-foreground line-clamp-2 
+    @apply font-medium text-foreground break-words
            group-hover:text-primary transition-colors;
   }
 
@@ -455,16 +455,32 @@
   }
 
   .bookmark-card-description {
-    @apply mt-2 text-sm text-muted-foreground line-clamp-2;
+    @apply mt-2 text-xs text-muted-foreground break-words;
   }
 
-  /* ===== BOOKMARK GRID ===== */
+  /* ===== BOOKMARK GRID (JS Masonry) ===== */
   .masonry-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+    position: relative;
+    /* Height set dynamically by JS */
   }
 
   .masonry-item {
-    /* Grid items - no special styles needed */
+    /* Position set by JS, smooth transition on resize */
+    transition: left 0.3s ease, top 0.3s ease, width 0.3s ease;
+  }
+
+  /* No-JS fallback: use CSS Grid */
+  .no-js .masonry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .no-js .masonry-item {
+    position: static !important;
+    width: auto !important;
+    left: auto !important;
+    top: auto !important;
   }
 
   /* ===== STAT CARD ===== */
