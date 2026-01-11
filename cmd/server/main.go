@@ -34,6 +34,12 @@ func main() {
 	// Create router
 	mux := http.NewServeMux()
 
+	// CSRF middleware configuration (secure cookies in production)
+	csrfConfig := middleware.CSRFConfig{
+		Secure: !cfg.IsDevelopment(),
+	}
+	csrfMiddleware := middleware.CSRF(csrfConfig)
+
 	// Static files
 	staticDir := "./web/static"
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
@@ -61,15 +67,19 @@ func main() {
 	mux.HandleFunc("GET /bookmarks/feed.xml", h.BookmarksFeed)
 
 	// ============================================
-	// AUTH ROUTES
+	// AUTH ROUTES (CSRF protected, no auth required)
 	// ============================================
 
-	mux.HandleFunc("GET /admin/login", h.LoginPage)
-	mux.HandleFunc("POST /admin/login", h.Login)
-	mux.HandleFunc("POST /admin/logout", h.Logout)
+	// Login routes need CSRF but not auth
+	authMux := http.NewServeMux()
+	authMux.HandleFunc("GET /admin/login", h.LoginPage)
+	authMux.HandleFunc("POST /admin/login", h.Login)
+	mux.Handle("/admin/login", csrfMiddleware(authMux))
+
+	// Logout needs CSRF + auth (handled via admin routes below)
 
 	// ============================================
-	// ADMIN ROUTES (protected)
+	// ADMIN ROUTES (CSRF + Auth protected)
 	// ============================================
 
 	adminMux := http.NewServeMux()
@@ -79,6 +89,9 @@ func main() {
 	adminMux.HandleFunc("GET /admin/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 	})
+
+	// Logout (in admin routes so it gets auth + csrf)
+	adminMux.HandleFunc("POST /admin/logout", h.Logout)
 
 	// Posts admin
 	adminMux.HandleFunc("GET /admin/posts", h.AdminPostsList)
@@ -117,10 +130,12 @@ func main() {
 	adminMux.HandleFunc("POST /admin/collections/{id}", h.AdminCollectionUpdate)
 	adminMux.HandleFunc("DELETE /admin/collections/{id}", h.AdminCollectionDelete)
 
-	// Wrap admin routes with auth middleware
+	// Wrap admin routes with CSRF + Auth middleware
+	// Order: CSRF runs first (sets token), then Auth checks session
 	authMiddleware := middleware.Auth(h.Service())
-	mux.Handle("/admin", authMiddleware(adminMux))
-	mux.Handle("/admin/", authMiddleware(adminMux))
+	protectedAdmin := csrfMiddleware(authMiddleware(adminMux))
+	mux.Handle("/admin", protectedAdmin)
+	mux.Handle("/admin/", protectedAdmin)
 
 	// Apply global middleware
 	handler := middleware.Logger(middleware.Recoverer(mux))
