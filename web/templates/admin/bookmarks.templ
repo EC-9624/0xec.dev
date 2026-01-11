@@ -24,6 +24,15 @@ templ BookmarksList(data BookmarksListData) {
 					</p>
 				</div>
 				<div class="flex items-center gap-2">
+					<button
+						id="refresh-btn"
+						onclick="startMetadataRefresh()"
+						class="btn-ghost btn-sm text-muted-foreground"
+						title="Re-fetch metadata for bookmarks missing cover images"
+					>
+						@refreshIcon()
+						<span id="refresh-btn-text">Refresh Metadata</span>
+					</button>
 					<a href="/admin/import" class="btn-outline">
 						@importIcon()
 						Import
@@ -32,6 +41,19 @@ templ BookmarksList(data BookmarksListData) {
 						@plusIcon()
 						New Bookmark
 					</a>
+				</div>
+			</div>
+			<!-- Refresh Progress Banner (hidden by default) -->
+			<div id="refresh-progress" class="hidden">
+				<div class="bg-muted border border-border p-4 space-y-2">
+					<div class="flex items-center justify-between">
+						<span id="refresh-status" class="text-sm font-medium">Preparing...</span>
+						<span id="refresh-count" class="text-sm text-muted-foreground"></span>
+					</div>
+					<div class="w-full bg-border h-2">
+						<div id="refresh-bar" class="bg-primary h-2 transition-all duration-300" style="width: 0%"></div>
+					</div>
+					<p id="refresh-current" class="text-xs text-muted-foreground truncate"></p>
 				</div>
 			</div>
 			<!-- Filters Bar -->
@@ -128,9 +150,16 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 		<!-- Title -->
 		<td class="table-cell">
 			<div class="flex items-center gap-3">
-				<!-- Favicon placeholder -->
-				<div class="w-8 h-8 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0">
-					{ string([]rune(bookmark.GetDomain())[0:1]) }
+				<!-- Favicon using Google's favicon service -->
+				<div class="w-8 h-8 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 overflow-hidden">
+					<img
+						src={ getGoogleFaviconURL(bookmark.GetDomain()) }
+						alt=""
+						class="w-5 h-5 object-contain"
+						loading="lazy"
+						onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+					/>
+					<span class="hidden items-center justify-center w-full h-full">{ getFirstLetter(bookmark.GetDomain()) }</span>
 				</div>
 				<div class="min-w-0">
 					<a
@@ -312,6 +341,81 @@ templ bookmarksFilterScript() {
 				} catch (e) {}
 			}
 		});
+
+		// Metadata refresh with SSE progress
+		function startMetadataRefresh() {
+			const btn = document.getElementById('refresh-btn');
+			const btnText = document.getElementById('refresh-btn-text');
+			const progress = document.getElementById('refresh-progress');
+			const status = document.getElementById('refresh-status');
+			const count = document.getElementById('refresh-count');
+			const bar = document.getElementById('refresh-bar');
+			const current = document.getElementById('refresh-current');
+
+			// Disable button and show progress
+			btn.disabled = true;
+			btn.classList.add('opacity-50');
+			btnText.textContent = 'Refreshing...';
+			progress.classList.remove('hidden');
+			status.textContent = 'Connecting...';
+			bar.style.width = '0%';
+
+			const eventSource = new EventSource('/admin/bookmarks/refresh-all');
+
+			eventSource.onmessage = (event) => {
+				const parts = event.data.split(':');
+				const type = parts[0];
+
+				if (type === 'start') {
+					const total = parts[1];
+					status.textContent = 'Refreshing metadata...';
+					count.textContent = `0 / ${total}`;
+				} else if (type === 'progress') {
+					const current_num = parseInt(parts[1]);
+					const total = parseInt(parts[2]);
+					const title = parts.slice(3).join(':'); // Title might contain colons
+					const pct = Math.round((current_num / total) * 100);
+					bar.style.width = pct + '%';
+					count.textContent = `${current_num} / ${total}`;
+					current.textContent = `Processing: ${title}`;
+				} else if (type === 'done') {
+					const updated = parts[1];
+					const failed = parts[2];
+					eventSource.close();
+					
+					status.textContent = 'Completed!';
+					bar.style.width = '100%';
+					current.textContent = `Updated: ${updated}, Failed: ${failed}`;
+					count.textContent = '';
+					
+					// Re-enable button
+					btn.disabled = false;
+					btn.classList.remove('opacity-50');
+					btnText.textContent = 'Refresh Metadata';
+
+					// Hide progress after 3 seconds and reload
+					setTimeout(() => {
+						progress.classList.add('hidden');
+						window.location.reload();
+					}, 2000);
+				} else if (type === 'error') {
+					eventSource.close();
+					status.textContent = 'Error: ' + parts.slice(1).join(':');
+					bar.style.width = '0%';
+					btn.disabled = false;
+					btn.classList.remove('opacity-50');
+					btnText.textContent = 'Refresh Metadata';
+				}
+			};
+
+			eventSource.onerror = () => {
+				eventSource.close();
+				status.textContent = 'Connection error';
+				btn.disabled = false;
+				btn.classList.remove('opacity-50');
+				btnText.textContent = 'Refresh Metadata';
+			};
+		}
 	</script>
 }
 
@@ -321,6 +425,20 @@ func getCollectionID(bookmark models.Bookmark) string {
 		return strconv.FormatInt(bookmark.CollectionID.Int64, 10)
 	}
 	return ""
+}
+
+func getFirstLetter(s string) string {
+	for _, r := range s {
+		return string(r)
+	}
+	return "?"
+}
+
+func getGoogleFaviconURL(domain string) string {
+	if domain == "" {
+		return ""
+	}
+	return "https://www.google.com/s2/favicons?sz=32&domain=" + domain
 }
 
 func getCollectionName(id int64, collections []models.Collection) string {
@@ -346,6 +464,10 @@ templ plusIcon() {
 
 templ importIcon() {
 	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+}
+
+templ refreshIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
 }
 
 templ globeIcon() {
@@ -416,13 +538,14 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 								value={ bookmarkValue(bookmark, "url") }
 								placeholder="https://example.com"
 								required
-								if isNew {
-									hx-post="/admin/bookmarks/fetch-metadata"
-									hx-trigger="blur"
-									hx-target="#metadata-fields"
-									hx-swap="innerHTML"
-									hx-indicator="#metadata-loading"
-								}
+							if isNew {
+								hx-post="/admin/bookmarks/fetch-metadata"
+								hx-trigger="blur"
+								hx-include="this"
+								hx-target="#metadata-fields"
+								hx-swap="innerHTML"
+								hx-indicator="#metadata-loading"
+							}
 							/>
 						</div>
 						<div id="metadata-loading" class="htmx-indicator text-sm text-muted-foreground py-2">

@@ -552,7 +552,7 @@ func (q *Queries) ListPublicFavoriteBookmarks(ctx context.Context, arg ListPubli
 
 const updateBookmark = `-- name: UpdateBookmark :exec
 UPDATE bookmarks 
-SET url = ?, title = ?, description = ?, cover_image = ?, domain = ?,
+SET url = ?, title = ?, description = ?, cover_image = ?, favicon = ?, domain = ?,
     collection_id = ?, is_public = ?, is_favorite = ?, updated_at = CURRENT_TIMESTAMP 
 WHERE id = ?
 `
@@ -562,6 +562,7 @@ type UpdateBookmarkParams struct {
 	Title        string  `json:"title"`
 	Description  *string `json:"description"`
 	CoverImage   *string `json:"cover_image"`
+	Favicon      *string `json:"favicon"`
 	Domain       *string `json:"domain"`
 	CollectionID *int64  `json:"collection_id"`
 	IsPublic     *int64  `json:"is_public"`
@@ -575,6 +576,7 @@ func (q *Queries) UpdateBookmark(ctx context.Context, arg UpdateBookmarkParams) 
 		arg.Title,
 		arg.Description,
 		arg.CoverImage,
+		arg.Favicon,
 		arg.Domain,
 		arg.CollectionID,
 		arg.IsPublic,

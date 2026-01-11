@@ -63,6 +63,7 @@ type CreateBookmarkInput struct {
 	Title        string  `json:"title"`
 	Description  string  `json:"description"`
 	CoverImage   string  `json:"cover_image"`
+	Favicon      string  `json:"favicon"`
 	CollectionID *int64  `json:"collection_id"`
 	IsPublic     bool    `json:"is_public"`
 	IsFavorite   bool    `json:"is_favorite"`
@@ -75,6 +76,7 @@ type UpdateBookmarkInput struct {
 	Title        string  `json:"title"`
 	Description  string  `json:"description"`
 	CoverImage   string  `json:"cover_image"`
+	Favicon      string  `json:"favicon"`
 	CollectionID *int64  `json:"collection_id"`
 	IsPublic     bool    `json:"is_public"`
 	IsFavorite   bool    `json:"is_favorite"`

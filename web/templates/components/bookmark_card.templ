@@ -4,30 +4,60 @@ import "github.com/EC-9624/0xec.dev/internal/models"
 
 templ BookmarkCard(bookmark models.Bookmark) {
 	<a href={ templ.URL(bookmark.URL) } target="_blank" rel="noopener noreferrer" class="bookmark-card group">
-		if bookmark.GetCoverImage() != "" {
-			<img
-				src={ bookmark.GetCoverImage() }
-				alt={ bookmark.Title }
-				class="bookmark-card-image"
-				loading="lazy"
-			/>
-		} else {
-			<div class="bookmark-card-image flex items-center justify-center bg-muted">
-				<span class="text-4xl font-medium text-muted-foreground">
-					{ string([]rune(bookmark.Title)[0]) }
-				</span>
-			</div>
-		}
+		<div class="bookmark-card-image-wrapper">
+			if bookmark.GetCoverImage() != "" {
+				<img
+					src={ bookmark.GetCoverImage() }
+					alt=""
+					class="bookmark-card-image"
+					loading="lazy"
+					decoding="async"
+					onload="this.parentElement.classList.add('loaded')"
+					onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+				/>
+				<div class="bookmark-card-fallback" style="display:none">
+					<span>{ getFirstChar(bookmark.Title) }</span>
+				</div>
+			} else {
+				<div class="bookmark-card-fallback">
+					<span>{ getFirstChar(bookmark.Title) }</span>
+				</div>
+			}
+		</div>
 		<div class="bookmark-card-content">
-			<h3 class="bookmark-card-title group-hover:text-primary transition-colors">
+			<h3 class="bookmark-card-title">
 				{ bookmark.Title }
 			</h3>
-			<p class="bookmark-card-domain">{ bookmark.GetDomain() }</p>
+			<p class="bookmark-card-domain">
+				<img
+					src={ getGoogleFaviconURL(bookmark.GetDomain()) }
+					alt=""
+					class="inline-block w-4 h-4 mr-1 align-text-bottom"
+					loading="lazy"
+				/>
+				{ bookmark.GetDomain() }
+			</p>
 			if bookmark.GetDescription() != "" {
 				<p class="bookmark-card-description">{ bookmark.GetDescription() }</p>
 			}
 		</div>
 	</a>
+}
+
+// getFirstChar returns the first character of a string, handling unicode
+func getFirstChar(s string) string {
+	for _, r := range s {
+		return string(r)
+	}
+	return ""
+}
+
+// getGoogleFaviconURL returns Google's favicon service URL for a domain
+func getGoogleFaviconURL(domain string) string {
+	if domain == "" {
+		return ""
+	}
+	return "https://www.google.com/s2/favicons?sz=32&domain=" + domain
 }
 
 templ BookmarkGrid(bookmarks []models.Bookmark) {

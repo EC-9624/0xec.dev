@@ -5,7 +5,7 @@ RETURNING *;
 
 -- name: UpdateBookmark :exec
 UPDATE bookmarks 
-SET url = ?, title = ?, description = ?, cover_image = ?, domain = ?,
+SET url = ?, title = ?, description = ?, cover_image = ?, favicon = ?, domain = ?,
     collection_id = ?, is_public = ?, is_favorite = ?, updated_at = CURRENT_TIMESTAMP 
 WHERE id = ?;
 

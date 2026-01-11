@@ -29,6 +29,11 @@ setup: install
 # Development mode with hot reload (runs air + tailwind watch in parallel)
 dev:
 	@echo "Starting development server with hot reload..."
+	@echo "Building initial CSS..."
+	@$(TAILWIND) -i ./web/static/css/input.css -o ./web/static/css/output.css
+	@echo "Generating templates..."
+	@templ generate
+	@echo "Starting watchers..."
 	@$(TAILWIND) -i ./web/static/css/input.css -o ./web/static/css/output.css --watch &
 	@air
 
