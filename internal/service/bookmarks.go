@@ -295,3 +295,47 @@ func extractDomain(rawURL string) string {
 	}
 	return parsed.Host
 }
+
+// ============================================
+// INLINE EDITING METHODS
+// ============================================
+
+// UpdateBookmarkPublic updates only the public status of a bookmark
+func (s *Service) UpdateBookmarkPublic(ctx context.Context, id int64, isPublic bool) error {
+	var val int64 = 0
+	if isPublic {
+		val = 1
+	}
+	return s.queries.UpdateBookmarkPublic(ctx, db.UpdateBookmarkPublicParams{
+		IsPublic: &val,
+		ID:       id,
+	})
+}
+
+// UpdateBookmarkFavorite updates only the favorite status of a bookmark
+func (s *Service) UpdateBookmarkFavorite(ctx context.Context, id int64, isFavorite bool) error {
+	var val int64 = 0
+	if isFavorite {
+		val = 1
+	}
+	return s.queries.UpdateBookmarkFavorite(ctx, db.UpdateBookmarkFavoriteParams{
+		IsFavorite: &val,
+		ID:         id,
+	})
+}
+
+// UpdateBookmarkCollection updates only the collection of a bookmark
+func (s *Service) UpdateBookmarkCollection(ctx context.Context, id int64, collectionID *int64) error {
+	return s.queries.UpdateBookmarkCollection(ctx, db.UpdateBookmarkCollectionParams{
+		CollectionID: collectionID,
+		ID:           id,
+	})
+}
+
+// UpdateBookmarkTitle updates only the title of a bookmark
+func (s *Service) UpdateBookmarkTitle(ctx context.Context, id int64, title string) error {
+	return s.queries.UpdateBookmarkTitle(ctx, db.UpdateBookmarkTitleParams{
+		Title: title,
+		ID:    id,
+	})
+}

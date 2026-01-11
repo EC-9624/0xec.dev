@@ -428,3 +428,176 @@ func (h *Handlers) AdminRefreshBookmarkMetadata(w http.ResponseWriter, r *http.R
 	// Redirect back to edit page
 	http.Redirect(w, r, fmt.Sprintf("/admin/bookmarks/%d/edit", id), http.StatusSeeOther)
 }
+
+// ============================================
+// INLINE EDITING HANDLERS (HTMX)
+// ============================================
+
+// AdminToggleBookmarkPublic toggles the public/private status of a bookmark
+func (h *Handlers) AdminToggleBookmarkPublic(w http.ResponseWriter, r *http.Request) {
+	id := extractBookmarkID(r.URL.Path, "/toggle-public")
+	if id == 0 {
+		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
+	if err != nil {
+		http.Error(w, "Bookmark not found", http.StatusNotFound)
+		return
+	}
+
+	// Toggle the public status
+	newStatus := !bookmark.IsPublic
+	err = h.service.UpdateBookmarkPublic(ctx, id, newStatus)
+	if err != nil {
+		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the updated badge with success animation
+	render(w, r, admin.BookmarkPublicBadge(id, newStatus, true))
+}
+
+// AdminToggleBookmarkFavorite toggles the favorite status of a bookmark
+func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Request) {
+	id := extractBookmarkID(r.URL.Path, "/toggle-favorite")
+	if id == 0 {
+		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
+	if err != nil {
+		http.Error(w, "Bookmark not found", http.StatusNotFound)
+		return
+	}
+
+	// Toggle the favorite status
+	newStatus := !bookmark.IsFavorite
+	err = h.service.UpdateBookmarkFavorite(ctx, id, newStatus)
+	if err != nil {
+		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the updated star with success animation
+	render(w, r, admin.BookmarkFavoriteStar(id, newStatus, true))
+}
+
+// AdminUpdateBookmarkCollection updates the collection of a bookmark
+func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.Request) {
+	id := extractBookmarkID(r.URL.Path, "/collection")
+	if id == 0 {
+		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Parse collection ID (empty string means no collection)
+	var collectionID *int64
+	cidStr := r.FormValue("collection_id")
+	if cidStr != "" {
+		cid, err := strconv.ParseInt(cidStr, 10, 64)
+		if err == nil {
+			collectionID = &cid
+		}
+	}
+
+	err := h.service.UpdateBookmarkCollection(ctx, id, collectionID)
+	if err != nil {
+		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		return
+	}
+
+	// Get collections for the dropdown
+	collections, _ := h.service.ListCollections(ctx, false)
+
+	// Return the updated dropdown with success animation
+	hasCollection := collectionID != nil
+	var currentCollectionID int64
+	if hasCollection {
+		currentCollectionID = *collectionID
+	}
+	render(w, r, admin.BookmarkCollectionDropdown(id, currentCollectionID, hasCollection, collections, true))
+}
+
+// AdminGetBookmarkTitleEdit returns the title edit input field
+func (h *Handlers) AdminGetBookmarkTitleEdit(w http.ResponseWriter, r *http.Request) {
+	id := extractBookmarkID(r.URL.Path, "/edit-title")
+	if id == 0 {
+		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
+	if err != nil {
+		http.Error(w, "Bookmark not found", http.StatusNotFound)
+		return
+	}
+
+	// Return the edit input
+	render(w, r, admin.BookmarkTitleEdit(id, bookmark.Title, bookmark.URL))
+}
+
+// AdminUpdateBookmarkTitle updates the title of a bookmark
+func (h *Handlers) AdminUpdateBookmarkTitle(w http.ResponseWriter, r *http.Request) {
+	id := extractBookmarkID(r.URL.Path, "/title")
+	if id == 0 {
+		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	title := strings.TrimSpace(r.FormValue("title"))
+
+	// Get current bookmark for URL (needed for display)
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
+	if err != nil {
+		http.Error(w, "Bookmark not found", http.StatusNotFound)
+		return
+	}
+
+	// Validate title
+	if title == "" {
+		// Return display mode with error (revert to original)
+		render(w, r, admin.BookmarkTitleDisplay(id, bookmark.Title, bookmark.URL, false))
+		return
+	}
+
+	// Update the title
+	err = h.service.UpdateBookmarkTitle(ctx, id, title)
+	if err != nil {
+		// Return display mode with original title on error
+		render(w, r, admin.BookmarkTitleDisplay(id, bookmark.Title, bookmark.URL, false))
+		return
+	}
+
+	// Return the updated display with success animation
+	render(w, r, admin.BookmarkTitleDisplay(id, title, bookmark.URL, true))
+}
+
+// extractBookmarkID extracts the bookmark ID from a path like /admin/bookmarks/{id}/suffix
+func extractBookmarkID(path, suffix string) int64 {
+	path = strings.TrimPrefix(path, "/admin/bookmarks/")
+	path = strings.TrimSuffix(path, suffix)
+	id, err := strconv.ParseInt(path, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return id
+}

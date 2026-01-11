@@ -118,6 +118,18 @@ func main() {
 	adminMux.HandleFunc("/admin/bookmarks/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		switch {
+		// Inline editing routes (HTMX)
+		case strings.HasSuffix(path, "/toggle-public"):
+			h.AdminToggleBookmarkPublic(w, r)
+		case strings.HasSuffix(path, "/toggle-favorite"):
+			h.AdminToggleBookmarkFavorite(w, r)
+		case strings.HasSuffix(path, "/collection") && r.Method == http.MethodPost:
+			h.AdminUpdateBookmarkCollection(w, r)
+		case strings.HasSuffix(path, "/edit-title"):
+			h.AdminGetBookmarkTitleEdit(w, r)
+		case strings.HasSuffix(path, "/title") && r.Method == http.MethodPost:
+			h.AdminUpdateBookmarkTitle(w, r)
+		// Existing routes
 		case strings.HasSuffix(path, "/refresh"):
 			h.AdminRefreshBookmarkMetadata(w, r)
 		case strings.HasSuffix(path, "/edit"):

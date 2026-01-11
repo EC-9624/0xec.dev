@@ -116,14 +116,32 @@ class Dropdown {
 // Store dropdown instances for external access
 window.dropdowns = new Map();
 
-// Auto-init all dropdowns
+// Initialize a single dropdown element
+function initDropdown(el) {
+  const dropdown = new Dropdown(el);
+  const input = el.querySelector('input[type="hidden"]');
+  if (input && input.id) {
+    window.dropdowns.set(input.id, dropdown);
+  }
+  return dropdown;
+}
+
+// Auto-init all dropdowns on page load
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('[data-dropdown]').forEach(el => {
-    const dropdown = new Dropdown(el);
-    // Store by input id for easy access
-    const input = el.querySelector('input[type="hidden"]');
-    if (input && input.id) {
-      window.dropdowns.set(input.id, dropdown);
-    }
-  });
+  document.querySelectorAll('[data-dropdown]').forEach(initDropdown);
+});
+
+// Re-initialize dropdowns after HTMX settles new content
+document.addEventListener('htmx:afterSettle', (e) => {
+  const target = e.detail.elt;
+  if (!target) return;
+  
+  // Check if the settled element itself is a dropdown
+  if (target.matches && target.matches('[data-dropdown]')) {
+    initDropdown(target);
+  }
+  // Also check for dropdowns inside the settled content
+  if (target.querySelectorAll) {
+    target.querySelectorAll('[data-dropdown]').forEach(initDropdown);
+  }
 });
