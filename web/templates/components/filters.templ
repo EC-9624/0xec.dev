@@ -1,0 +1,185 @@
+package components
+
+// ============================================
+// FILTER BAR COMPONENTS
+// ============================================
+
+// FilterBarProps holds the configuration for a filter bar
+type FilterBarProps struct {
+	ID string // Optional ID for the filter bar container
+}
+
+// FilterBar renders a container for filter elements
+// Usage: @FilterBar(FilterBarProps{}) { ... filter elements ... }
+templ FilterBar(props FilterBarProps) {
+	<div
+		if props.ID != "" {
+			id={ props.ID }
+		}
+		class="filter-bar"
+	>
+		{ children... }
+	</div>
+}
+
+// SearchInputProps configures the search input
+type SearchInputProps struct {
+	ID          string // Required: input ID for JS reference
+	Placeholder string // Placeholder text
+	OnInput     string // JS function to call on input (e.g., "filterBookmarks()")
+}
+
+// SearchInput renders a search text input
+templ SearchInput(props SearchInputProps) {
+	<div class="flex-1 min-w-40 max-w-sm">
+		<input
+			type="text"
+			id={ props.ID }
+			placeholder={ props.Placeholder }
+			class="input h-8 text-xs"
+			{ inputAttrs(props.OnInput)... }
+		/>
+	</div>
+}
+
+// inputAttrs returns oninput attribute if handler is provided
+func inputAttrs(handler string) templ.Attributes {
+	if handler == "" {
+		return nil
+	}
+	return templ.Attributes{"oninput": handler}
+}
+
+// FilterDropdownOption represents a single dropdown option
+type FilterDropdownOption struct {
+	Value    string
+	Label    string
+	Selected bool
+}
+
+// FilterDropdownProps configures a filter dropdown
+type FilterDropdownProps struct {
+	ID           string                 // Required: hidden input ID for JS reference
+	DefaultLabel string                 // Label when nothing selected (e.g., "All Status")
+	Options      []FilterDropdownOption // Available options
+	OnChange     string                 // JS function to call on change
+}
+
+// FilterDropdown renders a custom dropdown filter
+templ FilterDropdown(props FilterDropdownProps) {
+	<div data-dropdown class="dropdown">
+		<input type="hidden" id={ props.ID } value={ getSelectedValue(props.Options) } { changeAttrs(props.OnChange)... }/>
+		<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
+			<span data-dropdown-label>{ getSelectedLabel(props.Options, props.DefaultLabel) }</span>
+			@ChevronDownIcon(IconSM)
+		</button>
+		<div data-dropdown-menu class="dropdown-menu hidden">
+			for _, opt := range props.Options {
+				<button
+					type="button"
+					data-dropdown-option
+					data-value={ opt.Value }
+					class="dropdown-option"
+					if opt.Selected {
+						data-selected="true"
+					}
+				>
+					{ opt.Label }
+				</button>
+			}
+		</div>
+	</div>
+}
+
+// changeAttrs returns onchange attribute if handler is provided
+func changeAttrs(handler string) templ.Attributes {
+	if handler == "" {
+		return nil
+	}
+	return templ.Attributes{"onchange": handler}
+}
+
+// ClearFiltersButton renders the clear filters button
+templ ClearFiltersButton(onClick string) {
+	<button
+		type="button"
+		class="btn-ghost btn-xs text-muted-foreground"
+		{ clickAttrs(onClick)... }
+	>
+		Clear
+	</button>
+}
+
+// clickAttrs returns onclick attribute if handler is provided
+func clickAttrs(handler string) templ.Attributes {
+	if handler == "" {
+		return nil
+	}
+	return templ.Attributes{"onclick": handler}
+}
+
+// NoResultsMessage renders a hidden no-results message for client-side filtering
+templ NoResultsMessage(clearFn string) {
+	<div id="no-results" class="hidden card py-12 text-center">
+		<p class="text-muted-foreground">No items match your filters</p>
+		<button type="button" class="btn-ghost btn-sm mt-2" { clickAttrs(clearFn)... }>
+			Clear filters
+		</button>
+	</div>
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+// getSelectedValue returns the value of the first selected option
+func getSelectedValue(options []FilterDropdownOption) string {
+	for _, opt := range options {
+		if opt.Selected {
+			return opt.Value
+		}
+	}
+	return ""
+}
+
+// getSelectedLabel returns the label of the first selected option, or the default label
+func getSelectedLabel(options []FilterDropdownOption, defaultLabel string) string {
+	for _, opt := range options {
+		if opt.Selected {
+			return opt.Label
+		}
+	}
+	return defaultLabel
+}
+
+// ============================================
+// PRESET OPTIONS
+// ============================================
+
+// StatusOptions returns common public/private status options
+func StatusOptions() []FilterDropdownOption {
+	return []FilterDropdownOption{
+		{Value: "", Label: "All Status", Selected: true},
+		{Value: "public", Label: "Public"},
+		{Value: "private", Label: "Private"},
+	}
+}
+
+// PublishStatusOptions returns draft/published status options
+func PublishStatusOptions() []FilterDropdownOption {
+	return []FilterDropdownOption{
+		{Value: "", Label: "All Status", Selected: true},
+		{Value: "published", Label: "Published"},
+		{Value: "draft", Label: "Drafts"},
+	}
+}
+
+// BookmarkStatusOptions returns bookmark-specific status options
+func BookmarkStatusOptions() []FilterDropdownOption {
+	return []FilterDropdownOption{
+		{Value: "", Label: "All Status", Selected: true},
+		{Value: "public", Label: "Public"},
+		{Value: "private", Label: "Private"},
+		{Value: "favorite", Label: "Favorites"},
+	}
+}

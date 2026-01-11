@@ -2,6 +2,7 @@ package admin
 
 import (
 	"github.com/EC-9624/0xec.dev/internal/service"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 	"strconv"
 	"time"
@@ -17,16 +18,13 @@ templ Dashboard(data DashboardData) {
 	@layouts.Admin("Dashboard") {
 		<div class="space-y-4">
 			<!-- Header -->
-			<div>
-				<h1 class="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-				<p class="text-muted-foreground text-sm">Overview of your content and activity</p>
-			</div>
+			@components.PageHeaderSimple("Dashboard", "Overview of your content and activity")
 			<!-- Stats Grid -->
 			<div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-				@statCardWithTrend("Posts", data.Stats.TotalPosts, data.Stats.PostsThisWeek, "/admin/posts", dashPostsIcon())
-				@statCardWithTrend("Bookmarks", data.Stats.TotalBookmarks, data.Stats.BookmarksThisWeek, "/admin/bookmarks", dashBookmarksIcon())
-				@statCardSimple("Collections", data.Stats.TotalCollections, "/admin/collections", dashCollectionsIcon())
-				@statCardSimple("Tags", data.Stats.TotalTags, "/admin/tags", dashTagsIcon())
+				@statCardWithTrend("Posts", data.Stats.TotalPosts, data.Stats.PostsThisWeek, "/admin/posts", components.FileTextIcon(components.IconLG))
+				@statCardWithTrend("Bookmarks", data.Stats.TotalBookmarks, data.Stats.BookmarksThisWeek, "/admin/bookmarks", components.BookmarkIcon(components.IconLG))
+				@statCardSimple("Collections", data.Stats.TotalCollections, "/admin/collections", components.FolderIcon(components.IconLG))
+				@statCardSimple("Tags", data.Stats.TotalTags, "/admin/tags", components.TagIcon(components.IconLG))
 			</div>
 			<!-- Main Grid: Activity + Sidebar -->
 			<div class="grid gap-4 lg:grid-cols-3">
@@ -59,8 +57,8 @@ templ Dashboard(data DashboardData) {
 					if data.Stats.DraftPosts > 0 {
 						<a href="/admin/posts?status=draft" class="card hover:bg-muted/50 transition-colors block">
 							<div class="card-header pb-2">
-								<div class="flex items-center gap-1.5">
-									@dashDraftAlertIcon()
+								<div class="flex items-center gap-1.5 text-amber-600">
+									@components.EditIcon(components.IconLG)
 									<h2 class="text-sm font-semibold text-foreground">Drafts</h2>
 								</div>
 							</div>
@@ -93,15 +91,15 @@ templ Dashboard(data DashboardData) {
 						<div class="card-content">
 							<div class="flex flex-col gap-1.5">
 								<a href="/admin/posts/new" class="btn-outline btn-sm justify-start">
-									@dashPlusIcon()
+									@components.PlusIcon(components.IconMD)
 									New Post
 								</a>
 								<a href="/admin/bookmarks/new" class="btn-outline btn-sm justify-start">
-									@dashPlusIcon()
+									@components.PlusIcon(components.IconMD)
 									New Bookmark
 								</a>
 								<a href="/admin/collections/new" class="btn-outline btn-sm justify-start">
-									@dashPlusIcon()
+									@components.PlusIcon(components.IconMD)
 									New Collection
 								</a>
 							</div>
@@ -222,15 +220,15 @@ func getActivityBgClass(action string) string {
 templ getActivityIconSVG(action string) {
 	switch action {
 	case service.ActionBookmarkCreated, service.ActionPostCreated, service.ActionCollectionCreated:
-		@dashActivityPlusIcon()
+		@components.PlusIcon(components.IconSM)
 	case service.ActionBookmarkUpdated, service.ActionPostUpdated, service.ActionCollectionUpdated:
-		@dashActivityEditIcon()
+		@components.EditIcon(components.IconSM)
 	case service.ActionBookmarkDeleted, service.ActionPostDeleted, service.ActionCollectionDeleted:
-		@dashActivityTrashIcon()
+		@components.TrashIcon(components.IconSM)
 	case service.ActionPostPublished:
-		@dashActivityPublishIcon()
+		@components.CheckCircleIcon(components.IconSM)
 	default:
-		@dashActivityDefaultIcon()
+		@components.CircleIcon(components.IconSM)
 	}
 }
 
@@ -265,53 +263,4 @@ func formatTimeAgo(t time.Time) string {
 	}
 }
 
-// ============================================
-// ICONS
-// ============================================
 
-// Stat card icons (16px)
-templ dashPostsIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M18 10h-8"></path></svg>
-}
-
-templ dashBookmarksIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
-}
-
-templ dashCollectionsIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
-}
-
-templ dashTagsIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
-}
-
-// Activity icons (12px)
-templ dashActivityPlusIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-}
-
-templ dashActivityEditIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
-}
-
-templ dashActivityTrashIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-}
-
-templ dashActivityPublishIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
-}
-
-templ dashActivityDefaultIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
-}
-
-// Other icons
-templ dashPlusIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-}
-
-templ dashDraftAlertIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
-}

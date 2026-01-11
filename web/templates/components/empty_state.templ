@@ -1,0 +1,67 @@
+package components
+
+// ============================================
+// EMPTY STATE
+// ============================================
+
+// EmptyStateProps contains the configuration for an empty state component
+type EmptyStateProps struct {
+	Icon        templ.Component // Large icon to display
+	Title       string          // Main heading
+	Description string          // Subtext/explanation
+	CTAHref     string          // Call-to-action button URL
+	CTAText     string          // Call-to-action button text
+}
+
+// EmptyState displays a centered message when a list has no items
+// Used when there are zero items in a collection (before any filtering)
+templ EmptyState(props EmptyStateProps) {
+	<div class="card">
+		<div class="empty-state">
+			<div class="empty-state-icon">
+				@props.Icon
+			</div>
+			<h3 class="empty-state-title">{ props.Title }</h3>
+			<p class="empty-state-description">{ props.Description }</p>
+			if props.CTAHref != "" && props.CTAText != "" {
+				<a href={ templ.URL(props.CTAHref) } class="btn-default">
+					{ props.CTAText }
+				</a>
+			}
+		</div>
+	</div>
+}
+
+// ============================================
+// NO RESULTS (FILTERED)
+// ============================================
+
+// noResultsClickAttrs returns onclick attribute for no results button
+func noResultsClickAttrs(clearFn string) templ.Attributes {
+	if clearFn == "" {
+		return nil
+	}
+	return templ.Attributes{"onclick": clearFn + "()"}
+}
+
+// NoResults displays a message when filters return zero matches
+// Used when there are items but current filters exclude all of them
+templ NoResults(entityName string, clearFn string) {
+	<div id="no-results" class="hidden card py-12 text-center">
+		<p class="text-muted-foreground">No { entityName } match your filters</p>
+		<button type="button" class="btn-ghost btn-sm mt-2" { noResultsClickAttrs(clearFn)... }>
+			Clear filters
+		</button>
+	</div>
+}
+
+// NoResultsVisible is the same as NoResults but visible by default
+// Useful when you want to show it conditionally via server-side rendering
+templ NoResultsVisible(entityName string, clearFn string) {
+	<div class="card py-12 text-center">
+		<p class="text-muted-foreground">No { entityName } match your filters</p>
+		<button type="button" class="btn-ghost btn-sm mt-2" { noResultsClickAttrs(clearFn)... }>
+			Clear filters
+		</button>
+	</div>
+}

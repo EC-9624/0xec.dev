@@ -1,0 +1,141 @@
+package components
+
+// ============================================
+// STATUS BADGES
+// ============================================
+
+// PublicBadge displays a green "Public" status badge with globe icon
+templ PublicBadge() {
+	<span class="badge-success">
+		@GlobeIcon(IconXS)
+		Public
+	</span>
+}
+
+// PrivateBadge displays a muted "Private" status badge with lock icon
+templ PrivateBadge() {
+	<span class="badge-muted">
+		@LockIcon(IconXS)
+		Private
+	</span>
+}
+
+// DraftBadge displays an amber "Draft" status badge with edit icon
+templ DraftBadge() {
+	<span class="badge-warning">
+		@EditIcon(IconXS)
+		Draft
+	</span>
+}
+
+// PublishedBadge displays a green "Published" status badge with check icon
+templ PublishedBadge() {
+	<span class="badge-success">
+		@CheckCircleIcon(IconXS)
+		Published
+	</span>
+}
+
+// FavoriteBadge displays an amber "Favorite" status badge with star icon
+templ FavoriteBadge() {
+	<span class="badge-warning">
+		@StarFilledIcon(IconXS)
+		Favorite
+	</span>
+}
+
+// ============================================
+// GENERIC BADGE
+// ============================================
+
+// BadgeVariant represents the color variant of a badge
+type BadgeVariant string
+
+const (
+	BadgeSuccess BadgeVariant = "badge-success" // green
+	BadgeWarning BadgeVariant = "badge-warning" // amber
+	BadgeMuted   BadgeVariant = "badge-muted"   // gray
+	BadgeInfo    BadgeVariant = "badge-info"    // blue
+	BadgeError   BadgeVariant = "badge-error"   // red
+)
+
+// Badge displays a generic badge with custom variant, icon, and label
+templ Badge(variant BadgeVariant, label string) {
+	<span class={ string(variant) }>
+		{ label }
+	</span>
+}
+
+// BadgeWithIcon displays a badge with an icon and label
+templ BadgeWithIcon(variant BadgeVariant, icon templ.Component, label string) {
+	<span class={ string(variant) }>
+		@icon
+		{ label }
+	</span>
+}
+
+// ============================================
+// INTERACTIVE STATUS TOGGLES (for inline editing)
+// ============================================
+
+// PublicToggle displays a clickable public/private toggle button
+// Used in admin tables for inline status changes
+templ PublicToggle(isPublic bool, hxEndpoint string, showSuccess bool) {
+	<button
+		type="button"
+		hx-post={ hxEndpoint }
+		hx-target="this"
+		hx-swap="outerHTML"
+		class={ templ.KV("outline outline-2 outline-green-400", showSuccess) }
+		title={ togglePublicTitle(isPublic) }
+	>
+		if isPublic {
+			<span class="badge-success">
+				@GlobeIcon(IconXS)
+				Public
+			</span>
+		} else {
+			<span class="badge-muted">
+				@LockIcon(IconXS)
+				Private
+			</span>
+		}
+	</button>
+}
+
+func togglePublicTitle(isPublic bool) string {
+	if isPublic {
+		return "Click to make private"
+	}
+	return "Click to make public"
+}
+
+// FavoriteToggle displays a clickable star toggle button
+// Used in admin tables for inline favorite changes
+templ FavoriteToggle(isFavorite bool, hxEndpoint string, showSuccess bool) {
+	<button
+		type="button"
+		hx-post={ hxEndpoint }
+		hx-target="this"
+		hx-swap="outerHTML"
+		class={ "btn-ghost btn-xs", templ.KV("outline outline-2 outline-green-400", showSuccess) }
+		title={ toggleFavoriteTitle(isFavorite) }
+	>
+		if isFavorite {
+			<span class="text-amber-500">
+				@StarFilledIcon(IconMD)
+			</span>
+		} else {
+			<span class="text-muted-foreground hover:text-amber-500">
+				@StarIcon(IconMD)
+			</span>
+		}
+	</button>
+}
+
+func toggleFavoriteTitle(isFavorite bool) string {
+	if isFavorite {
+		return "Remove from favorites"
+	}
+	return "Add to favorites"
+}
