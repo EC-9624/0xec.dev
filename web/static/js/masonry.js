@@ -135,17 +135,35 @@ class SimpleMasonry {
 window.SimpleMasonry = SimpleMasonry;
 
 /**
- * Auto-initialize masonry for bookmark grid
+ * Initialize masonry for a grid element
  */
-document.addEventListener('DOMContentLoaded', function() {
+function initMasonry() {
   const grid = document.getElementById('bookmark-grid');
   if (!grid) return;
 
-  // Initialize masonry immediately - ResizeObserver will handle lazy images
+  // If masonry already exists for this grid, destroy it first
+  if (window.bookmarkMasonry) {
+    // Check if it's the same grid element
+    if (window.bookmarkMasonry.container === grid) {
+      return; // Already initialized for this grid
+    }
+    // Different grid (page navigation), destroy old instance
+    window.bookmarkMasonry.destroy();
+    window.bookmarkMasonry = null;
+  }
+
+  // Initialize masonry - ResizeObserver will handle lazy images
   window.bookmarkMasonry = new SimpleMasonry(grid, {
     gap: 16,
     minColumnWidth: 350
   });
+}
+
+/**
+ * Auto-initialize masonry for bookmark grid
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  initMasonry();
 
   // Handle HTMX appends (OOB swaps to bookmark-grid)
   document.body.addEventListener('htmx:oobAfterSwap', function(e) {
@@ -153,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.detail.target.id !== 'bookmark-grid') return;
     if (!window.bookmarkMasonry) return;
 
+    const grid = document.getElementById('bookmark-grid');
     // Find new items (ones without data-laid-out attribute)
     const newItems = [...grid.querySelectorAll('.masonry-item:not([data-laid-out])')];
 
@@ -160,5 +179,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Append new items - ResizeObserver will handle when images load
     window.bookmarkMasonry.append(newItems);
+  });
+
+  // Handle HTMX navigation - re-initialize masonry when content is swapped in
+  document.body.addEventListener('htmx:afterSettle', function(e) {
+    const grid = document.getElementById('bookmark-grid');
+    if (!grid) return;
+
+    // Always destroy old instance and reinitialize
+    // After HTMX swap, the grid is a new DOM element even if it has the same ID
+    if (window.bookmarkMasonry) {
+      window.bookmarkMasonry.destroy();
+      window.bookmarkMasonry = null;
+    }
+
+    initMasonry();
   });
 });
