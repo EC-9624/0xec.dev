@@ -22,17 +22,17 @@ func (q *Queries) CountActivities(ctx context.Context) (int64, error) {
 }
 
 const createActivity = `-- name: CreateActivity :one
-INSERT INTO activities (action, entity_type, entity_id, title, metadata, created_at)
+INSERT INTO activities (action, entity_type, entity_id, entity_title, metadata, created_at)
 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-RETURNING id, "action", entity_type, entity_id, title, metadata, created_at
+RETURNING id, "action", entity_type, entity_id, entity_title, metadata, created_at
 `
 
 type CreateActivityParams struct {
-	Action     string  `json:"action"`
-	EntityType *string `json:"entity_type"`
-	EntityID   *int64  `json:"entity_id"`
-	Title      *string `json:"title"`
-	Metadata   *string `json:"metadata"`
+	Action      string  `json:"action"`
+	EntityType  string  `json:"entity_type"`
+	EntityID    *int64  `json:"entity_id"`
+	EntityTitle *string `json:"entity_title"`
+	Metadata    *string `json:"metadata"`
 }
 
 func (q *Queries) CreateActivity(ctx context.Context, arg CreateActivityParams) (Activity, error) {
@@ -40,7 +40,7 @@ func (q *Queries) CreateActivity(ctx context.Context, arg CreateActivityParams) 
 		arg.Action,
 		arg.EntityType,
 		arg.EntityID,
-		arg.Title,
+		arg.EntityTitle,
 		arg.Metadata,
 	)
 	var i Activity
@@ -49,7 +49,7 @@ func (q *Queries) CreateActivity(ctx context.Context, arg CreateActivityParams) 
 		&i.Action,
 		&i.EntityType,
 		&i.EntityID,
-		&i.Title,
+		&i.EntityTitle,
 		&i.Metadata,
 		&i.CreatedAt,
 	)
@@ -62,8 +62,8 @@ WHERE entity_type = ? AND entity_id = ?
 `
 
 type DeleteActivitiesByEntityParams struct {
-	EntityType *string `json:"entity_type"`
-	EntityID   *int64  `json:"entity_id"`
+	EntityType string `json:"entity_type"`
+	EntityID   *int64 `json:"entity_id"`
 }
 
 func (q *Queries) DeleteActivitiesByEntity(ctx context.Context, arg DeleteActivitiesByEntityParams) error {
@@ -82,16 +82,16 @@ func (q *Queries) DeleteOldActivities(ctx context.Context, createdAt *time.Time)
 }
 
 const listActivitiesByEntity = `-- name: ListActivitiesByEntity :many
-SELECT id, "action", entity_type, entity_id, title, metadata, created_at FROM activities
+SELECT id, "action", entity_type, entity_id, entity_title, metadata, created_at FROM activities
 WHERE entity_type = ? AND entity_id = ?
 ORDER BY created_at DESC
 LIMIT ?
 `
 
 type ListActivitiesByEntityParams struct {
-	EntityType *string `json:"entity_type"`
-	EntityID   *int64  `json:"entity_id"`
-	Limit      int64   `json:"limit"`
+	EntityType string `json:"entity_type"`
+	EntityID   *int64 `json:"entity_id"`
+	Limit      int64  `json:"limit"`
 }
 
 func (q *Queries) ListActivitiesByEntity(ctx context.Context, arg ListActivitiesByEntityParams) ([]Activity, error) {
@@ -108,7 +108,7 @@ func (q *Queries) ListActivitiesByEntity(ctx context.Context, arg ListActivities
 			&i.Action,
 			&i.EntityType,
 			&i.EntityID,
-			&i.Title,
+			&i.EntityTitle,
 			&i.Metadata,
 			&i.CreatedAt,
 		); err != nil {
@@ -126,7 +126,7 @@ func (q *Queries) ListActivitiesByEntity(ctx context.Context, arg ListActivities
 }
 
 const listRecentActivities = `-- name: ListRecentActivities :many
-SELECT id, "action", entity_type, entity_id, title, metadata, created_at FROM activities
+SELECT id, "action", entity_type, entity_id, entity_title, metadata, created_at FROM activities
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?
 `
@@ -150,7 +150,7 @@ func (q *Queries) ListRecentActivities(ctx context.Context, arg ListRecentActivi
 			&i.Action,
 			&i.EntityType,
 			&i.EntityID,
-			&i.Title,
+			&i.EntityTitle,
 			&i.Metadata,
 			&i.CreatedAt,
 		); err != nil {

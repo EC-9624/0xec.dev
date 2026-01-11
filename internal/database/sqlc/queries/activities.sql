@@ -1,5 +1,5 @@
 -- name: CreateActivity :one
-INSERT INTO activities (action, entity_type, entity_id, title, metadata, created_at)
+INSERT INTO activities (action, entity_type, entity_id, entity_title, metadata, created_at)
 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 RETURNING *;
 
