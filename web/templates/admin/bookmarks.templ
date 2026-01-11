@@ -2,6 +2,7 @@ package admin
 
 import (
 	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 	"strconv"
 )
@@ -16,33 +17,11 @@ templ BookmarksList(data BookmarksListData) {
 	@layouts.Admin("Bookmarks") {
 		<div class="space-y-4">
 			<!-- Header -->
-			<div class="flex items-center justify-between">
-				<div>
-					<h1 class="text-2xl font-bold tracking-tight text-foreground">Bookmarks</h1>
-					<p class="text-muted-foreground">
-						{ strconv.Itoa(len(data.Bookmarks)) } bookmarks
-					</p>
-				</div>
-				<div class="flex items-center gap-2">
-					<button
-						id="refresh-btn"
-						onclick="startMetadataRefresh()"
-						class="btn-ghost btn-sm text-muted-foreground"
-						title="Re-fetch metadata for bookmarks missing cover images"
-					>
-						@refreshIcon()
-						<span id="refresh-btn-text">Refresh Metadata</span>
-					</button>
-					<a href="/admin/import" class="btn-outline">
-						@importIcon()
-						Import
-					</a>
-					<a href="/admin/bookmarks/new" class="btn-default">
-						@plusIcon()
-						New Bookmark
-					</a>
-				</div>
-			</div>
+			@components.PageHeader("Bookmarks", strconv.Itoa(len(data.Bookmarks))+" bookmarks") {
+				@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
+				@components.ImportButton("/admin/import")
+				@components.NewButton("/admin/bookmarks/new", "New Bookmark")
+			}
 			<!-- Refresh Progress Banner (hidden by default) -->
 			<div id="refresh-progress" class="hidden">
 				<div class="bg-muted border border-border p-4 space-y-2">
@@ -57,57 +36,22 @@ templ BookmarksList(data BookmarksListData) {
 				</div>
 			</div>
 			<!-- Filters Bar -->
-			<div class="flex flex-wrap items-center gap-2 py-2 border-b border-border text-xs">
-				<!-- Search -->
-				<div class="flex-1 min-w-40 max-w-sm">
-					<input
-						type="text"
-						id="bookmark-search"
-						placeholder="Search bookmarks..."
-						class="input h-8 text-xs"
-						oninput="filterBookmarks()"
-					/>
-				</div>
-				<!-- Collection Filter -->
-				<div data-dropdown class="dropdown">
-					<input type="hidden" id="collection-filter" value="" onchange="filterBookmarks()"/>
-					<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
-						<span data-dropdown-label>All Collections</span>
-						@chevronDownIcon()
-					</button>
-					<div data-dropdown-menu class="dropdown-menu hidden">
-						<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected="true">All Collections</button>
-						<button type="button" data-dropdown-option data-value="none" class="dropdown-option">Unsorted</button>
-						for _, collection := range data.Collections {
-							<button type="button" data-dropdown-option data-value={ strconv.FormatInt(collection.ID, 10) } class="dropdown-option">
-								{ collection.Name }
-							</button>
-						}
-					</div>
-				</div>
-				<!-- Status Filter -->
-				<div data-dropdown class="dropdown">
-					<input type="hidden" id="status-filter" value="" onchange="filterBookmarks()"/>
-					<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
-						<span data-dropdown-label>All Status</span>
-						@chevronDownIcon()
-					</button>
-					<div data-dropdown-menu class="dropdown-menu hidden">
-						<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected="true">All Status</button>
-						<button type="button" data-dropdown-option data-value="public" class="dropdown-option">Public</button>
-						<button type="button" data-dropdown-option data-value="private" class="dropdown-option">Private</button>
-						<button type="button" data-dropdown-option data-value="favorite" class="dropdown-option">Favorites</button>
-					</div>
-				</div>
-				<!-- Clear Filters -->
-				<button
-					type="button"
-					class="btn-ghost btn-xs text-muted-foreground"
-					onclick="clearFilters()"
-				>
-					Clear
-				</button>
-			</div>
+			@components.FilterBar(components.FilterBarProps{}) {
+				@components.SearchInput(components.SearchInputProps{
+					ID:          "bookmark-search",
+					Placeholder: "Search bookmarks...",
+					OnInput:     "bookmarksFilter.apply()",
+				})
+				<!-- Collection Filter (custom with dynamic options) -->
+				@bookmarkCollectionFilter(data.Collections)
+				@components.FilterDropdown(components.FilterDropdownProps{
+					ID:           "status-filter",
+					DefaultLabel: "All Status",
+					Options:      components.BookmarkStatusOptions(),
+					OnChange:     "bookmarksFilter.apply()",
+				})
+				@components.ClearFiltersButton("bookmarksFilter.clear()")
+			}
 			<!-- Table -->
 			if len(data.Bookmarks) > 0 {
 				<div class="card overflow-hidden">
@@ -128,14 +72,15 @@ templ BookmarksList(data BookmarksListData) {
 					</table>
 				</div>
 				<!-- No results message (hidden by default) -->
-				<div id="no-results" class="hidden card py-12 text-center">
-					<p class="text-muted-foreground">No bookmarks match your filters</p>
-					<button type="button" class="btn-ghost btn-sm mt-2" onclick="clearFilters()">
-						Clear filters
-					</button>
-				</div>
+				@components.NoResults("bookmarks", "bookmarksFilter.clear")
 			} else {
-				@emptyBookmarks()
+				@components.EmptyState(components.EmptyStateProps{
+					Icon:        components.BookmarkIcon(components.IconXXL),
+					Title:       "No bookmarks yet",
+					Description: "Start saving interesting links.",
+					CTAHref:     "/admin/bookmarks/new",
+					CTAText:     "Add your first bookmark",
+				})
 			}
 		</div>
 		<!-- Client-side filtering script -->
@@ -183,21 +128,21 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 		</td>
 		<!-- Actions -->
 		<td class="table-cell text-right">
-			<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+			<div class="row-actions">
 				<a
 					href={ templ.URL(bookmark.URL) }
 					class="btn-ghost btn-xs"
 					target="_blank"
 					title="Open link"
 				>
-					@externalLinkIcon()
+					@components.ExternalLinkIcon(components.IconMD)
 				</a>
 				<a
 					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
 					class="btn-ghost btn-xs"
 					title="Full edit"
 				>
-					@editIcon()
+					@components.EditIcon(components.IconMD)
 				</a>
 				<button
 					type="button"
@@ -208,125 +153,30 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 					class="btn-ghost btn-xs text-destructive hover:text-destructive"
 					title="Delete"
 				>
-					@trashIcon()
+					@components.TrashIcon(components.IconMD)
 				</button>
 			</div>
 		</td>
 	</tr>
 }
 
-templ emptyBookmarks() {
-	<div class="card">
-		<div class="flex flex-col items-center justify-center py-12 text-center">
-			<div class="bg-muted p-4 mb-4">
-				@bookmarkIconLarge()
-			</div>
-			<h3 class="font-semibold text-foreground mb-1">No bookmarks yet</h3>
-			<p class="text-muted-foreground mb-4">Start saving interesting links.</p>
-			<a href="/admin/bookmarks/new" class="btn-default">
-				Add your first bookmark
-			</a>
-		</div>
-	</div>
-}
-
 templ bookmarksFilterScript() {
 	<script>
-		function filterBookmarks() {
-			const search = document.getElementById('bookmark-search').value.toLowerCase();
-			const collectionFilter = document.getElementById('collection-filter').value;
-			const statusFilter = document.getElementById('status-filter').value;
-			
-			const rows = document.querySelectorAll('#bookmarks-tbody tr');
-			let visibleCount = 0;
-			
-			rows.forEach(row => {
-				const title = row.dataset.title?.toLowerCase() || '';
-				const url = row.dataset.url?.toLowerCase() || '';
-				const domain = row.dataset.domain?.toLowerCase() || '';
-				const collectionId = row.dataset.collectionId || '';
-				const isPublic = row.dataset.isPublic === 'true';
-				const isFavorite = row.dataset.isFavorite === 'true';
-				
-				let visible = true;
-				
-				// Search filter
-				if (search && !title.includes(search) && !url.includes(search) && !domain.includes(search)) {
-					visible = false;
-				}
-				
-				// Collection filter
-				if (collectionFilter) {
-					if (collectionFilter === 'none' && collectionId !== '') {
-						visible = false;
-					} else if (collectionFilter !== 'none' && collectionId !== collectionFilter) {
-						visible = false;
-					}
-				}
-				
-				// Status filter
-				if (statusFilter === 'public' && !isPublic) visible = false;
-				if (statusFilter === 'private' && isPublic) visible = false;
-				if (statusFilter === 'favorite' && !isFavorite) visible = false;
-				
-				row.style.display = visible ? '' : 'none';
-				if (visible) visibleCount++;
-			});
-			
-			// Show/hide no results message
-			const noResults = document.getElementById('no-results');
-			const table = document.querySelector('.card:has(#bookmarks-table)');
-			if (visibleCount === 0 && rows.length > 0) {
-				noResults?.classList.remove('hidden');
-				table?.classList.add('hidden');
-			} else {
-				noResults?.classList.add('hidden');
-				table?.classList.remove('hidden');
-			}
-			
-			// Save to session storage
-			sessionStorage.setItem('bookmarkFilters', JSON.stringify({
-				search, collectionFilter, statusFilter
-			}));
-		}
-		
-		function clearFilters() {
-			document.getElementById('bookmark-search').value = '';
-			// Reset custom dropdowns using the global dropdowns map
-			if (window.dropdowns) {
-				const collectionDropdown = window.dropdowns.get('collection-filter');
-				const statusDropdown = window.dropdowns.get('status-filter');
-				if (collectionDropdown) collectionDropdown.reset('');
-				if (statusDropdown) statusDropdown.reset('');
-			}
-			sessionStorage.removeItem('bookmarkFilters');
-			filterBookmarks();
-		}
-		
-		// Restore filters on page load
-		document.addEventListener('DOMContentLoaded', () => {
-			const saved = sessionStorage.getItem('bookmarkFilters');
-			if (saved) {
-				try {
-					const filters = JSON.parse(saved);
-					document.getElementById('bookmark-search').value = filters.search || '';
-					// Restore custom dropdowns - need to wait for dropdowns to init
-					setTimeout(() => {
-						if (window.dropdowns) {
-							const collectionDropdown = window.dropdowns.get('collection-filter');
-							const statusDropdown = window.dropdowns.get('status-filter');
-							if (collectionDropdown && filters.collectionFilter) {
-								collectionDropdown.reset(filters.collectionFilter);
-							}
-							if (statusDropdown && filters.statusFilter) {
-								statusDropdown.reset(filters.statusFilter);
-							}
-						}
-						filterBookmarks();
-					}, 10);
-				} catch (e) {}
-			}
+		// Initialize table filter using the reusable TableFilter class
+		const bookmarksFilter = new TableFilter({
+			tableBodyId: 'bookmarks-tbody',
+			searchId: 'bookmark-search',
+			filters: [
+				{ id: 'collection-filter', match: TableFilter.collectionMatcher },
+				{ id: 'status-filter', match: TableFilter.bookmarkStatusMatcher }
+			],
+			searchFields: ['title', 'url', 'domain'],
+			storageKey: 'bookmarkFilters',
+			tableCardSelector: '.card:has(#bookmarks-table)'
 		});
+
+		// Initialize on DOM ready
+		document.addEventListener('DOMContentLoaded', () => bookmarksFilter.init());
 
 		// Metadata refresh with SSE progress
 		function startMetadataRefresh() {
@@ -445,9 +295,29 @@ templ bookmarksFilterScript() {
 			}
 
 			// Re-run filter to update visibility based on new data
-			filterBookmarks();
+			bookmarksFilter.apply();
 		});
 	</script>
+}
+
+// bookmarkCollectionFilter renders the collection filter dropdown with dynamic options
+templ bookmarkCollectionFilter(collections []models.Collection) {
+	<div data-dropdown class="dropdown">
+		<input type="hidden" id="collection-filter" value="" onchange="bookmarksFilter.apply()"/>
+		<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
+			<span data-dropdown-label>All Collections</span>
+			@components.ChevronDownIcon(components.IconSM)
+		</button>
+		<div data-dropdown-menu class="dropdown-menu hidden">
+			<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected="true">All Collections</button>
+			<button type="button" data-dropdown-option data-value="none" class="dropdown-option">Unsorted</button>
+			for _, collection := range collections {
+				<button type="button" data-dropdown-option data-value={ strconv.FormatInt(collection.ID, 10) } class="dropdown-option">
+					{ collection.Name }
+				</button>
+			}
+		</div>
+	</div>
 }
 
 // Helper functions
@@ -486,51 +356,6 @@ func truncateURL(url string, maxLen int) string {
 		return url
 	}
 	return url[:maxLen-3] + "..."
-}
-
-// Icons
-templ plusIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-}
-
-templ importIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
-}
-
-templ refreshIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
-}
-
-templ chevronDownIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
-}
-
-templ globeIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
-}
-
-templ lockIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-}
-
-templ starIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-}
-
-templ externalLinkIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
-}
-
-templ editIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
-}
-
-templ trashIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-}
-
-templ bookmarkIconLarge() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
 }
 
 templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool) {
@@ -739,10 +564,10 @@ templ BookmarkPublicBadge(id int64, isPublic bool, success bool) {
 			type="button"
 			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
 			hx-swap="outerHTML"
-			class={ "inline-flex items-center gap-0.5 text-[10px] text-green-700 bg-green-50 border border-green-200 px-1 py-0.5 cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
+			class={ "badge-success cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
 			title="Click to make private"
 		>
-			@globeIcon()
+			@components.GlobeIcon(components.IconXS)
 			Public
 		</button>
 	} else {
@@ -750,10 +575,10 @@ templ BookmarkPublicBadge(id int64, isPublic bool, success bool) {
 			type="button"
 			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
 			hx-swap="outerHTML"
-			class={ "inline-flex items-center gap-0.5 text-[10px] text-muted-foreground bg-muted px-1 py-0.5 cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
+			class={ "badge-muted cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
 			title="Click to make public"
 		>
-			@lockIcon()
+			@components.LockIcon(components.IconXS)
 			Private
 		</button>
 	}
@@ -769,7 +594,7 @@ templ BookmarkFavoriteStar(id int64, isFavorite bool, success bool) {
 			class={ "text-amber-500 cursor-pointer hover:text-amber-600", templ.KV("save-success", success) }
 			title="Remove from favorites"
 		>
-			@starFilledIcon()
+			@components.StarFilledIcon(components.IconSM)
 		</button>
 	} else {
 		<button
@@ -779,28 +604,28 @@ templ BookmarkFavoriteStar(id int64, isFavorite bool, success bool) {
 			class={ "text-muted-foreground/40 cursor-pointer hover:text-amber-500", templ.KV("save-success", success) }
 			title="Add to favorites"
 		>
-			@starOutlineIcon()
+			@components.StarIcon(components.IconSM)
 		</button>
 	}
 }
 
 // BookmarkCollectionDropdown renders the inline collection selector
 templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollection bool, collections []models.Collection, success bool) {
-	<div 
-		data-dropdown 
+	<div
+		data-dropdown
 		class={ "dropdown w-28", templ.KV("save-success", success) }
 		data-bookmark-id={ strconv.FormatInt(id, 10) }
 	>
 		<input type="hidden" id={ "collection-" + strconv.FormatInt(id, 10) } value={ getCurrentCollectionValue(currentCollectionID, hasCollection) }/>
 		<button type="button" data-dropdown-trigger class="dropdown-trigger h-6 text-[10px]" aria-expanded="false">
 			<span data-dropdown-label class="truncate">{ getCurrentCollectionLabel(currentCollectionID, hasCollection, collections) }</span>
-			@chevronDownIcon()
+			@components.ChevronDownIcon(components.IconSM)
 		</button>
 		<div data-dropdown-menu class="dropdown-menu hidden">
-			<button 
-				type="button" 
-				data-dropdown-option 
-				data-value="" 
+			<button
+				type="button"
+				data-dropdown-option
+				data-value=""
 				class="dropdown-option"
 				hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
 				hx-vals='{"collection_id": ""}'
@@ -813,9 +638,9 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 				—
 			</button>
 			for _, collection := range collections {
-				<button 
-					type="button" 
-					data-dropdown-option 
+				<button
+					type="button"
+					data-dropdown-option
 					data-value={ strconv.FormatInt(collection.ID, 10) }
 					class="dropdown-option"
 					hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
@@ -901,13 +726,4 @@ func getCurrentCollectionLabel(collectionID int64, hasCollection bool, collectio
 		}
 	}
 	return "—"
-}
-
-// Star icons
-templ starFilledIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-}
-
-templ starOutlineIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
 }

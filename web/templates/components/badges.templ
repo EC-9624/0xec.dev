@@ -86,7 +86,7 @@ templ PublicToggle(isPublic bool, hxEndpoint string, showSuccess bool) {
 		hx-post={ hxEndpoint }
 		hx-target="this"
 		hx-swap="outerHTML"
-		class={ templ.KV("outline outline-2 outline-green-400", showSuccess) }
+		class={ templ.KV("outline-2 outline-green-400", showSuccess) }
 		title={ togglePublicTitle(isPublic) }
 	>
 		if isPublic {
@@ -118,7 +118,7 @@ templ FavoriteToggle(isFavorite bool, hxEndpoint string, showSuccess bool) {
 		hx-post={ hxEndpoint }
 		hx-target="this"
 		hx-swap="outerHTML"
-		class={ "btn-ghost btn-xs", templ.KV("outline outline-2 outline-green-400", showSuccess) }
+		class={ "btn-ghost btn-xs", templ.KV("outline-2 outline-green-400", showSuccess) }
 		title={ toggleFavoriteTitle(isFavorite) }
 	>
 		if isFavorite {
