@@ -23,31 +23,34 @@ templ PostsList(posts []models.Post) {
 				</a>
 			</div>
 			<!-- Filters Bar -->
-			<div class="flex flex-wrap items-center gap-3 py-3 border-b border-border">
+			<div class="flex flex-wrap items-center gap-2 py-2 border-b border-border text-xs">
 				<!-- Search -->
-				<div class="flex-1 min-w-[200px] max-w-md">
+				<div class="flex-1 min-w-40 max-w-sm">
 					<input
 						type="text"
 						id="post-search"
 						placeholder="Search posts..."
-						class="input h-9"
+						class="input h-8 text-xs"
 						oninput="filterPosts()"
 					/>
 				</div>
 				<!-- Status Filter -->
-				<select
-					id="status-filter"
-					class="input h-9 w-auto"
-					onchange="filterPosts()"
-				>
-					<option value="">All Status</option>
-					<option value="published">Published</option>
-					<option value="draft">Drafts</option>
-				</select>
+				<div data-dropdown class="dropdown">
+					<input type="hidden" id="status-filter" value="" onchange="filterPosts()"/>
+					<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
+						<span data-dropdown-label>All Status</span>
+						@postChevronDownIcon()
+					</button>
+					<div data-dropdown-menu class="dropdown-menu hidden">
+						<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected="true">All Status</button>
+						<button type="button" data-dropdown-option data-value="published" class="dropdown-option">Published</button>
+						<button type="button" data-dropdown-option data-value="draft" class="dropdown-option">Drafts</button>
+					</div>
+				</div>
 				<!-- Clear Filters -->
 				<button
 					type="button"
-					class="btn-ghost btn-sm text-muted-foreground"
+					class="btn-ghost btn-xs text-muted-foreground"
 					onclick="clearPostFilters()"
 				>
 					Clear
@@ -116,12 +119,12 @@ templ postRow(post models.Post) {
 		<!-- Status -->
 		<td class="table-cell">
 			if post.IsDraft {
-				<span class="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5">
+				<span class="inline-flex items-center gap-0.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5">
 					@draftIcon()
 					Draft
 				</span>
 			} else {
-				<span class="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5">
+				<span class="inline-flex items-center gap-0.5 text-[10px] text-green-700 bg-green-50 border border-green-200 px-1 py-0.5">
 					@publishedIcon()
 					Published
 				</span>
@@ -237,7 +240,11 @@ templ postsFilterScript() {
 		
 		function clearPostFilters() {
 			document.getElementById('post-search').value = '';
-			document.getElementById('status-filter').value = '';
+			// Reset custom dropdown
+			if (window.dropdowns) {
+				const statusDropdown = window.dropdowns.get('status-filter');
+				if (statusDropdown) statusDropdown.reset('');
+			}
 			sessionStorage.removeItem('postFilters');
 			filterPosts();
 		}
@@ -249,8 +256,14 @@ templ postsFilterScript() {
 				try {
 					const filters = JSON.parse(saved);
 					document.getElementById('post-search').value = filters.search || '';
-					document.getElementById('status-filter').value = filters.statusFilter || '';
-					filterPosts();
+					// Restore custom dropdown - need to wait for dropdowns to init
+					setTimeout(() => {
+						if (window.dropdowns && filters.statusFilter) {
+							const statusDropdown = window.dropdowns.get('status-filter');
+							if (statusDropdown) statusDropdown.reset(filters.statusFilter);
+						}
+						filterPosts();
+					}, 10);
 				} catch (e) {}
 			}
 		});
@@ -270,12 +283,16 @@ templ postPlusIcon() {
 	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
 }
 
+templ postChevronDownIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+}
+
 templ draftIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
 }
 
 templ publishedIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
 }
 
 templ postExternalLinkIcon() {

@@ -15,36 +15,36 @@ type DashboardData struct {
 
 templ Dashboard(data DashboardData) {
 	@layouts.Admin("Dashboard") {
-		<div class="space-y-8">
+		<div class="space-y-4">
 			<!-- Header -->
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-				<p class="text-muted-foreground">Overview of your content and recent activity.</p>
+				<p class="text-muted-foreground text-sm">Overview of your content and activity</p>
 			</div>
 			<!-- Stats Grid -->
-			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				@statCardWithTrend("Posts", data.Stats.TotalPosts, data.Stats.PostsThisWeek, "/admin/posts", postsIcon())
-				@statCardWithTrend("Bookmarks", data.Stats.TotalBookmarks, data.Stats.BookmarksThisWeek, "/admin/bookmarks", bookmarksIcon())
-				@statCardSimple("Collections", data.Stats.TotalCollections, "/admin/collections", collectionsIcon())
-				@statCardSimple("Tags", data.Stats.TotalTags, "/admin/tags", tagsIcon())
+			<div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+				@statCardWithTrend("Posts", data.Stats.TotalPosts, data.Stats.PostsThisWeek, "/admin/posts", dashPostsIcon())
+				@statCardWithTrend("Bookmarks", data.Stats.TotalBookmarks, data.Stats.BookmarksThisWeek, "/admin/bookmarks", dashBookmarksIcon())
+				@statCardSimple("Collections", data.Stats.TotalCollections, "/admin/collections", dashCollectionsIcon())
+				@statCardSimple("Tags", data.Stats.TotalTags, "/admin/tags", dashTagsIcon())
 			</div>
-			<!-- Main Grid: Activity + Distribution -->
-			<div class="grid gap-6 lg:grid-cols-3">
+			<!-- Main Grid: Activity + Sidebar -->
+			<div class="grid gap-4 lg:grid-cols-3">
 				<!-- Activity Feed -->
 				<div class="lg:col-span-2">
 					<div class="card">
-						<div class="card-header pb-4">
-							<h2 class="text-lg font-semibold text-foreground">Recent Activity</h2>
-							<p class="text-sm text-muted-foreground">Your latest actions</p>
+						<div class="card-header pb-3">
+							<h2 class="text-sm font-semibold text-foreground">Recent Activity</h2>
+							<p class="text-xs text-muted-foreground">Your latest actions</p>
 						</div>
 						<div class="card-content">
 							if len(data.Activities) == 0 {
-								<div class="py-8 text-center text-muted-foreground">
-									<p>No activity yet</p>
-									<p class="text-sm mt-1">Start creating content to see your activity here</p>
+								<div class="py-6 text-center text-muted-foreground">
+									<p class="text-xs">No activity yet</p>
+									<p class="text-[10px] mt-1">Start creating content to see your activity here</p>
 								</div>
 							} else {
-								<div class="space-y-1">
+								<div class="space-y-0">
 									for _, activity := range data.Activities {
 										@activityItem(activity)
 									}
@@ -54,30 +54,30 @@ templ Dashboard(data DashboardData) {
 					</div>
 				</div>
 				<!-- Right Column: Distribution + Quick Actions -->
-				<div class="space-y-6">
+				<div class="space-y-4">
 					<!-- Draft Posts Alert -->
 					if data.Stats.DraftPosts > 0 {
 						<a href="/admin/posts?status=draft" class="card hover:bg-muted/50 transition-colors block">
 							<div class="card-header pb-2">
-								<div class="flex items-center gap-2">
-									@draftAlertIcon()
-									<h2 class="text-lg font-semibold text-foreground">Drafts</h2>
+								<div class="flex items-center gap-1.5">
+									@dashDraftAlertIcon()
+									<h2 class="text-sm font-semibold text-foreground">Drafts</h2>
 								</div>
 							</div>
 							<div class="card-content">
-								<p class="text-2xl font-bold text-amber-600">{ strconv.Itoa(data.Stats.DraftPosts) }</p>
-								<p class="text-sm text-muted-foreground">posts waiting to be published</p>
+								<p class="text-xl font-bold text-amber-600">{ strconv.Itoa(data.Stats.DraftPosts) }</p>
+								<p class="text-xs text-muted-foreground">posts waiting to be published</p>
 							</div>
 						</a>
 					}
 					<!-- Bookmarks by Collection -->
 					if len(data.Stats.BookmarksByCollection) > 0 {
 						<div class="card">
-							<div class="card-header pb-4">
-								<h2 class="text-lg font-semibold text-foreground">Bookmarks by Collection</h2>
+							<div class="card-header pb-3">
+								<h2 class="text-sm font-semibold text-foreground">Bookmarks by Collection</h2>
 							</div>
 							<div class="card-content">
-								<div class="space-y-3">
+								<div class="space-y-2">
 									for _, c := range data.Stats.BookmarksByCollection {
 										@barChartItem(c.Name, c.Count, maxCount(data.Stats.BookmarksByCollection))
 									}
@@ -87,20 +87,20 @@ templ Dashboard(data DashboardData) {
 					}
 					<!-- Quick Actions -->
 					<div class="card">
-						<div class="card-header pb-4">
-							<h2 class="text-lg font-semibold text-foreground">Quick Actions</h2>
+						<div class="card-header pb-3">
+							<h2 class="text-sm font-semibold text-foreground">Quick Actions</h2>
 						</div>
 						<div class="card-content">
-							<div class="flex flex-col gap-2">
-								<a href="/admin/posts/new" class="btn-outline justify-start">
+							<div class="flex flex-col gap-1.5">
+								<a href="/admin/posts/new" class="btn-outline btn-sm justify-start">
 									@dashPlusIcon()
 									New Post
 								</a>
-								<a href="/admin/bookmarks/new" class="btn-outline justify-start">
+								<a href="/admin/bookmarks/new" class="btn-outline btn-sm justify-start">
 									@dashPlusIcon()
 									New Bookmark
 								</a>
-								<a href="/admin/collections/new" class="btn-outline justify-start">
+								<a href="/admin/collections/new" class="btn-outline btn-sm justify-start">
 									@dashPlusIcon()
 									New Collection
 								</a>
@@ -117,15 +117,15 @@ templ Dashboard(data DashboardData) {
 templ statCardWithTrend(title string, count int, thisWeek int, href string, icon templ.Component) {
 	<a href={ templ.URL(href) } class="card hover:bg-muted/50 transition-colors">
 		<div class="card-header flex-row items-center justify-between space-y-0 pb-2">
-			<h3 class="text-sm font-medium text-muted-foreground">{ title }</h3>
+			<h3 class="text-xs font-medium text-muted-foreground">{ title }</h3>
 			<div class="text-muted-foreground">
 				@icon
 			</div>
 		</div>
 		<div class="card-content">
-			<div class="text-3xl font-bold text-foreground">{ strconv.Itoa(count) }</div>
+			<div class="text-2xl font-bold text-foreground">{ strconv.Itoa(count) }</div>
 			if thisWeek > 0 {
-				<p class="text-xs text-muted-foreground mt-1">
+				<p class="text-[10px] text-muted-foreground mt-1">
 					<span class="text-green-600">+{ strconv.Itoa(thisWeek) }</span> this week
 				</p>
 			}
@@ -137,44 +137,44 @@ templ statCardWithTrend(title string, count int, thisWeek int, href string, icon
 templ statCardSimple(title string, count int, href string, icon templ.Component) {
 	<a href={ templ.URL(href) } class="card hover:bg-muted/50 transition-colors">
 		<div class="card-header flex-row items-center justify-between space-y-0 pb-2">
-			<h3 class="text-sm font-medium text-muted-foreground">{ title }</h3>
+			<h3 class="text-xs font-medium text-muted-foreground">{ title }</h3>
 			<div class="text-muted-foreground">
 				@icon
 			</div>
 		</div>
 		<div class="card-content">
-			<div class="text-3xl font-bold text-foreground">{ strconv.Itoa(count) }</div>
+			<div class="text-2xl font-bold text-foreground">{ strconv.Itoa(count) }</div>
 		</div>
 	</a>
 }
 
 // Activity feed item
 templ activityItem(activity service.Activity) {
-	<div class="flex items-start gap-3 py-2 border-b border-border last:border-0">
-		<div class={ "flex items-center justify-center w-8 h-8 text-xs font-medium border", getActivityBgClass(activity.Action) }>
-			{ getActivityIcon(activity.Action) }
+	<div class="flex items-center gap-2 py-1.5 border-b border-border last:border-0">
+		<div class={ "flex items-center justify-center w-6 h-6 shrink-0", getActivityBgClass(activity.Action) }>
+			@getActivityIconSVG(activity.Action)
 		</div>
 		<div class="flex-1 min-w-0">
-			<p class="text-sm text-foreground">
+			<p class="text-xs text-foreground truncate">
 				<span class="font-medium">{ service.GetActivityVerb(activity.Action) }</span>
 				if activity.Title != "" {
-					<span class="text-muted-foreground">&middot; </span>
-					<span class="truncate">{ activity.Title }</span>
+					<span class="text-muted-foreground"> · </span>
+					<span class="text-muted-foreground">{ activity.Title }</span>
 				}
 			</p>
-			<p class="text-xs text-muted-foreground mt-0.5">{ formatTimeAgo(activity.CreatedAt) }</p>
 		</div>
+		<p class="text-[10px] text-muted-foreground shrink-0">{ formatTimeAgo(activity.CreatedAt) }</p>
 	</div>
 }
 
 // Bar chart item for collection distribution
 templ barChartItem(name string, count int, maxCount int) {
 	<div class="space-y-1">
-		<div class="flex items-center justify-between text-sm">
+		<div class="flex items-center justify-between text-xs">
 			<span class="text-foreground truncate">{ name }</span>
 			<span class="text-muted-foreground">{ strconv.Itoa(count) }</span>
 		</div>
-		<div class="h-2 bg-muted overflow-hidden">
+		<div class="h-1.5 bg-muted overflow-hidden">
 			<div
 				class="h-full bg-foreground"
 				style={ "width: " + strconv.Itoa(percentage(count, maxCount)) + "%" }
@@ -202,35 +202,35 @@ func maxCount(collections []service.CollectionCount) int {
 	return max
 }
 
-// Helper: Get activity icon character
-func getActivityIcon(action string) string {
-	switch action {
-	case service.ActionBookmarkCreated, service.ActionPostCreated, service.ActionCollectionCreated:
-		return "+"
-	case service.ActionBookmarkUpdated, service.ActionPostUpdated, service.ActionCollectionUpdated:
-		return "~"
-	case service.ActionBookmarkDeleted, service.ActionPostDeleted, service.ActionCollectionDeleted:
-		return "-"
-	case service.ActionPostPublished:
-		return "!"
-	default:
-		return "o"
-	}
-}
-
 // Helper: Get activity background class
 func getActivityBgClass(action string) string {
 	switch action {
 	case service.ActionBookmarkCreated, service.ActionPostCreated, service.ActionCollectionCreated:
-		return "bg-green-50 text-green-700 border-green-200"
+		return "bg-green-50 text-green-600"
 	case service.ActionBookmarkUpdated, service.ActionPostUpdated, service.ActionCollectionUpdated:
-		return "bg-blue-50 text-blue-700 border-blue-200"
+		return "bg-blue-50 text-blue-600"
 	case service.ActionBookmarkDeleted, service.ActionPostDeleted, service.ActionCollectionDeleted:
-		return "bg-red-50 text-red-700 border-red-200"
+		return "bg-red-50 text-red-600"
 	case service.ActionPostPublished:
-		return "bg-purple-50 text-purple-700 border-purple-200"
+		return "bg-purple-50 text-purple-600"
 	default:
-		return "bg-muted text-muted-foreground border-border"
+		return "bg-muted text-muted-foreground"
+	}
+}
+
+// Helper: Get activity SVG icon
+templ getActivityIconSVG(action string) {
+	switch action {
+	case service.ActionBookmarkCreated, service.ActionPostCreated, service.ActionCollectionCreated:
+		@dashActivityPlusIcon()
+	case service.ActionBookmarkUpdated, service.ActionPostUpdated, service.ActionCollectionUpdated:
+		@dashActivityEditIcon()
+	case service.ActionBookmarkDeleted, service.ActionPostDeleted, service.ActionCollectionDeleted:
+		@dashActivityTrashIcon()
+	case service.ActionPostPublished:
+		@dashActivityPublishIcon()
+	default:
+		@dashActivityDefaultIcon()
 	}
 }
 
@@ -241,51 +241,77 @@ func formatTimeAgo(t time.Time) string {
 
 	switch {
 	case diff < time.Minute:
-		return "just now"
+		return "now"
 	case diff < time.Hour:
 		mins := int(diff.Minutes())
 		if mins == 1 {
-			return "1 minute ago"
+			return "1m ago"
 		}
-		return strconv.Itoa(mins) + " minutes ago"
+		return strconv.Itoa(mins) + "m ago"
 	case diff < 24*time.Hour:
 		hours := int(diff.Hours())
 		if hours == 1 {
-			return "1 hour ago"
+			return "1h ago"
 		}
-		return strconv.Itoa(hours) + " hours ago"
+		return strconv.Itoa(hours) + "h ago"
 	case diff < 7*24*time.Hour:
 		days := int(diff.Hours() / 24)
 		if days == 1 {
-			return "yesterday"
+			return "1d ago"
 		}
-		return strconv.Itoa(days) + " days ago"
+		return strconv.Itoa(days) + "d ago"
 	default:
-		return t.Format("Jan 2, 2006")
+		return t.Format("Jan 2")
 	}
 }
 
-// Icons
-templ postsIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M18 10h-8"></path></svg>
+// ============================================
+// ICONS
+// ============================================
+
+// Stat card icons (16px)
+templ dashPostsIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M18 10h-8"></path></svg>
 }
 
-templ bookmarksIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
+templ dashBookmarksIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
 }
 
-templ collectionsIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+templ dashCollectionsIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
 }
 
-templ tagsIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
+templ dashTagsIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
 }
 
+// Activity icons (12px)
+templ dashActivityPlusIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+}
+
+templ dashActivityEditIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
+}
+
+templ dashActivityTrashIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+}
+
+templ dashActivityPublishIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+}
+
+templ dashActivityDefaultIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+}
+
+// Other icons
 templ dashPlusIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
 }
 
-templ draftAlertIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
+templ dashDraftAlertIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
 }
