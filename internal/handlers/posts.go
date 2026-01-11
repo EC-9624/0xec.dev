@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -20,7 +21,7 @@ func (h *Handlers) PostsIndex(w http.ResponseWriter, r *http.Request) {
 	render(w, r, pages.PostsIndex(posts))
 }
 
-// PostShow handles a single post page
+// PostShow handles a single post page (full page only)
 func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
 	slug := strings.TrimPrefix(r.URL.Path, "/posts/")
 	if slug == "" {
@@ -28,35 +29,53 @@ func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.service.GetPostBySlug(r.Context(), slug)
+	post, allPosts, contentHTML, err := h.getPostData(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
+	}
+
+	render(w, r, pages.PostShow(*post, allPosts, contentHTML))
+}
+
+// HTMXPostContent returns the post content partial + OOB sidebar update
+func (h *Handlers) HTMXPostContent(w http.ResponseWriter, r *http.Request) {
+	slug := strings.TrimPrefix(r.URL.Path, "/htmx/posts/")
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	post, allPosts, contentHTML, err := h.getPostData(r.Context(), slug)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	render(w, r, pages.PostContentPartial(*post, contentHTML, allPosts))
+}
+
+// getPostData fetches all data needed for a post page
+func (h *Handlers) getPostData(ctx context.Context, slug string) (*models.Post, []models.Post, string, error) {
+	post, err := h.service.GetPostBySlug(ctx, slug)
+	if err != nil {
+		return nil, nil, "", err
 	}
 
 	// Don't show drafts on public site
 	if post.IsDraft {
-		http.NotFound(w, r)
-		return
+		return nil, nil, "", http.ErrNotSupported
 	}
 
 	// Fetch all posts for the sidebar
-	allPosts, err := h.service.ListPosts(r.Context(), true, 100, 0)
+	allPosts, err := h.service.ListPosts(ctx, true, 100, 0)
 	if err != nil {
 		allPosts = []models.Post{}
 	}
 
-	// TODO: Convert markdown to HTML
 	contentHTML := markdownToHTML(post.Content)
 
-	// For HTMX requests, return partial content + OOB swap for middle column
-	if r.Header.Get("HX-Request") == "true" {
-		render(w, r, pages.PostContentPartial(*post, contentHTML, allPosts))
-		return
-	}
-
-	// Full page for direct navigation
-	render(w, r, pages.PostShow(*post, allPosts, contentHTML))
+	return post, allPosts, contentHTML, nil
 }
 
 // markdownToHTML converts markdown to HTML

@@ -133,7 +133,6 @@ templ LoadMoreButton(collection *models.Collection, nextPage int) {
 // ============================================
 // EMPTY STATE & ICONS
 // ============================================
-
 templ BookmarksEmptyState() {
 	<div class="empty-state">
 		<div class="empty-state-icon">
@@ -172,7 +171,7 @@ func activeCollectionSlug(collection *models.Collection) string {
 
 func loadMoreURL(collection *models.Collection, page int) string {
 	if collection != nil {
-		return "/bookmarks/" + collection.Slug + "?page=" + strconv.Itoa(page) + "&partial=append"
+		return "/htmx/bookmarks/more/" + collection.Slug + "?page=" + strconv.Itoa(page)
 	}
-	return "/bookmarks?page=" + strconv.Itoa(page) + "&partial=append"
+	return "/htmx/bookmarks/more?page=" + strconv.Itoa(page)
 }

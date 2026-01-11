@@ -34,7 +34,6 @@ templ BookmarksList(data BookmarksListData) {
 					</a>
 				</div>
 			</div>
-
 			<!-- Filters Bar -->
 			<div class="flex flex-wrap items-center gap-3 py-3 border-b border-border">
 				<!-- Search -->
@@ -47,7 +46,6 @@ templ BookmarksList(data BookmarksListData) {
 						oninput="filterBookmarks()"
 					/>
 				</div>
-
 				<!-- Collection Filter -->
 				<select
 					id="collection-filter"
@@ -62,7 +60,6 @@ templ BookmarksList(data BookmarksListData) {
 						</option>
 					}
 				</select>
-
 				<!-- Status Filter -->
 				<select
 					id="status-filter"
@@ -74,7 +71,6 @@ templ BookmarksList(data BookmarksListData) {
 					<option value="private">Private</option>
 					<option value="favorite">Favorites</option>
 				</select>
-
 				<!-- Clear Filters -->
 				<button
 					type="button"
@@ -84,7 +80,6 @@ templ BookmarksList(data BookmarksListData) {
 					Clear
 				</button>
 			</div>
-
 			<!-- Table -->
 			if len(data.Bookmarks) > 0 {
 				<div class="card overflow-hidden">
@@ -104,7 +99,6 @@ templ BookmarksList(data BookmarksListData) {
 						</tbody>
 					</table>
 				</div>
-
 				<!-- No results message (hidden by default) -->
 				<div id="no-results" class="hidden card py-12 text-center">
 					<p class="text-muted-foreground">No bookmarks match your filters</p>
@@ -116,15 +110,14 @@ templ BookmarksList(data BookmarksListData) {
 				@emptyBookmarks()
 			}
 		</div>
-
 		<!-- Client-side filtering script -->
 		@bookmarksFilterScript()
 	}
 }
 
 templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
-	<tr 
-		class="table-row group" 
+	<tr
+		class="table-row group"
 		data-title={ bookmark.Title }
 		data-url={ bookmark.URL }
 		data-domain={ bookmark.GetDomain() }
@@ -140,14 +133,14 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 					{ string([]rune(bookmark.GetDomain())[0:1]) }
 				</div>
 				<div class="min-w-0">
-					<a 
-						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } 
+					<a
+						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
 						class="font-medium text-foreground hover:underline block truncate"
 						title={ bookmark.Title }
 					>
 						{ bookmark.Title }
 					</a>
-					<a 
+					<a
 						href={ templ.URL(bookmark.URL) }
 						target="_blank"
 						class="text-xs text-muted-foreground hover:underline truncate block"
@@ -158,7 +151,6 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 				</div>
 			</div>
 		</td>
-
 		<!-- Collection -->
 		<td class="table-cell">
 			if bookmark.CollectionID.Valid {
@@ -169,7 +161,6 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 				<span class="text-muted-foreground text-sm">—</span>
 			}
 		</td>
-
 		<!-- Status -->
 		<td class="table-cell">
 			<div class="flex items-center gap-1.5">
@@ -191,20 +182,19 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 				}
 			</div>
 		</td>
-
 		<!-- Actions -->
 		<td class="table-cell text-right">
 			<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-				<a 
-					href={ templ.URL(bookmark.URL) } 
-					class="btn-ghost btn-xs" 
+				<a
+					href={ templ.URL(bookmark.URL) }
+					class="btn-ghost btn-xs"
 					target="_blank"
 					title="Open link"
 				>
 					@externalLinkIcon()
 				</a>
-				<a 
-					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") } 
+				<a
+					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
 					class="btn-ghost btn-xs"
 					title="Edit"
 				>
@@ -351,39 +341,39 @@ func truncateURL(url string, maxLen int) string {
 
 // Icons
 templ plusIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
 }
 
 templ importIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
 }
 
 templ globeIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
 }
 
 templ lockIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
 }
 
 templ starIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
 }
 
 templ externalLinkIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
 }
 
 templ editIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
 }
 
 templ trashIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
 }
 
 templ bookmarkIconLarge() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
 }
 
 templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool) {
@@ -405,7 +395,6 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 					}
 				</p>
 			</div>
-
 			<form
 				if isNew {
 					action="/admin/bookmarks"
@@ -436,15 +425,12 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 								}
 							/>
 						</div>
-
 						<div id="metadata-loading" class="htmx-indicator text-sm text-muted-foreground py-2">
 							Fetching page metadata...
 						</div>
-
 						<div id="metadata-fields">
 							@BookmarkMetadataFields(bookmark)
 						</div>
-
 						<div class="space-y-2">
 							<label for="collection_id" class="label">Collection</label>
 							<select id="collection_id" name="collection_id" class="input">
@@ -461,7 +447,6 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 								}
 							</select>
 						</div>
-
 						<div class="flex items-center gap-6">
 							<div class="flex items-center space-x-2">
 								<input
@@ -496,7 +481,6 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 						</div>
 					</div>
 				</div>
-
 				<div class="flex items-center gap-4">
 					<button type="submit" class="btn-default">
 						if isNew {
