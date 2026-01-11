@@ -70,7 +70,6 @@ templ leftSidebar(currentPath string) {
 						<span class="profile-title">Personal Site</span>
 					</div>
 				</a>
-
 				<!-- Navigation -->
 				<nav class="flex flex-col gap-1">
 					<a href="/" class={ navItemClass(currentPath, "/") }>
@@ -96,9 +95,7 @@ templ leftSidebar(currentPath string) {
 					</a>
 				</nav>
 			</div>
-
 			<div class="separator-horizontal"></div>
-
 			<!-- Social Links -->
 			<div class="flex flex-col gap-2">
 				<span class="social-section-title">Online</span>
@@ -139,7 +136,7 @@ func navItemClass(currentPath, targetPath string) string {
 		}
 		return "nav-item"
 	}
-	
+
 	// Check if current path starts with target path
 	if len(currentPath) >= len(targetPath) && currentPath[:len(targetPath)] == targetPath {
 		return "nav-item-active"

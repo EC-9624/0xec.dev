@@ -22,7 +22,6 @@ templ PostsList(posts []models.Post) {
 					New Post
 				</a>
 			</div>
-
 			<!-- Filters Bar -->
 			<div class="flex flex-wrap items-center gap-3 py-3 border-b border-border">
 				<!-- Search -->
@@ -35,7 +34,6 @@ templ PostsList(posts []models.Post) {
 						oninput="filterPosts()"
 					/>
 				</div>
-
 				<!-- Status Filter -->
 				<select
 					id="status-filter"
@@ -46,7 +44,6 @@ templ PostsList(posts []models.Post) {
 					<option value="published">Published</option>
 					<option value="draft">Drafts</option>
 				</select>
-
 				<!-- Clear Filters -->
 				<button
 					type="button"
@@ -56,7 +53,6 @@ templ PostsList(posts []models.Post) {
 					Clear
 				</button>
 			</div>
-
 			<!-- Table -->
 			if len(posts) > 0 {
 				<div class="card overflow-hidden">
@@ -76,7 +72,6 @@ templ PostsList(posts []models.Post) {
 						</tbody>
 					</table>
 				</div>
-
 				<!-- No results message (hidden by default) -->
 				<div id="no-results" class="hidden card py-12 text-center">
 					<p class="text-muted-foreground">No posts match your filters</p>
@@ -88,15 +83,14 @@ templ PostsList(posts []models.Post) {
 				@emptyPosts()
 			}
 		</div>
-
 		<!-- Client-side filtering script -->
 		@postsFilterScript()
 	}
 }
 
 templ postRow(post models.Post) {
-	<tr 
-		class="table-row group" 
+	<tr
+		class="table-row group"
 		data-title={ post.Title }
 		data-slug={ post.Slug }
 		data-excerpt={ post.GetExcerpt() }
@@ -105,8 +99,8 @@ templ postRow(post models.Post) {
 		<!-- Title -->
 		<td class="table-cell">
 			<div class="min-w-0">
-				<a 
-					href={ templ.URL("/admin/posts/" + post.Slug + "/edit") } 
+				<a
+					href={ templ.URL("/admin/posts/" + post.Slug + "/edit") }
 					class="font-medium text-foreground hover:underline block truncate"
 					title={ post.Title }
 				>
@@ -119,7 +113,6 @@ templ postRow(post models.Post) {
 				}
 			</div>
 		</td>
-
 		<!-- Status -->
 		<td class="table-cell">
 			if post.IsDraft {
@@ -134,7 +127,6 @@ templ postRow(post models.Post) {
 				</span>
 			}
 		</td>
-
 		<!-- Date -->
 		<td class="table-cell text-muted-foreground text-sm">
 			if post.PublishedAt.Valid {
@@ -145,22 +137,21 @@ templ postRow(post models.Post) {
 				<div class="text-xs">Created</div>
 			}
 		</td>
-
 		<!-- Actions -->
 		<td class="table-cell text-right">
 			<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 				if !post.IsDraft {
-					<a 
-						href={ templ.URL("/posts/" + post.Slug) } 
-						class="btn-ghost btn-xs" 
+					<a
+						href={ templ.URL("/posts/" + post.Slug) }
+						class="btn-ghost btn-xs"
 						target="_blank"
 						title="View post"
 					>
 						@postExternalLinkIcon()
 					</a>
 				}
-				<a 
-					href={ templ.URL("/admin/posts/" + post.Slug + "/edit") } 
+				<a
+					href={ templ.URL("/admin/posts/" + post.Slug + "/edit") }
 					class="btn-ghost btn-xs"
 					title="Edit"
 				>
@@ -276,31 +267,31 @@ func truncateText(text string, maxLen int) string {
 
 // Icons (prefixed with post to avoid conflicts)
 templ postPlusIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
 }
 
 templ draftIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
 }
 
 templ publishedIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
 }
 
 templ postExternalLinkIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
 }
 
 templ postEditIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
 }
 
 templ postTrashIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
 }
 
 templ postIconLarge() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M18 18h-8"/><path d="M18 10h-8"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M18 10h-8"></path></svg>
 }
 
 templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool) {
@@ -322,7 +313,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 					}
 				</p>
 			</div>
-
 			<form
 				if isNew {
 					action="/admin/posts"
@@ -346,7 +336,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								required
 							/>
 						</div>
-
 						<div class="space-y-2">
 							<label for="slug" class="label">Slug</label>
 							<input
@@ -359,7 +348,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								required
 							/>
 						</div>
-
 						<div class="space-y-2">
 							<label for="excerpt" class="label">Excerpt</label>
 							<textarea
@@ -370,7 +358,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								placeholder="Brief description of your post"
 							>{ postValue(post, "excerpt") }</textarea>
 						</div>
-
 						<div class="space-y-2">
 							<label for="content" class="label">Content (Markdown)</label>
 							<textarea
@@ -382,7 +369,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								required
 							>{ postValue(post, "content") }</textarea>
 						</div>
-
 						<div class="space-y-2">
 							<label for="cover_image" class="label">Cover Image URL</label>
 							<input
@@ -394,7 +380,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								placeholder="https://example.com/image.jpg"
 							/>
 						</div>
-
 						<div class="flex items-center space-x-2">
 							<input
 								type="checkbox"
@@ -412,7 +397,6 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 						</div>
 					</div>
 				</div>
-
 				<div class="flex items-center gap-4">
 					<button type="submit" class="btn-default">
 						if isNew {

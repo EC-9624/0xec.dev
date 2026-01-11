@@ -15,11 +15,10 @@ templ CollectionsList(collections []models.Collection) {
 					<p class="text-muted-foreground">Organize your bookmarks into groups.</p>
 				</div>
 				<a href="/admin/collections/new" class="btn-default">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
 					New Collection
 				</a>
 			</div>
-
 			if len(collections) > 0 {
 				<div class="card overflow-hidden">
 					<table class="table">
@@ -75,7 +74,7 @@ templ CollectionsList(collections []models.Collection) {
 				<div class="card">
 					<div class="flex flex-col items-center justify-center py-12 text-center">
 						<div class="rounded-full bg-muted p-4 mb-4">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
 						</div>
 						<h3 class="font-semibold text-foreground mb-1">No collections yet</h3>
 						<p class="text-muted-foreground mb-4">Create collections to organize your bookmarks.</p>
@@ -108,7 +107,6 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 					}
 				</p>
 			</div>
-
 			<form
 				if isNew {
 					action="/admin/collections"
@@ -132,7 +130,6 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								required
 							/>
 						</div>
-
 						<div class="space-y-2">
 							<label for="slug" class="label">Slug</label>
 							<input
@@ -145,7 +142,6 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								required
 							/>
 						</div>
-
 						<div class="space-y-2">
 							<label for="description" class="label">Description</label>
 							<textarea
@@ -156,7 +152,6 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								placeholder="What is this collection about?"
 							>{ collectionValue(collection, "description") }</textarea>
 						</div>
-
 						<div class="grid grid-cols-2 gap-4">
 							<div class="space-y-2">
 								<label for="icon" class="label">Icon (emoji)</label>
@@ -180,7 +175,6 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								/>
 							</div>
 						</div>
-
 						<div class="flex items-center space-x-2">
 							<input
 								type="checkbox"
@@ -198,7 +192,6 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 						</div>
 					</div>
 				</div>
-
 				<div class="flex items-center gap-4">
 					<button type="submit" class="btn-default">
 						if isNew {

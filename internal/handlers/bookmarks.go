@@ -14,21 +14,58 @@ import (
 
 const bookmarksPerPage = 24
 
-// BookmarksIndex handles the bookmarks listing page
+// BookmarksIndex handles the bookmarks listing page (full page only)
 func (h *Handlers) BookmarksIndex(w http.ResponseWriter, r *http.Request) {
+	data, err := h.getBookmarksData(r, nil)
+	if err != nil {
+		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
+		return
+	}
+	render(w, r, pages.BookmarksIndex(data))
+}
+
+// HTMXBookmarksContent returns the bookmarks content partial + OOB sidebar update
+func (h *Handlers) HTMXBookmarksContent(w http.ResponseWriter, r *http.Request) {
+	data, err := h.getBookmarksData(r, nil)
+	if err != nil {
+		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
+		return
+	}
+	render(w, r, pages.BookmarksContentPartial(data))
+}
+
+// HTMXBookmarksMore returns only new bookmark items for infinite scroll (append)
+func (h *Handlers) HTMXBookmarksMore(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page := getPageParam(r)
-	isHTMX := r.Header.Get("HX-Request") == "true"
-	isAppend := r.URL.Query().Get("partial") == "append"
 
-	// Always use standard pagination (no more loading ALL items!)
+	// Extract collection slug if present
+	slug := strings.TrimPrefix(r.URL.Path, "/htmx/bookmarks/more/")
+	if slug == "/htmx/bookmarks/more" || slug == "" {
+		slug = ""
+	}
+
+	var collection *models.Collection
+	var collectionID *int64
+
+	if slug != "" {
+		var err error
+		collection, err = h.service.GetCollectionBySlug(ctx, slug)
+		if err != nil || !collection.IsPublic {
+			http.NotFound(w, r)
+			return
+		}
+		collectionID = &collection.ID
+	}
+
 	limit := bookmarksPerPage
 	offset := (page - 1) * bookmarksPerPage
 
 	opts := service.BookmarkListOptions{
-		PublicOnly: true,
-		Limit:      limit,
-		Offset:     offset,
+		PublicOnly:   true,
+		CollectionID: collectionID,
+		Limit:        limit,
+		Offset:       offset,
 	}
 
 	bookmarks, err := h.service.ListBookmarks(ctx, opts)
@@ -37,49 +74,62 @@ func (h *Handlers) BookmarksIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Count total for hasMore calculation
-	countOpts := service.BookmarkListOptions{PublicOnly: true}
+	countOpts := service.BookmarkListOptions{PublicOnly: true, CollectionID: collectionID}
+	total, _ := h.service.CountBookmarks(ctx, countOpts)
+	hasMore := (page * bookmarksPerPage) < total
+
+	render(w, r, pages.BookmarkGridAppend(bookmarks, collection, page, hasMore))
+}
+
+// getBookmarksData fetches all data needed for bookmarks pages
+func (h *Handlers) getBookmarksData(r *http.Request, collection *models.Collection) (templates.BookmarksData, error) {
+	ctx := r.Context()
+	page := getPageParam(r)
+
+	var collectionID *int64
+	if collection != nil {
+		collectionID = &collection.ID
+	}
+
+	limit := bookmarksPerPage
+	offset := (page - 1) * bookmarksPerPage
+
+	opts := service.BookmarkListOptions{
+		PublicOnly:   true,
+		CollectionID: collectionID,
+		Limit:        limit,
+		Offset:       offset,
+	}
+
+	bookmarks, err := h.service.ListBookmarks(ctx, opts)
+	if err != nil {
+		return templates.BookmarksData{}, err
+	}
+
+	collections, err := h.service.ListCollections(ctx, true)
+	if err != nil {
+		return templates.BookmarksData{}, err
+	}
+
+	countOpts := service.BookmarkListOptions{PublicOnly: true, CollectionID: collectionID}
 	total, err := h.service.CountBookmarks(ctx, countOpts)
 	if err != nil {
-		http.Error(w, "Failed to count bookmarks", http.StatusInternalServerError)
-		return
+		return templates.BookmarksData{}, err
 	}
 
 	hasMore := (page * bookmarksPerPage) < total
 
-	// For append requests, only return new items + next button (efficient infinite scroll)
-	if isHTMX && isAppend {
-		render(w, r, pages.BookmarkGridAppend(bookmarks, nil, page, hasMore))
-		return
-	}
-
-	// Full data needed for non-append requests
-	collections, err := h.service.ListCollections(ctx, true)
-	if err != nil {
-		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
-		return
-	}
-
-	data := templates.BookmarksData{
+	return templates.BookmarksData{
 		Bookmarks:        bookmarks,
 		Collections:      collections,
-		ActiveCollection: nil,
+		ActiveCollection: collection,
 		Total:            total,
 		Page:             page,
 		HasMore:          hasMore,
-	}
-
-	// For HTMX navigation requests, return content partial + OOB middle column update
-	if isHTMX {
-		render(w, r, pages.BookmarksContentPartial(data))
-		return
-	}
-
-	// Full page for direct navigation
-	render(w, r, pages.BookmarksIndex(data))
+	}, nil
 }
 
-// BookmarksByCollection handles the bookmarks listing for a specific collection
+// BookmarksByCollection handles the bookmarks listing for a specific collection (full page only)
 func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	slug := strings.TrimPrefix(r.URL.Path, "/bookmarks/")
@@ -99,67 +149,42 @@ func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	page := getPageParam(r)
-	isHTMX := r.Header.Get("HX-Request") == "true"
-	isAppend := r.URL.Query().Get("partial") == "append"
-
-	// Always use standard pagination (no more loading ALL items!)
-	limit := bookmarksPerPage
-	offset := (page - 1) * bookmarksPerPage
-
-	opts := service.BookmarkListOptions{
-		PublicOnly:   true,
-		CollectionID: &collection.ID,
-		Limit:        limit,
-		Offset:       offset,
-	}
-
-	bookmarks, err := h.service.ListBookmarks(ctx, opts)
+	data, err := h.getBookmarksData(r, collection)
 	if err != nil {
 		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
 		return
 	}
 
-	// Count total for hasMore calculation
-	countOpts := service.BookmarkListOptions{PublicOnly: true, CollectionID: &collection.ID}
-	total, err := h.service.CountBookmarks(ctx, countOpts)
-	if err != nil {
-		http.Error(w, "Failed to count bookmarks", http.StatusInternalServerError)
-		return
-	}
-
-	hasMore := (page * bookmarksPerPage) < total
-
-	// For append requests, only return new items + next button (efficient infinite scroll)
-	if isHTMX && isAppend {
-		render(w, r, pages.BookmarkGridAppend(bookmarks, collection, page, hasMore))
-		return
-	}
-
-	// Full data needed for non-append requests
-	collections, err := h.service.ListCollections(ctx, true)
-	if err != nil {
-		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
-		return
-	}
-
-	data := templates.BookmarksData{
-		Bookmarks:        bookmarks,
-		Collections:      collections,
-		ActiveCollection: collection,
-		Total:            total,
-		Page:             page,
-		HasMore:          hasMore,
-	}
-
-	// For HTMX navigation requests, return content partial + OOB middle column update
-	if isHTMX {
-		render(w, r, pages.BookmarksContentPartial(data))
-		return
-	}
-
-	// Full page for direct navigation
 	render(w, r, pages.BookmarksIndex(data))
+}
+
+// HTMXBookmarksCollectionContent returns the collection bookmarks content partial + OOB sidebar
+func (h *Handlers) HTMXBookmarksCollectionContent(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	slug := strings.TrimPrefix(r.URL.Path, "/htmx/bookmarks/")
+	if slug == "" {
+		h.HTMXBookmarksContent(w, r)
+		return
+	}
+
+	collection, err := h.service.GetCollectionBySlug(ctx, slug)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if !collection.IsPublic {
+		http.NotFound(w, r)
+		return
+	}
+
+	data, err := h.getBookmarksData(r, collection)
+	if err != nil {
+		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
+		return
+	}
+
+	render(w, r, pages.BookmarksContentPartial(data))
 }
 
 // AdminBookmarksList handles the admin bookmarks listing

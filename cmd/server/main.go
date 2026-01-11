@@ -46,6 +46,13 @@ func main() {
 	mux.HandleFunc("/bookmarks", h.BookmarksIndex)
 	mux.HandleFunc("/bookmarks/", h.BookmarksByCollection)
 
+	// HTMX partial routes (always return partials, no full page)
+	mux.HandleFunc("/htmx/posts/", h.HTMXPostContent)
+	mux.HandleFunc("/htmx/bookmarks", h.HTMXBookmarksContent)
+	mux.HandleFunc("/htmx/bookmarks/more", h.HTMXBookmarksMore)
+	mux.HandleFunc("/htmx/bookmarks/more/", h.HTMXBookmarksMore)
+	mux.HandleFunc("/htmx/bookmarks/", h.HTMXBookmarksCollectionContent)
+
 	// RSS feeds
 	mux.HandleFunc("/feed.xml", h.PostsFeed)
 	mux.HandleFunc("/posts/feed.xml", h.PostsFeed)

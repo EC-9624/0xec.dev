@@ -14,7 +14,6 @@ templ ImportPage(collections []models.Collection) {
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">Import Bookmarks</h1>
 				<p class="text-muted-foreground">Import bookmarks from a Chrome/Firefox HTML export file.</p>
 			</div>
-
 			<div class="card">
 				<div class="card-content pt-6">
 					<form
@@ -37,7 +36,6 @@ templ ImportPage(collections []models.Collection) {
 								Export from Chrome: Bookmarks Manager → ⋮ → Export bookmarks
 							</p>
 						</div>
-
 						<div class="space-y-2">
 							<label for="collection_id" class="label">Import to Collection (optional)</label>
 							<select id="collection_id" name="collection_id" class="input">
@@ -52,7 +50,6 @@ templ ImportPage(collections []models.Collection) {
 								All imported bookmarks will be added to this collection.
 							</p>
 						</div>
-
 						<div class="flex items-center gap-4">
 							<button type="submit" class="btn-default">
 								@importUploadIcon()
@@ -63,7 +60,6 @@ templ ImportPage(collections []models.Collection) {
 					</form>
 				</div>
 			</div>
-
 			<!-- Instructions -->
 			<div class="card">
 				<div class="card-header pb-4">
@@ -101,7 +97,6 @@ templ ImportResult(result *service.ImportResult) {
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">Import Complete</h1>
 				<p class="text-muted-foreground">Your bookmarks have been processed.</p>
 			</div>
-
 			<div class="card">
 				<div class="card-content pt-6">
 					<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -122,7 +117,6 @@ templ ImportResult(result *service.ImportResult) {
 							<div class="text-sm text-muted-foreground">Skipped</div>
 						</div>
 					</div>
-
 					if len(result.Errors) > 0 {
 						<div class="mt-6 p-4 bg-red-50 border border-red-200">
 							<p class="font-medium text-red-700 mb-2">Some bookmarks failed to import:</p>
@@ -133,7 +127,6 @@ templ ImportResult(result *service.ImportResult) {
 							</ul>
 						</div>
 					}
-
 					<div class="mt-6 flex gap-4">
 						<a href="/admin/bookmarks" class="btn-default">View Bookmarks</a>
 						<a href="/admin/import" class="btn-outline">Import More</a>
@@ -145,5 +138,5 @@ templ ImportResult(result *service.ImportResult) {
 }
 
 templ importUploadIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
 }
