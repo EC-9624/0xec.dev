@@ -456,6 +456,9 @@ func (h *Handlers) AdminToggleBookmarkPublic(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Send HX-Trigger to update row data attributes for filtering
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"updateRowData": {"id": %d, "isPublic": %t}}`, id, newStatus))
+
 	// Return the updated badge with success animation
 	render(w, r, admin.BookmarkPublicBadge(id, newStatus, true))
 }
@@ -482,6 +485,9 @@ func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
 		return
 	}
+
+	// Send HX-Trigger to update row data attributes for filtering
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"updateRowData": {"id": %d, "isFavorite": %t}}`, id, newStatus))
 
 	// Return the updated star with success animation
 	render(w, r, admin.BookmarkFavoriteStar(id, newStatus, true))
@@ -527,6 +533,14 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	if hasCollection {
 		currentCollectionID = *collectionID
 	}
+
+	// Send HX-Trigger to update row data attributes for filtering
+	if hasCollection {
+		w.Header().Set("HX-Trigger", fmt.Sprintf(`{"updateRowData": {"id": %d, "collectionId": "%d"}}`, id, currentCollectionID))
+	} else {
+		w.Header().Set("HX-Trigger", fmt.Sprintf(`{"updateRowData": {"id": %d, "collectionId": ""}}`, id))
+	}
+
 	render(w, r, admin.BookmarkCollectionDropdown(id, currentCollectionID, hasCollection, collections, true))
 }
 
@@ -586,6 +600,12 @@ func (h *Handlers) AdminUpdateBookmarkTitle(w http.ResponseWriter, r *http.Reque
 		render(w, r, admin.BookmarkTitleDisplay(id, bookmark.Title, bookmark.URL, false))
 		return
 	}
+
+	// Send HX-Trigger to update row data attributes for filtering
+	// Escape the title for JSON
+	escapedTitle := strings.ReplaceAll(title, `\`, `\\`)
+	escapedTitle = strings.ReplaceAll(escapedTitle, `"`, `\"`)
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"updateRowData": {"id": %d, "title": "%s"}}`, id, escapedTitle))
 
 	// Return the updated display with success animation
 	render(w, r, admin.BookmarkTitleDisplay(id, title, bookmark.URL, true))

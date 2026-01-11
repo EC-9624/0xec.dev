@@ -402,6 +402,51 @@ templ bookmarksFilterScript() {
 				btnText.textContent = 'Refresh Metadata';
 			};
 		}
+
+		// Listen for HX-Trigger events to update row data attributes for filtering
+		document.body.addEventListener('updateRowData', (e) => {
+			const data = e.detail;
+			if (!data || !data.id) return;
+
+			// Find the row by looking for any element with data-bookmark-id or the tr itself
+			const row = document.querySelector(`#bookmarks-tbody tr[data-title]`)?.closest('tbody')
+				?.querySelector(`tr:has([data-bookmark-id="${data.id}"])`) 
+				|| document.querySelector(`#bookmarks-tbody tr`)?.closest('tbody')
+				?.querySelector(`tr`);
+			
+			// Alternative: find by iterating through rows
+			const rows = document.querySelectorAll('#bookmarks-tbody tr');
+			let targetRow = null;
+			for (const r of rows) {
+				// Check if this row contains an element with matching bookmark id
+				const dropdown = r.querySelector(`[data-bookmark-id="${data.id}"]`);
+				const titleEdit = r.querySelector(`[hx-get*="/admin/bookmarks/${data.id}/"]`);
+				const publicBtn = r.querySelector(`[hx-post*="/admin/bookmarks/${data.id}/"]`);
+				if (dropdown || titleEdit || publicBtn) {
+					targetRow = r;
+					break;
+				}
+			}
+
+			if (!targetRow) return;
+
+			// Update the relevant data attributes
+			if ('title' in data) {
+				targetRow.dataset.title = data.title;
+			}
+			if ('collectionId' in data) {
+				targetRow.dataset.collectionId = data.collectionId;
+			}
+			if ('isPublic' in data) {
+				targetRow.dataset.isPublic = String(data.isPublic);
+			}
+			if ('isFavorite' in data) {
+				targetRow.dataset.isFavorite = String(data.isFavorite);
+			}
+
+			// Re-run filter to update visibility based on new data
+			filterBookmarks();
+		});
 	</script>
 }
 
