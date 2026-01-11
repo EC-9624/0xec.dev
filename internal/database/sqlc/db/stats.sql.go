@@ -24,6 +24,7 @@ func (q *Queries) CountDraftPosts(ctx context.Context) (int64, error) {
 const getBookmarkCountsByCollection = `-- name: GetBookmarkCountsByCollection :many
 SELECT 
     COALESCE(c.name, 'Unsorted') as collection_name,
+    COALESCE(c.color, '') as collection_color,
     COUNT(b.id) as bookmark_count
 FROM bookmarks b
 LEFT JOIN collections c ON b.collection_id = c.id
@@ -33,8 +34,9 @@ LIMIT ?
 `
 
 type GetBookmarkCountsByCollectionRow struct {
-	CollectionName string `json:"collection_name"`
-	BookmarkCount  int64  `json:"bookmark_count"`
+	CollectionName  string `json:"collection_name"`
+	CollectionColor string `json:"collection_color"`
+	BookmarkCount   int64  `json:"bookmark_count"`
 }
 
 func (q *Queries) GetBookmarkCountsByCollection(ctx context.Context, limit int64) ([]GetBookmarkCountsByCollectionRow, error) {
@@ -46,7 +48,7 @@ func (q *Queries) GetBookmarkCountsByCollection(ctx context.Context, limit int64
 	items := []GetBookmarkCountsByCollectionRow{}
 	for rows.Next() {
 		var i GetBookmarkCountsByCollectionRow
-		if err := rows.Scan(&i.CollectionName, &i.BookmarkCount); err != nil {
+		if err := rows.Scan(&i.CollectionName, &i.CollectionColor, &i.BookmarkCount); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

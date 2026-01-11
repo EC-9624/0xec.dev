@@ -35,6 +35,7 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		Name:        r.FormValue("name"),
 		Slug:        r.FormValue("slug"),
 		Description: r.FormValue("description"),
+		Color:       r.FormValue("color"),
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 
@@ -81,6 +82,7 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		Name:        r.FormValue("name"),
 		Slug:        r.FormValue("slug"),
 		Description: r.FormValue("description"),
+		Color:       r.FormValue("color"),
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 

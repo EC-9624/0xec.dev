@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS collections (
     name            TEXT NOT NULL,
     slug            TEXT NOT NULL UNIQUE,
     description     TEXT,
+    color           TEXT,
     parent_id       INTEGER,
     sort_order      INTEGER DEFAULT 0,
     is_public       INTEGER DEFAULT 1,

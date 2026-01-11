@@ -9,6 +9,7 @@ WHERE created_at >= ?;
 -- name: GetBookmarkCountsByCollection :many
 SELECT 
     COALESCE(c.name, 'Unsorted') as collection_name,
+    COALESCE(c.color, '') as collection_color,
     COUNT(b.id) as bookmark_count
 FROM bookmarks b
 LEFT JOIN collections c ON b.collection_id = c.id

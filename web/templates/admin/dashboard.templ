@@ -76,9 +76,9 @@ templ Dashboard(data DashboardData) {
 							</div>
 							<div class="card-content">
 								<div class="space-y-2">
-									for _, c := range data.Stats.BookmarksByCollection {
-										@barChartItem(c.Name, c.Count, maxCount(data.Stats.BookmarksByCollection))
-									}
+								for _, c := range data.Stats.BookmarksByCollection {
+									@barChartItem(c.Name, c.Color, c.Count, maxCount(data.Stats.BookmarksByCollection))
+								}
 								</div>
 							</div>
 						</div>
@@ -166,19 +166,32 @@ templ activityItem(activity service.Activity) {
 }
 
 // Bar chart item for collection distribution
-templ barChartItem(name string, count int, maxCount int) {
+templ barChartItem(name string, color string, count int, maxCount int) {
 	<div class="space-y-1">
 		<div class="flex items-center justify-between text-xs">
-			<span class="text-foreground truncate">{ name }</span>
-			<span class="text-muted-foreground">{ strconv.Itoa(count) }</span>
+			<div class="flex items-center gap-1.5 min-w-0">
+				if color != "" {
+					<span class="w-2 h-2 rounded-full shrink-0" style={ "background-color: " + color }></span>
+				}
+				<span class="text-foreground truncate">{ name }</span>
+			</div>
+			<span class="text-muted-foreground shrink-0">{ strconv.Itoa(count) }</span>
 		</div>
 		<div class="h-1.5 bg-muted overflow-hidden">
 			<div
-				class="h-full bg-foreground bar-chart-fill"
-				style={ "--bar-width: " + strconv.Itoa(percentage(count, maxCount)) + "%" }
+				class={ "h-full bar-chart-fill", templ.KV("bg-foreground", color == "") }
+				style={ barChartStyle(color, percentage(count, maxCount)) }
 			></div>
 		</div>
 	</div>
+}
+
+// Helper: Build bar chart inline style
+func barChartStyle(color string, pct int) string {
+	if color != "" {
+		return "--bar-width: " + strconv.Itoa(pct) + "%; background-color: " + color
+	}
+	return "--bar-width: " + strconv.Itoa(pct) + "%"
 }
 
 // Helper: Calculate percentage for bar chart

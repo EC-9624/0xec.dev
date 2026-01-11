@@ -27,6 +27,7 @@ type DashboardStats struct {
 // CollectionCount represents bookmarks count per collection
 type CollectionCount struct {
 	Name  string
+	Color string
 	Count int
 }
 
@@ -64,6 +65,7 @@ func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStats, error
 		for _, c := range collectionCounts {
 			stats.BookmarksByCollection = append(stats.BookmarksByCollection, CollectionCount{
 				Name:  c.CollectionName,
+				Color: c.CollectionColor,
 				Count: int(c.BookmarkCount),
 			})
 		}

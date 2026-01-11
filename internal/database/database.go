@@ -19,6 +19,9 @@ var activitiesMigration string
 //go:embed migrations/003_remove_collection_icon_color.sql
 var removeCollectionIconColorMigration string
 
+//go:embed migrations/004_add_collection_color.sql
+var addCollectionColorMigration string
+
 // DB is the global database connection
 var DB *sql.DB
 
@@ -67,6 +70,12 @@ func runMigrations() error {
 	if err != nil {
 		// Ignore error if columns don't exist (migration already ran)
 		// SQLite will error with "no such column" if already dropped
+	}
+
+	// Migration 004: Add color column back to collections
+	_, err = DB.Exec(addCollectionColorMigration)
+	if err != nil {
+		// Ignore error if column already exists
 	}
 
 	return nil

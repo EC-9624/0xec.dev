@@ -11,6 +11,7 @@ type Collection struct {
 	Name          string         `json:"name"`
 	Slug          string         `json:"slug"`
 	Description   sql.NullString `json:"description"`
+	Color         sql.NullString `json:"color"`
 	ParentID      sql.NullInt64  `json:"parent_id"`
 	SortOrder     int            `json:"sort_order"`
 	IsPublic      bool           `json:"is_public"`
@@ -28,11 +29,20 @@ func (c *Collection) GetDescription() string {
 	return ""
 }
 
+// GetColor returns the color or empty string
+func (c *Collection) GetColor() string {
+	if c.Color.Valid {
+		return c.Color.String
+	}
+	return ""
+}
+
 // CreateCollectionInput represents input for creating a collection
 type CreateCollectionInput struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
+	Color       string `json:"color"`
 	ParentID    *int64 `json:"parent_id"`
 	IsPublic    bool   `json:"is_public"`
 }
@@ -42,6 +52,7 @@ type UpdateCollectionInput struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
+	Color       string `json:"color"`
 	ParentID    *int64 `json:"parent_id"`
 	IsPublic    bool   `json:"is_public"`
 	SortOrder   int    `json:"sort_order"`

@@ -240,7 +240,34 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								placeholder="What is this collection about?"
 							>{ collectionValue(collection, "description") }</textarea>
 						</div>
-
+						<div class="space-y-2">
+							<label for="color" class="label">Color</label>
+							<div class="flex items-center gap-3">
+								<input
+									type="color"
+									id="color"
+									name="color"
+									value={ collectionColorValue(collection) }
+									class="h-10 w-14 cursor-pointer rounded border border-input bg-background p-1"
+								/>
+								<input
+									type="text"
+									id="color-hex"
+									value={ collectionColorValue(collection) }
+									placeholder="#3b82f6"
+									class="input w-28 font-mono text-sm"
+									oninput="document.getElementById('color').value = this.value"
+								/>
+								<button
+									type="button"
+									class="btn-ghost btn-sm text-muted-foreground"
+									onclick="document.getElementById('color').value = ''; document.getElementById('color-hex').value = ''"
+								>
+									Clear
+								</button>
+							</div>
+							<p class="text-xs text-muted-foreground">Used for the bar chart on the dashboard</p>
+						</div>
 						<div class="flex items-center space-x-2">
 							<input
 								type="checkbox"
@@ -281,6 +308,12 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 					}
 				</div>
 			</form>
+			<script>
+				// Sync color picker with hex input
+				document.getElementById('color').addEventListener('input', function() {
+					document.getElementById('color-hex').value = this.value;
+				});
+			</script>
 		</div>
 	}
 }
@@ -305,4 +338,15 @@ func collectionValue(collection *models.Collection, field string) string {
 		return collection.GetDescription()
 	}
 	return ""
+}
+
+func collectionColorValue(collection *models.Collection) string {
+	if collection == nil {
+		return "#3b82f6" // Default blue
+	}
+	color := collection.GetColor()
+	if color == "" {
+		return "#3b82f6"
+	}
+	return color
 }

@@ -149,15 +149,16 @@ func seedCollections(ctx context.Context, queries *db.Queries) ([]db.Collection,
 		name        string
 		slug        string
 		description string
+		color       string
 	}{
-		{"Development", "development", "Programming tutorials, guides, and resources"},
-		{"Design", "design", "UI/UX design resources and inspiration"},
-		{"Databases", "databases", "SQL, PostgreSQL, and data systems"},
-		{"DevOps", "devops", "Infrastructure, deployment, and operations"},
-		{"Learning", "learning", "Educational resources and courses"},
-		{"Tools", "tools", "Useful utilities and applications"},
-		{"Reading", "reading", "Articles, blogs, and interesting reads"},
-		{"Music", "music", "Audio, music production, and related"},
+		{"Development", "development", "Programming tutorials, guides, and resources", "#3b82f6"},
+		{"Design", "design", "UI/UX design resources and inspiration", "#ec4899"},
+		{"Databases", "databases", "SQL, PostgreSQL, and data systems", "#059669"},
+		{"DevOps", "devops", "Infrastructure, deployment, and operations", "#f97316"},
+		{"Learning", "learning", "Educational resources and courses", "#8b5cf6"},
+		{"Tools", "tools", "Useful utilities and applications", "#6366f1"},
+		{"Reading", "reading", "Articles, blogs, and interesting reads", "#14b8a6"},
+		{"Music", "music", "Audio, music production, and related", "#f43f5e"},
 	}
 
 	var collections []db.Collection
@@ -166,6 +167,7 @@ func seedCollections(ctx context.Context, queries *db.Queries) ([]db.Collection,
 			Name:        c.name,
 			Slug:        c.slug,
 			Description: strPtr(c.description),
+			Color:       strPtr(c.color),
 			SortOrder:   int64Ptr(int64(i)),
 			IsPublic:    int64Ptr(1),
 		})
