@@ -141,9 +141,9 @@ CREATE INDEX IF NOT EXISTS idx_post_tags_tag ON post_tags(tag_id);
 CREATE TABLE IF NOT EXISTS activities (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     action          TEXT NOT NULL,
-    entity_type     TEXT,
+    entity_type     TEXT NOT NULL,
     entity_id       INTEGER,
-    title           TEXT,
+    entity_title    TEXT,
     metadata        TEXT,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 );

@@ -1,4 +1,4 @@
-.PHONY: dev build run clean templ css install setup sqlc
+.PHONY: dev build run clean templ css install setup sqlc seed
 
 # Tailwind standalone CLI
 TAILWIND := ./bin/tailwindcss
@@ -44,6 +44,10 @@ templ:
 # Generate sqlc code
 sqlc:
 	cd internal/database/sqlc && sqlc generate
+
+# Seed database with sample data
+seed:
+	go run ./cmd/seed
 
 # Build CSS
 css:
@@ -95,6 +99,7 @@ help:
 	@echo "  make sqlc       - Generate sqlc database code"
 	@echo "  make css        - Build CSS"
 	@echo "  make css-watch  - Watch CSS for changes"
+	@echo "  make seed       - Seed database with sample data"
 	@echo "  make clean      - Clean build artifacts"
 	@echo "  make fmt        - Format code"
 	@echo "  make test       - Run tests"

@@ -58,11 +58,6 @@ func (s *Service) LogActivity(ctx context.Context, action, entityType string, en
 		}
 	}
 
-	var entityTypePtr *string
-	if entityType != "" {
-		entityTypePtr = &entityType
-	}
-
 	var entityIDPtr *int64
 	if entityID > 0 {
 		entityIDPtr = &entityID
@@ -74,11 +69,11 @@ func (s *Service) LogActivity(ctx context.Context, action, entityType string, en
 	}
 
 	activity, err := s.queries.CreateActivity(ctx, db.CreateActivityParams{
-		Action:     action,
-		EntityType: entityTypePtr,
-		EntityID:   entityIDPtr,
-		Title:      titlePtr,
-		Metadata:   metadataJSON,
+		Action:      action,
+		EntityType:  entityType,
+		EntityID:    entityIDPtr,
+		EntityTitle: titlePtr,
+		Metadata:    metadataJSON,
 	})
 	if err != nil {
 		return nil, err
@@ -114,7 +109,7 @@ func (s *Service) CountActivities(ctx context.Context) (int, error) {
 // DeleteActivitiesForEntity deletes all activities for a specific entity
 func (s *Service) DeleteActivitiesForEntity(ctx context.Context, entityType string, entityID int64) error {
 	return s.queries.DeleteActivitiesByEntity(ctx, db.DeleteActivitiesByEntityParams{
-		EntityType: &entityType,
+		EntityType: entityType,
 		EntityID:   &entityID,
 	})
 }
@@ -122,19 +117,17 @@ func (s *Service) DeleteActivitiesForEntity(ctx context.Context, entityType stri
 // Helper to convert db.Activity to Activity model
 func dbActivityToModel(a db.Activity) *Activity {
 	activity := &Activity{
-		ID:        a.ID,
-		Action:    a.Action,
-		CreatedAt: derefTime(a.CreatedAt),
+		ID:         a.ID,
+		Action:     a.Action,
+		EntityType: a.EntityType,
+		CreatedAt:  derefTime(a.CreatedAt),
 	}
 
-	if a.EntityType != nil {
-		activity.EntityType = *a.EntityType
-	}
 	if a.EntityID != nil {
 		activity.EntityID = *a.EntityID
 	}
-	if a.Title != nil {
-		activity.Title = *a.Title
+	if a.EntityTitle != nil {
+		activity.Title = *a.EntityTitle
 	}
 	if a.Metadata != nil {
 		var metadata map[string]interface{}
