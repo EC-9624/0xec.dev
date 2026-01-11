@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
@@ -50,8 +49,7 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 
 // AdminCollectionEdit handles the edit collection form
 func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
-	idStr := extractSlugFromPath(r.URL.Path, "/admin/collections/", "/edit")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -68,8 +66,7 @@ func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
 
 // AdminCollectionUpdate handles updating a collection
 func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/admin/collections/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -98,8 +95,7 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 
 // AdminCollectionDelete handles deleting a collection
 func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/admin/collections/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return

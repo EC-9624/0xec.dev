@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/config"
 	"github.com/EC-9624/0xec.dev/internal/database"
@@ -37,143 +36,86 @@ func main() {
 
 	// Static files
 	staticDir := "./web/static"
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
-	// Public routes
-	mux.HandleFunc("/", h.Home)
-	mux.HandleFunc("/posts", h.PostsIndex)
-	mux.HandleFunc("/posts/", h.PostShow)
-	mux.HandleFunc("/bookmarks", h.BookmarksIndex)
-	mux.HandleFunc("/bookmarks/", h.BookmarksByCollection)
+	// ============================================
+	// PUBLIC ROUTES
+	// ============================================
 
-	// HTMX partial routes (always return partials, no full page)
-	mux.HandleFunc("/htmx/posts/", h.HTMXPostContent)
-	mux.HandleFunc("/htmx/bookmarks", h.HTMXBookmarksContent)
-	mux.HandleFunc("/htmx/bookmarks/more", h.HTMXBookmarksMore)
-	mux.HandleFunc("/htmx/bookmarks/more/", h.HTMXBookmarksMore)
-	mux.HandleFunc("/htmx/bookmarks/", h.HTMXBookmarksCollectionContent)
+	mux.HandleFunc("GET /{$}", h.Home)
+	mux.HandleFunc("GET /posts", h.PostsIndex)
+	mux.HandleFunc("GET /posts/{slug}", h.PostShow)
+	mux.HandleFunc("GET /bookmarks", h.BookmarksIndex)
+	mux.HandleFunc("GET /bookmarks/{slug}", h.BookmarksByCollection)
+
+	// HTMX partial routes
+	mux.HandleFunc("GET /htmx/posts/{slug}", h.HTMXPostContent)
+	mux.HandleFunc("GET /htmx/bookmarks", h.HTMXBookmarksContent)
+	mux.HandleFunc("GET /htmx/bookmarks/more", h.HTMXBookmarksMore)
+	mux.HandleFunc("GET /htmx/bookmarks/more/{slug}", h.HTMXBookmarksMore)
+	mux.HandleFunc("GET /htmx/bookmarks/{slug}", h.HTMXBookmarksCollectionContent)
 
 	// RSS feeds
-	mux.HandleFunc("/feed.xml", h.PostsFeed)
-	mux.HandleFunc("/posts/feed.xml", h.PostsFeed)
-	mux.HandleFunc("/bookmarks/feed.xml", h.BookmarksFeed)
+	mux.HandleFunc("GET /feed.xml", h.PostsFeed)
+	mux.HandleFunc("GET /posts/feed.xml", h.PostsFeed)
+	mux.HandleFunc("GET /bookmarks/feed.xml", h.BookmarksFeed)
 
-	// Auth routes
-	mux.HandleFunc("/admin/login", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			h.Login(w, r)
-		} else {
-			h.LoginPage(w, r)
-		}
-	})
-	mux.HandleFunc("/admin/logout", h.Logout)
+	// ============================================
+	// AUTH ROUTES
+	// ============================================
 
-	// Admin routes (protected)
+	mux.HandleFunc("GET /admin/login", h.LoginPage)
+	mux.HandleFunc("POST /admin/login", h.Login)
+	mux.HandleFunc("POST /admin/logout", h.Logout)
+
+	// ============================================
+	// ADMIN ROUTES (protected)
+	// ============================================
+
 	adminMux := http.NewServeMux()
 
 	// Dashboard
-	adminMux.HandleFunc("/admin", h.AdminDashboard)
-	adminMux.HandleFunc("/admin/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/admin/" {
-			http.Redirect(w, r, "/admin", http.StatusSeeOther)
-			return
-		}
-		http.NotFound(w, r)
+	adminMux.HandleFunc("GET /admin", h.AdminDashboard)
+	adminMux.HandleFunc("GET /admin/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 	})
 
 	// Posts admin
-	adminMux.HandleFunc("/admin/posts", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			h.AdminPostCreate(w, r)
-		} else {
-			h.AdminPostsList(w, r)
-		}
-	})
-	adminMux.HandleFunc("/admin/posts/new", h.AdminPostNew)
-	adminMux.HandleFunc("/admin/posts/", func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		switch {
-		case strings.HasSuffix(path, "/edit"):
-			h.AdminPostEdit(w, r)
-		case r.Method == http.MethodPost:
-			h.AdminPostUpdate(w, r)
-		case r.Method == http.MethodDelete:
-			h.AdminPostDelete(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
+	adminMux.HandleFunc("GET /admin/posts", h.AdminPostsList)
+	adminMux.HandleFunc("POST /admin/posts", h.AdminPostCreate)
+	adminMux.HandleFunc("GET /admin/posts/new", h.AdminPostNew)
+	adminMux.HandleFunc("GET /admin/posts/{slug}/edit", h.AdminPostEdit)
+	adminMux.HandleFunc("POST /admin/posts/{slug}", h.AdminPostUpdate)
+	adminMux.HandleFunc("DELETE /admin/posts/{slug}", h.AdminPostDelete)
 
 	// Bookmarks admin
-	adminMux.HandleFunc("/admin/bookmarks", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			h.AdminBookmarkCreate(w, r)
-		} else {
-			h.AdminBookmarksList(w, r)
-		}
-	})
-	adminMux.HandleFunc("/admin/bookmarks/new", h.AdminBookmarkNew)
-	adminMux.HandleFunc("/admin/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)
-	adminMux.HandleFunc("/admin/bookmarks/refresh-all", h.AdminRefreshAllMetadata)
-	adminMux.HandleFunc("/admin/bookmarks/", func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		switch {
-		// Inline editing routes (HTMX)
-		case strings.HasSuffix(path, "/toggle-public"):
-			h.AdminToggleBookmarkPublic(w, r)
-		case strings.HasSuffix(path, "/toggle-favorite"):
-			h.AdminToggleBookmarkFavorite(w, r)
-		case strings.HasSuffix(path, "/collection") && r.Method == http.MethodPost:
-			h.AdminUpdateBookmarkCollection(w, r)
-		case strings.HasSuffix(path, "/edit-title"):
-			h.AdminGetBookmarkTitleEdit(w, r)
-		case strings.HasSuffix(path, "/title") && r.Method == http.MethodPost:
-			h.AdminUpdateBookmarkTitle(w, r)
-		// Existing routes
-		case strings.HasSuffix(path, "/refresh"):
-			h.AdminRefreshBookmarkMetadata(w, r)
-		case strings.HasSuffix(path, "/edit"):
-			h.AdminBookmarkEdit(w, r)
-		case r.Method == http.MethodPost:
-			h.AdminBookmarkUpdate(w, r)
-		case r.Method == http.MethodDelete:
-			h.AdminBookmarkDelete(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
+	adminMux.HandleFunc("GET /admin/bookmarks", h.AdminBookmarksList)
+	adminMux.HandleFunc("POST /admin/bookmarks", h.AdminBookmarkCreate)
+	adminMux.HandleFunc("GET /admin/bookmarks/new", h.AdminBookmarkNew)
+	adminMux.HandleFunc("POST /admin/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)
+	adminMux.HandleFunc("GET /admin/bookmarks/refresh-all", h.AdminRefreshAllMetadata)
+	adminMux.HandleFunc("GET /admin/bookmarks/{id}/edit", h.AdminBookmarkEdit)
+	adminMux.HandleFunc("POST /admin/bookmarks/{id}", h.AdminBookmarkUpdate)
+	adminMux.HandleFunc("DELETE /admin/bookmarks/{id}", h.AdminBookmarkDelete)
+	adminMux.HandleFunc("POST /admin/bookmarks/{id}/refresh", h.AdminRefreshBookmarkMetadata)
+	// Inline editing routes (HTMX)
+	adminMux.HandleFunc("POST /admin/bookmarks/{id}/toggle-public", h.AdminToggleBookmarkPublic)
+	adminMux.HandleFunc("POST /admin/bookmarks/{id}/toggle-favorite", h.AdminToggleBookmarkFavorite)
+	adminMux.HandleFunc("POST /admin/bookmarks/{id}/collection", h.AdminUpdateBookmarkCollection)
+	adminMux.HandleFunc("GET /admin/bookmarks/{id}/edit-title", h.AdminGetBookmarkTitleEdit)
+	adminMux.HandleFunc("POST /admin/bookmarks/{id}/title", h.AdminUpdateBookmarkTitle)
 
 	// Import
-	adminMux.HandleFunc("/admin/import", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			h.AdminImportBookmarks(w, r)
-		} else {
-			h.AdminImportPage(w, r)
-		}
-	})
+	adminMux.HandleFunc("GET /admin/import", h.AdminImportPage)
+	adminMux.HandleFunc("POST /admin/import", h.AdminImportBookmarks)
 
 	// Collections admin
-	adminMux.HandleFunc("/admin/collections", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			h.AdminCollectionCreate(w, r)
-		} else {
-			h.AdminCollectionsList(w, r)
-		}
-	})
-	adminMux.HandleFunc("/admin/collections/new", h.AdminCollectionNew)
-	adminMux.HandleFunc("/admin/collections/", func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		switch {
-		case strings.HasSuffix(path, "/edit"):
-			h.AdminCollectionEdit(w, r)
-		case r.Method == http.MethodPost:
-			h.AdminCollectionUpdate(w, r)
-		case r.Method == http.MethodDelete:
-			h.AdminCollectionDelete(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
+	adminMux.HandleFunc("GET /admin/collections", h.AdminCollectionsList)
+	adminMux.HandleFunc("POST /admin/collections", h.AdminCollectionCreate)
+	adminMux.HandleFunc("GET /admin/collections/new", h.AdminCollectionNew)
+	adminMux.HandleFunc("GET /admin/collections/{id}/edit", h.AdminCollectionEdit)
+	adminMux.HandleFunc("POST /admin/collections/{id}", h.AdminCollectionUpdate)
+	adminMux.HandleFunc("DELETE /admin/collections/{id}", h.AdminCollectionDelete)
 
 	// Wrap admin routes with auth middleware
 	authMiddleware := middleware.Auth(h.Service())

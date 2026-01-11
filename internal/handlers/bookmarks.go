@@ -41,10 +41,7 @@ func (h *Handlers) HTMXBookmarksMore(w http.ResponseWriter, r *http.Request) {
 	page := getPageParam(r)
 
 	// Extract collection slug if present
-	slug := strings.TrimPrefix(r.URL.Path, "/htmx/bookmarks/more/")
-	if slug == "/htmx/bookmarks/more" || slug == "" {
-		slug = ""
-	}
+	slug := r.PathValue("slug")
 
 	var collection *models.Collection
 	var collectionID *int64
@@ -141,7 +138,7 @@ func (h *Handlers) getBookmarksData(r *http.Request, collection *models.Collecti
 // BookmarksByCollection handles the bookmarks listing for a specific collection (full page only)
 func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	slug := strings.TrimPrefix(r.URL.Path, "/bookmarks/")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		h.BookmarksIndex(w, r)
 		return
@@ -170,7 +167,7 @@ func (h *Handlers) BookmarksByCollection(w http.ResponseWriter, r *http.Request)
 // HTMXBookmarksCollectionContent returns the collection bookmarks content partial + OOB sidebar
 func (h *Handlers) HTMXBookmarksCollectionContent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	slug := strings.TrimPrefix(r.URL.Path, "/htmx/bookmarks/")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		h.HTMXBookmarksContent(w, r)
 		return
@@ -262,8 +259,7 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 // AdminBookmarkEdit handles the edit bookmark form
 func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	idStr := extractSlugFromPath(r.URL.Path, "/admin/bookmarks/", "/edit")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -282,8 +278,7 @@ func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 
 // AdminBookmarkUpdate handles updating a bookmark
 func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/admin/bookmarks/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -323,8 +318,7 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 
 // AdminBookmarkDelete handles deleting a bookmark
 func (h *Handlers) AdminBookmarkDelete(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/admin/bookmarks/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -417,12 +411,7 @@ func (h *Handlers) AdminRefreshAllMetadata(w http.ResponseWriter, r *http.Reques
 
 // AdminRefreshBookmarkMetadata refreshes metadata for a single bookmark
 func (h *Handlers) AdminRefreshBookmarkMetadata(w http.ResponseWriter, r *http.Request) {
-	// Extract ID from path: /admin/bookmarks/{id}/refresh
-	path := r.URL.Path
-	path = strings.TrimPrefix(path, "/admin/bookmarks/")
-	path = strings.TrimSuffix(path, "/refresh")
-
-	id, err := strconv.ParseInt(path, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
@@ -443,8 +432,8 @@ func (h *Handlers) AdminRefreshBookmarkMetadata(w http.ResponseWriter, r *http.R
 
 // AdminToggleBookmarkPublic toggles the public/private status of a bookmark
 func (h *Handlers) AdminToggleBookmarkPublic(w http.ResponseWriter, r *http.Request) {
-	id := extractBookmarkID(r.URL.Path, "/toggle-public")
-	if id == 0 {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -473,8 +462,8 @@ func (h *Handlers) AdminToggleBookmarkPublic(w http.ResponseWriter, r *http.Requ
 
 // AdminToggleBookmarkFavorite toggles the favorite status of a bookmark
 func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Request) {
-	id := extractBookmarkID(r.URL.Path, "/toggle-favorite")
-	if id == 0 {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -503,8 +492,8 @@ func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Re
 
 // AdminUpdateBookmarkCollection updates the collection of a bookmark
 func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.Request) {
-	id := extractBookmarkID(r.URL.Path, "/collection")
-	if id == 0 {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -526,7 +515,7 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 		}
 	}
 
-	err := h.service.UpdateBookmarkCollection(ctx, id, collectionID)
+	err = h.service.UpdateBookmarkCollection(ctx, id, collectionID)
 	if err != nil {
 		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
 		return
@@ -554,8 +543,8 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 
 // AdminGetBookmarkTitleEdit returns the title edit input field
 func (h *Handlers) AdminGetBookmarkTitleEdit(w http.ResponseWriter, r *http.Request) {
-	id := extractBookmarkID(r.URL.Path, "/edit-title")
-	if id == 0 {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -573,8 +562,8 @@ func (h *Handlers) AdminGetBookmarkTitleEdit(w http.ResponseWriter, r *http.Requ
 
 // AdminUpdateBookmarkTitle updates the title of a bookmark
 func (h *Handlers) AdminUpdateBookmarkTitle(w http.ResponseWriter, r *http.Request) {
-	id := extractBookmarkID(r.URL.Path, "/title")
-	if id == 0 {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -617,15 +606,4 @@ func (h *Handlers) AdminUpdateBookmarkTitle(w http.ResponseWriter, r *http.Reque
 
 	// Return the updated display with success animation
 	render(w, r, admin.BookmarkTitleDisplay(id, title, bookmark.URL, true))
-}
-
-// extractBookmarkID extracts the bookmark ID from a path like /admin/bookmarks/{id}/suffix
-func extractBookmarkID(path, suffix string) int64 {
-	path = strings.TrimPrefix(path, "/admin/bookmarks/")
-	path = strings.TrimSuffix(path, suffix)
-	id, err := strconv.ParseInt(path, 10, 64)
-	if err != nil {
-		return 0
-	}
-	return id
 }

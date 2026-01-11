@@ -23,7 +23,7 @@ func (h *Handlers) PostsIndex(w http.ResponseWriter, r *http.Request) {
 
 // PostShow handles a single post page (full page only)
 func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
-	slug := strings.TrimPrefix(r.URL.Path, "/posts/")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
@@ -40,7 +40,7 @@ func (h *Handlers) PostShow(w http.ResponseWriter, r *http.Request) {
 
 // HTMXPostContent returns the post content partial + OOB sidebar update
 func (h *Handlers) HTMXPostContent(w http.ResponseWriter, r *http.Request) {
-	slug := strings.TrimPrefix(r.URL.Path, "/htmx/posts/")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
@@ -129,7 +129,7 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostEdit handles the edit post form
 func (h *Handlers) AdminPostEdit(w http.ResponseWriter, r *http.Request) {
-	slug := extractSlugFromPath(r.URL.Path, "/admin/posts/", "/edit")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
@@ -147,7 +147,7 @@ func (h *Handlers) AdminPostEdit(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostUpdate handles updating a post
 func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
-	slug := strings.TrimPrefix(r.URL.Path, "/admin/posts/")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
@@ -184,7 +184,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostDelete handles deleting a post
 func (h *Handlers) AdminPostDelete(w http.ResponseWriter, r *http.Request) {
-	slug := strings.TrimPrefix(r.URL.Path, "/admin/posts/")
+	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
@@ -209,10 +209,4 @@ func (h *Handlers) AdminPostDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/posts", http.StatusSeeOther)
-}
-
-func extractSlugFromPath(path, prefix, suffix string) string {
-	path = strings.TrimPrefix(path, prefix)
-	path = strings.TrimSuffix(path, suffix)
-	return path
 }
