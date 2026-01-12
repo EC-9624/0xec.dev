@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -98,7 +99,10 @@ func (h *Handlers) AdminPostsList(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostNew handles the new post form
 func (h *Handlers) AdminPostNew(w http.ResponseWriter, r *http.Request) {
-	tags, _ := h.service.ListTags(r.Context())
+	tags, err := h.service.ListTags(r.Context())
+	if err != nil {
+		log.Printf("Failed to load tags for new post form: %v", err)
+	}
 	render(w, r, admin.PostForm(nil, nil, tags, true))
 }
 
@@ -116,6 +120,11 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 		Excerpt:    r.FormValue("excerpt"),
 		CoverImage: r.FormValue("cover_image"),
 		IsDraft:    r.FormValue("is_draft") == "true",
+	}
+
+	if err := input.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	_, err := h.service.CreatePost(r.Context(), input)
@@ -141,7 +150,10 @@ func (h *Handlers) AdminPostEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tags, _ := h.service.ListTags(r.Context())
+	tags, err := h.service.ListTags(r.Context())
+	if err != nil {
+		log.Printf("Failed to load tags for post edit form: %v", err)
+	}
 	render(w, r, admin.PostForm(post, post.Tags, tags, false))
 }
 
@@ -171,6 +183,11 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 		Excerpt:    r.FormValue("excerpt"),
 		CoverImage: r.FormValue("cover_image"),
 		IsDraft:    r.FormValue("is_draft") == "true",
+	}
+
+	if err := input.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	_, err = h.service.UpdatePost(r.Context(), post.ID, input)

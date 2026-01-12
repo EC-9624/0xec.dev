@@ -26,13 +26,14 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize database
-	if err := database.Init(cfg.DatabaseURL); err != nil {
+	db, err := database.Init(cfg.DatabaseURL)
+	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
 	// Seed the database
-	if err := seed(database.DB); err != nil {
+	if err := seed(db); err != nil {
 		log.Fatalf("Failed to seed database: %v", err)
 	}
 

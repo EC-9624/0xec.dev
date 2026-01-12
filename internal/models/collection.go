@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -56,4 +57,26 @@ type UpdateCollectionInput struct {
 	ParentID    *int64 `json:"parent_id"`
 	IsPublic    bool   `json:"is_public"`
 	SortOrder   int    `json:"sort_order"`
+}
+
+// Validate validates the CreateCollectionInput
+func (input CreateCollectionInput) Validate() error {
+	if input.Name == "" {
+		return errors.New("name is required")
+	}
+	if input.Slug == "" {
+		return errors.New("slug is required")
+	}
+	return nil
+}
+
+// Validate validates the UpdateCollectionInput
+func (input UpdateCollectionInput) Validate() error {
+	if input.Name == "" {
+		return errors.New("name is required")
+	}
+	if input.Slug == "" {
+		return errors.New("slug is required")
+	}
+	return nil
 }

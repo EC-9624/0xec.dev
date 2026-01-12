@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -64,4 +65,26 @@ type UpdatePostInput struct {
 	CoverImage string  `json:"cover_image"`
 	IsDraft    bool    `json:"is_draft"`
 	TagIDs     []int64 `json:"tag_ids"`
+}
+
+// Validate validates the CreatePostInput
+func (input CreatePostInput) Validate() error {
+	if input.Title == "" {
+		return errors.New("title is required")
+	}
+	if input.Slug == "" {
+		return errors.New("slug is required")
+	}
+	return nil
+}
+
+// Validate validates the UpdatePostInput
+func (input UpdatePostInput) Validate() error {
+	if input.Title == "" {
+		return errors.New("title is required")
+	}
+	if input.Slug == "" {
+		return errors.New("slug is required")
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -96,4 +97,26 @@ type UpdateBookmarkInput struct {
 	IsPublic     bool    `json:"is_public"`
 	IsFavorite   bool    `json:"is_favorite"`
 	TagIDs       []int64 `json:"tag_ids"`
+}
+
+// Validate validates the CreateBookmarkInput
+func (input CreateBookmarkInput) Validate() error {
+	if input.URL == "" {
+		return errors.New("URL is required")
+	}
+	if input.Title == "" {
+		return errors.New("title is required")
+	}
+	return nil
+}
+
+// Validate validates the UpdateBookmarkInput
+func (input UpdateBookmarkInput) Validate() error {
+	if input.URL == "" {
+		return errors.New("URL is required")
+	}
+	if input.Title == "" {
+		return errors.New("title is required")
+	}
+	return nil
 }

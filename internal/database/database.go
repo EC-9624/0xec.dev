@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -16,75 +17,106 @@ var initialMigration string
 //go:embed migrations/002_activities.sql
 var activitiesMigration string
 
-//go:embed migrations/003_remove_collection_icon_color.sql
-var removeCollectionIconColorMigration string
+//go:embed migrations/003_remove_collection_icon.sql
+var removeCollectionIconMigration string
 
-//go:embed migrations/004_add_collection_color.sql
-var addCollectionColorMigration string
+// migration represents a database migration
+type migration struct {
+	name string
+	sql  string
+}
 
-// DB is the global database connection
-var DB *sql.DB
+// migrations list in order of execution
+var migrations = []migration{
+	{"001_initial", initialMigration},
+	{"002_activities", activitiesMigration},
+	{"003_remove_collection_icon", removeCollectionIconMigration},
+}
 
-// Init initializes the database connection and runs migrations
-func Init(dbPath string) error {
+// Init initializes the database connection and runs migrations.
+// Returns the database connection which the caller is responsible for closing.
+func Init(dbPath string) (*sql.DB, error) {
 	// Ensure the directory exists
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create database directory: %w", err)
+		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
-	var err error
-	DB, err = sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
+	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
 	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
 	// Test the connection
-	if err := DB.Ping(); err != nil {
-		return fmt.Errorf("failed to ping database: %w", err)
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	// Run migrations
-	if err := runMigrations(); err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
+	if err := runMigrations(db); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	return nil
+	return db, nil
 }
 
-// runMigrations runs all database migrations
-func runMigrations() error {
-	_, err := DB.Exec(initialMigration)
-	if err != nil {
-		return fmt.Errorf("failed to run initial migration: %w", err)
-	}
-
-	_, err = DB.Exec(activitiesMigration)
-	if err != nil {
-		return fmt.Errorf("failed to run activities migration: %w", err)
-	}
-
-	// Migration 003: Remove icon and color from collections
-	// This uses ALTER TABLE DROP COLUMN which requires SQLite 3.35.0+
-	_, err = DB.Exec(removeCollectionIconColorMigration)
-	if err != nil {
-		// Ignore error if columns don't exist (migration already ran)
-		// SQLite will error with "no such column" if already dropped
-	}
-
-	// Migration 004: Add color column back to collections
-	_, err = DB.Exec(addCollectionColorMigration)
-	if err != nil {
-		// Ignore error if column already exists
-	}
-
-	return nil
+// ensureMigrationsTable creates the migrations tracking table if it doesn't exist
+func ensureMigrationsTable(db *sql.DB) error {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			name TEXT PRIMARY KEY,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	return err
 }
 
-// Close closes the database connection
-func Close() error {
-	if DB != nil {
-		return DB.Close()
+// isMigrationApplied checks if a migration has already been applied
+func isMigrationApplied(db *sql.DB, name string) (bool, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE name = ?", name).Scan(&count)
+	if err != nil {
+		return false, err
 	}
+	return count > 0, nil
+}
+
+// recordMigration records that a migration has been applied
+func recordMigration(db *sql.DB, name string) error {
+	_, err := db.Exec("INSERT INTO schema_migrations (name) VALUES (?)", name)
+	return err
+}
+
+// runMigrations runs all database migrations that haven't been applied yet
+func runMigrations(db *sql.DB) error {
+	// Ensure migrations table exists
+	if err := ensureMigrationsTable(db); err != nil {
+		return fmt.Errorf("failed to create migrations table: %w", err)
+	}
+
+	for _, m := range migrations {
+		applied, err := isMigrationApplied(db, m.name)
+		if err != nil {
+			return fmt.Errorf("failed to check migration %s: %w", m.name, err)
+		}
+
+		if applied {
+			continue
+		}
+
+		log.Printf("Running migration: %s", m.name)
+
+		_, err = db.Exec(m.sql)
+		if err != nil {
+			return fmt.Errorf("failed to run migration %s: %w", m.name, err)
+		}
+
+		if err := recordMigration(db, m.name); err != nil {
+			return fmt.Errorf("failed to record migration %s: %w", m.name, err)
+		}
+
+		log.Printf("Migration %s applied successfully", m.name)
+	}
+
 	return nil
 }

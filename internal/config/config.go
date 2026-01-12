@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 )
 
 // Config holds all configuration for the application
@@ -13,6 +14,11 @@ type Config struct {
 	AdminPass   string
 	BaseURL     string
 	Environment string
+
+	// Pagination settings
+	BookmarksPerPage    int
+	AdminBookmarksLimit int
+	PostsPerPage        int
 }
 
 // Load loads configuration from environment variables with sensible defaults
@@ -25,6 +31,11 @@ func Load() *Config {
 		AdminPass:   getEnv("ADMIN_PASS", "admin"),
 		BaseURL:     getEnv("BASE_URL", "http://localhost:8080"),
 		Environment: getEnv("ENVIRONMENT", "development"),
+
+		// Pagination defaults
+		BookmarksPerPage:    getEnvInt("BOOKMARKS_PER_PAGE", 24),
+		AdminBookmarksLimit: getEnvInt("ADMIN_BOOKMARKS_LIMIT", 500),
+		PostsPerPage:        getEnvInt("POSTS_PER_PAGE", 100),
 	}
 }
 
@@ -36,6 +47,15 @@ func (c *Config) IsDevelopment() bool {
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
+	}
+	return fallback
+}
+
+func getEnvInt(key string, fallback int) int {
+	if value, exists := os.LookupEnv(key); exists {
+		if intVal, err := strconv.Atoi(value); err == nil {
+			return intVal
+		}
 	}
 	return fallback
 }

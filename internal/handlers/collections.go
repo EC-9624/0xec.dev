@@ -39,6 +39,11 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 
+	if err := input.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	_, err := h.service.CreateCollection(r.Context(), input)
 	if err != nil {
 		http.Error(w, "Failed to create collection", http.StatusInternalServerError)
@@ -84,6 +89,11 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		Description: r.FormValue("description"),
 		Color:       r.FormValue("color"),
 		IsPublic:    r.FormValue("is_public") == "true",
+	}
+
+	if err := input.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	_, err = h.service.UpdateCollection(r.Context(), id, input)

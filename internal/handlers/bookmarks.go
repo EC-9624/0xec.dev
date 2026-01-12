@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,7 +14,10 @@ import (
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
 )
 
-const bookmarksPerPage = 24
+// bookmarksPerPage returns the number of bookmarks per page from config
+func (h *Handlers) bookmarksPerPage() int {
+	return h.config.BookmarksPerPage
+}
 
 // BookmarksIndex handles the bookmarks listing page (full page only)
 func (h *Handlers) BookmarksIndex(w http.ResponseWriter, r *http.Request) {
@@ -56,8 +60,9 @@ func (h *Handlers) HTMXBookmarksMore(w http.ResponseWriter, r *http.Request) {
 		collectionID = &collection.ID
 	}
 
-	limit := bookmarksPerPage
-	offset := (page - 1) * bookmarksPerPage
+	perPage := h.bookmarksPerPage()
+	limit := perPage
+	offset := (page - 1) * perPage
 
 	opts := service.BookmarkListOptions{
 		PublicOnly:   true,
@@ -74,7 +79,7 @@ func (h *Handlers) HTMXBookmarksMore(w http.ResponseWriter, r *http.Request) {
 
 	countOpts := service.BookmarkListOptions{PublicOnly: true, CollectionID: collectionID}
 	total, _ := h.service.CountBookmarks(ctx, countOpts)
-	hasMore := (page * bookmarksPerPage) < total
+	hasMore := (page * perPage) < total
 
 	render(w, r, pages.BookmarkGridAppend(bookmarks, collection, page, hasMore))
 }
@@ -89,8 +94,9 @@ func (h *Handlers) getBookmarksData(r *http.Request, collection *models.Collecti
 		collectionID = &collection.ID
 	}
 
-	limit := bookmarksPerPage
-	offset := (page - 1) * bookmarksPerPage
+	perPage := h.bookmarksPerPage()
+	limit := perPage
+	offset := (page - 1) * perPage
 
 	opts := service.BookmarkListOptions{
 		PublicOnly:   true,
@@ -122,7 +128,7 @@ func (h *Handlers) getBookmarksData(r *http.Request, collection *models.Collecti
 		return templates.BookmarksData{}, err
 	}
 
-	hasMore := (page * bookmarksPerPage) < total
+	hasMore := (page * perPage) < total
 
 	return templates.BookmarksData{
 		Bookmarks:         bookmarks,
@@ -198,7 +204,7 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	bookmarks, err := h.service.ListBookmarks(ctx, service.BookmarkListOptions{
-		Limit:  500, // Load more for client-side filtering
+		Limit:  h.config.AdminBookmarksLimit, // Load more for client-side filtering
 		Offset: 0,
 	})
 	if err != nil {
@@ -206,7 +212,10 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collections, _ := h.service.ListCollections(ctx, false)
+	collections, err := h.service.ListCollections(ctx, false)
+	if err != nil {
+		log.Printf("Failed to load collections for bookmarks list: %v", err)
+	}
 
 	render(w, r, admin.BookmarksList(admin.BookmarksListData{
 		Bookmarks:   bookmarks,
@@ -217,8 +226,14 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 // AdminBookmarkNew handles the new bookmark form
 func (h *Handlers) AdminBookmarkNew(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	collections, _ := h.service.ListCollections(ctx, false)
-	tags, _ := h.service.ListTags(ctx)
+	collections, err := h.service.ListCollections(ctx, false)
+	if err != nil {
+		log.Printf("Failed to load collections for new bookmark form: %v", err)
+	}
+	tags, err := h.service.ListTags(ctx)
+	if err != nil {
+		log.Printf("Failed to load tags for new bookmark form: %v", err)
+	}
 	render(w, r, admin.BookmarkForm(nil, collections, tags, true))
 }
 
@@ -247,6 +262,11 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}
 
+	if err := input.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	_, err := h.service.CreateBookmark(r.Context(), input)
 	if err != nil {
 		http.Error(w, "Failed to create bookmark", http.StatusInternalServerError)
@@ -271,8 +291,14 @@ func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collections, _ := h.service.ListCollections(ctx, false)
-	tags, _ := h.service.ListTags(ctx)
+	collections, err := h.service.ListCollections(ctx, false)
+	if err != nil {
+		log.Printf("Failed to load collections for bookmark edit form: %v", err)
+	}
+	tags, err := h.service.ListTags(ctx)
+	if err != nil {
+		log.Printf("Failed to load tags for bookmark edit form: %v", err)
+	}
 	render(w, r, admin.BookmarkForm(bookmark, collections, tags, false))
 }
 
@@ -305,6 +331,11 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 		CollectionID: collectionID,
 		IsPublic:     r.FormValue("is_public") == "true",
 		IsFavorite:   r.FormValue("is_favorite") == "true",
+	}
+
+	if err := input.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	_, err = h.service.UpdateBookmark(r.Context(), id, input)
@@ -522,7 +553,10 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	}
 
 	// Get collections for the dropdown
-	collections, _ := h.service.ListCollections(ctx, false)
+	collections, err := h.service.ListCollections(ctx, false)
+	if err != nil {
+		log.Printf("Failed to load collections for dropdown: %v", err)
+	}
 
 	// Return the updated dropdown with success animation
 	hasCollection := collectionID != nil

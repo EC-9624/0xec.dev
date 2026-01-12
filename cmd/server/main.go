@@ -5,7 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/EC-9624/0xec.dev/internal/config"
 	"github.com/EC-9624/0xec.dev/internal/database"
@@ -18,13 +21,14 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize database
-	if err := database.Init(cfg.DatabaseURL); err != nil {
+	db, err := database.Init(cfg.DatabaseURL)
+	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
 	// Create handlers
-	h := handlers.New(cfg, database.DB)
+	h := handlers.New(cfg, db)
 
 	// Ensure admin user exists
 	if err := h.Service().EnsureAdminExists(context.Background(), cfg.AdminUser, cfg.AdminPass); err != nil {
@@ -65,6 +69,19 @@ func main() {
 	mux.HandleFunc("GET /feed.xml", h.PostsFeed)
 	mux.HandleFunc("GET /posts/feed.xml", h.PostsFeed)
 	mux.HandleFunc("GET /bookmarks/feed.xml", h.BookmarksFeed)
+
+	// Health check endpoint
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		// Check database connectivity
+		if err := db.Ping(); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status":"unhealthy","error":"database connection failed"}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy"}`))
+	})
 
 	// ============================================
 	// AUTH ROUTES (CSRF protected, no auth required)
@@ -148,13 +165,43 @@ func main() {
 		}
 	}
 
-	// Start server
+	// Configure server with timeouts
 	addr := ":" + cfg.Port
-	log.Printf("Starting server on http://localhost%s", addr)
-	log.Printf("Admin panel: http://localhost%s/admin", addr)
-	log.Printf("Default credentials: %s / %s", cfg.AdminUser, cfg.AdminPass)
-
-	if err := http.ListenAndServe(addr, handler); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      handler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Printf("Starting server on http://localhost%s", addr)
+		log.Printf("Admin panel: http://localhost%s/admin", addr)
+		if cfg.IsDevelopment() {
+			log.Printf("Default credentials: %s / %s", cfg.AdminUser, cfg.AdminPass)
+		}
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	// Give outstanding requests 30 seconds to complete
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server stopped gracefully")
 }
