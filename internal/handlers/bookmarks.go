@@ -252,6 +252,8 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isDrawer := r.FormValue("_drawer") == "true"
+
 	var collectionID *int64
 	if cid := r.FormValue("collection_id"); cid != "" {
 		id, err := strconv.ParseInt(cid, 10, 64)
@@ -288,18 +290,36 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 	if errors != nil && errors.HasErrors() {
 		collections, _ := h.service.ListCollections(ctx, false)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		render(w, r, admin.BookmarkForm(nil, collections, true, errors, &input))
+		if isDrawer {
+			render(w, r, admin.BookmarkFormDrawer(nil, collections, true, errors, &input))
+		} else {
+			render(w, r, admin.BookmarkForm(nil, collections, true, errors, &input))
+		}
 		return
 	}
 
-	_, err := h.service.CreateBookmark(ctx, input)
+	bookmark, err := h.service.CreateBookmark(ctx, input)
 	if err != nil {
 		log.Printf("Failed to create bookmark: %v", err)
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to create bookmark. Please try again."
 		collections, _ := h.service.ListCollections(ctx, false)
 		w.WriteHeader(http.StatusInternalServerError)
-		render(w, r, admin.BookmarkForm(nil, collections, true, formErrors, &input))
+		if isDrawer {
+			render(w, r, admin.BookmarkFormDrawer(nil, collections, true, formErrors, &input))
+		} else {
+			render(w, r, admin.BookmarkForm(nil, collections, true, formErrors, &input))
+		}
+		return
+	}
+
+	// For drawer requests, return success response with close trigger and OOB row
+	if isDrawer {
+		collections, _ := h.service.ListCollections(ctx, false)
+		w.Header().Set("HX-Trigger", "closeDrawer")
+		w.Header().Set("HX-Reswap", "none")
+		// Return OOB swap to prepend new row to table
+		render(w, r, admin.BookmarkRowOOBPrepend(*bookmark, collections))
 		return
 	}
 
@@ -349,6 +369,8 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isDrawer := r.FormValue("_drawer") == "true"
+
 	var collectionID *int64
 	if cid := r.FormValue("collection_id"); cid != "" {
 		cid, err := strconv.ParseInt(cid, 10, 64)
@@ -395,11 +417,15 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 			IsFavorite:   input.IsFavorite,
 		}
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		render(w, r, admin.BookmarkForm(bookmark, collections, false, errors, formInput))
+		if isDrawer {
+			render(w, r, admin.BookmarkFormDrawer(bookmark, collections, false, errors, formInput))
+		} else {
+			render(w, r, admin.BookmarkForm(bookmark, collections, false, errors, formInput))
+		}
 		return
 	}
 
-	_, err = h.service.UpdateBookmark(ctx, id, input)
+	updatedBookmark, err := h.service.UpdateBookmark(ctx, id, input)
 	if err != nil {
 		log.Printf("Failed to update bookmark: %v", err)
 		formErrors := models.NewFormErrors()
@@ -415,7 +441,21 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 			IsFavorite:   input.IsFavorite,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		render(w, r, admin.BookmarkForm(bookmark, collections, false, formErrors, formInput))
+		if isDrawer {
+			render(w, r, admin.BookmarkFormDrawer(bookmark, collections, false, formErrors, formInput))
+		} else {
+			render(w, r, admin.BookmarkForm(bookmark, collections, false, formErrors, formInput))
+		}
+		return
+	}
+
+	// For drawer requests, return success response with close trigger and OOB row update
+	if isDrawer {
+		collections, _ := h.service.ListCollections(ctx, false)
+		w.Header().Set("HX-Trigger", "closeDrawer")
+		w.Header().Set("HX-Reswap", "none")
+		// Return OOB swap to update the row
+		render(w, r, admin.BookmarkRowOOB(*updatedBookmark, collections))
 		return
 	}
 
@@ -648,4 +688,40 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	}
 
 	render(w, r, admin.BookmarkCollectionDropdown(id, currentCollectionID, hasCollection, collections, true))
+}
+
+// ============================================
+// DRAWER HANDLERS
+// ============================================
+
+// AdminBookmarkNewDrawer returns the new bookmark form for the drawer
+func (h *Handlers) AdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	collections, err := h.service.ListCollections(ctx, false)
+	if err != nil {
+		log.Printf("Failed to load collections for new bookmark drawer: %v", err)
+	}
+	render(w, r, admin.BookmarkFormDrawer(nil, collections, true, nil, nil))
+}
+
+// AdminBookmarkEditDrawer returns the edit bookmark form for the drawer
+func (h *Handlers) AdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	collections, err := h.service.ListCollections(ctx, false)
+	if err != nil {
+		log.Printf("Failed to load collections for bookmark edit drawer: %v", err)
+	}
+	render(w, r, admin.BookmarkFormDrawer(bookmark, collections, false, nil, nil))
 }

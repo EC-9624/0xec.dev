@@ -460,9 +460,16 @@
   // Clean up dropdowns before HTMX swaps content
   document.addEventListener('htmx:beforeSwap', (e) => {
     const target = e.detail?.elt;
-    if (!target?.querySelectorAll) return;
+    if (!target) return;
     
-    target.querySelectorAll('[data-dropdown]').forEach(cleanupDropdown);
+    // Clean up if target itself is a dropdown (for outerHTML swaps)
+    if (target.matches?.('[data-dropdown]')) {
+      cleanupDropdown(target);
+    }
+    // Clean up any child dropdowns
+    if (target.querySelectorAll) {
+      target.querySelectorAll('[data-dropdown]').forEach(cleanupDropdown);
+    }
   });
 
   // Export for manual use

@@ -38,6 +38,26 @@ templ NewButton(href, label string) {
 	</a>
 }
 
+// drawerOpenAttrs returns onclick attribute for drawer trigger buttons
+func drawerOpenAttrs(title string) templ.Attributes {
+	return templ.Attributes{"onclick": "window.drawerOpen('" + title + "')"}
+}
+
+// NewButtonDrawer displays a "New [Entity]" button that opens a drawer
+templ NewButtonDrawer(drawerURL, drawerTitle, label string) {
+	<button
+		type="button"
+		hx-get={ drawerURL }
+		hx-target="#drawer-content"
+		hx-swap="innerHTML"
+		{ drawerOpenAttrs(drawerTitle)... }
+		class="btn-default"
+	>
+		@PlusIcon(IconLG)
+		{ label }
+	</button>
+}
+
 // ImportButton displays an "Import" outline button
 templ ImportButton(href string) {
 	<a href={ templ.URL(href) } class="btn-outline">

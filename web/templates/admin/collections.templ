@@ -550,10 +550,10 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 						href={ templ.URL(bookmark.URL) }
 						target="_blank"
 						rel="noopener noreferrer"
-						class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-32 shrink-0 truncate"
+						class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-32 shrink-0 overflow-hidden"
 						title={ bookmark.URL }
 					>
-						{ bookmark.Domain }
+						<span class="truncate">{ bookmark.Domain }</span>
 						@components.ExternalLinkIcon(components.IconXS)
 					</a>
 					<!-- Favorite -->
