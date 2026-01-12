@@ -178,7 +178,7 @@ templ collectionRow(collection models.Collection) {
 				id={ "collection-bookmarks-content-" + strconv.FormatInt(collection.ID, 10) }
 				class="bg-muted/20"
 				hx-get={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
-				hx-trigger="load"
+				hx-trigger="fetchContent"
 				hx-swap="innerHTML"
 			>
 				<!-- Loading placeholder -->
@@ -517,9 +517,20 @@ script toggleCollectionExpand(collectionID int64) {
 	window.toggleCollectionRow(collectionID);
 }
 
-// collectionExpandScript adds the shared toggle function to window
+// collectionExpandScript adds the shared toggle function to window with prefetch on hover/focus
 templ collectionExpandScript() {
 	<script>
+		// Prefetch content for a collection row (only once)
+		window.prefetchCollectionRow = function(collectionID) {
+			const id = collectionID.toString();
+			const contentDiv = document.getElementById('collection-bookmarks-content-' + id);
+			if (contentDiv && !contentDiv.dataset.loaded) {
+				contentDiv.dataset.loaded = 'true';
+				htmx.trigger(contentDiv, 'fetchContent');
+			}
+		};
+
+		// Toggle expand/collapse for a collection row
 		window.toggleCollectionRow = function(collectionID) {
 			const id = collectionID.toString();
 			const row = document.getElementById('collection-row-' + id);
@@ -534,13 +545,30 @@ templ collectionExpandScript() {
 				bookmarksRow.classList.add('hidden');
 				expandBtn.classList.remove('rotate-90');
 			} else {
-				// Expand
+				// Expand - trigger fetch if not already loaded
+				window.prefetchCollectionRow(collectionID);
 				row.dataset.expanded = 'true';
 				row.setAttribute('aria-expanded', 'true');
 				bookmarksRow.classList.remove('hidden');
 				expandBtn.classList.add('rotate-90');
 			}
 		};
+
+		// Setup prefetch on hover/focus for all expandable collection rows
+		document.addEventListener('DOMContentLoaded', function() {
+			document.querySelectorAll('[data-collection-id]').forEach(function(row) {
+				const collectionID = row.dataset.collectionId;
+				// Only add listeners if row is expandable (has count > 0)
+				if (row.getAttribute('role') === 'button') {
+					row.addEventListener('mouseenter', function() {
+						window.prefetchCollectionRow(collectionID);
+					}, { once: true });
+					row.addEventListener('focus', function() {
+						window.prefetchCollectionRow(collectionID);
+					}, { once: true });
+				}
+			});
+		});
 	</script>
 }
 

@@ -110,7 +110,7 @@ templ tagRow(tag service.TagWithCount) {
 				id={ "tag-posts-content-" + strconv.FormatInt(tag.ID, 10) }
 				class="bg-muted/20"
 				hx-get={ "/admin/tags/" + strconv.FormatInt(tag.ID, 10) + "/posts" }
-				hx-trigger="load"
+				hx-trigger="fetchContent"
 				hx-swap="innerHTML"
 			>
 				<!-- Loading placeholder -->
@@ -135,9 +135,20 @@ script toggleTagExpand(tagID int64) {
 	window.toggleTagRow(tagID);
 }
 
-// tagExpandScript adds the shared toggle function to window
+// tagExpandScript adds the shared toggle function to window with prefetch on hover/focus
 templ tagExpandScript() {
 	<script>
+		// Prefetch content for a tag row (only once)
+		window.prefetchTagRow = function(tagID) {
+			const id = tagID.toString();
+			const contentDiv = document.getElementById('tag-posts-content-' + id);
+			if (contentDiv && !contentDiv.dataset.loaded) {
+				contentDiv.dataset.loaded = 'true';
+				htmx.trigger(contentDiv, 'fetchContent');
+			}
+		};
+
+		// Toggle expand/collapse for a tag row
 		window.toggleTagRow = function(tagID) {
 			const id = tagID.toString();
 			const row = document.getElementById('tag-row-' + id);
@@ -152,13 +163,30 @@ templ tagExpandScript() {
 				postsRow.classList.add('hidden');
 				expandBtn.classList.remove('rotate-90');
 			} else {
-				// Expand
+				// Expand - trigger fetch if not already loaded
+				window.prefetchTagRow(tagID);
 				row.dataset.expanded = 'true';
 				row.setAttribute('aria-expanded', 'true');
 				postsRow.classList.remove('hidden');
 				expandBtn.classList.add('rotate-90');
 			}
 		};
+
+		// Setup prefetch on hover/focus for all expandable tag rows
+		document.addEventListener('DOMContentLoaded', function() {
+			document.querySelectorAll('[data-tag-id]').forEach(function(row) {
+				const tagID = row.dataset.tagId;
+				// Only add listeners if row is expandable (has count > 0)
+				if (row.getAttribute('role') === 'button') {
+					row.addEventListener('mouseenter', function() {
+						window.prefetchTagRow(tagID);
+					}, { once: true });
+					row.addEventListener('focus', function() {
+						window.prefetchTagRow(tagID);
+					}, { once: true });
+				}
+			});
+		});
 	</script>
 }
 
