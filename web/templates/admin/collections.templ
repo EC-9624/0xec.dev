@@ -524,7 +524,7 @@ templ collectionExpandScript() {
 
 // CollectionBookmarksExpanded renders the expanded bookmarks list for a collection
 templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.CollectionBookmark, totalCount int) {
-	<div class="divide-y divide-border">
+	<div>
 		for i, bookmark := range bookmarks {
 			if i < 5 {
 				<div class="flex items-center gap-4 px-8 py-2.5 hover:bg-muted/30">
