@@ -862,22 +862,64 @@
     }
   }
 
-  /* Error flash - red X with "Failed" text that appears and fades */
-  .save-error {
-    position: relative;
+  /* ===== TOAST NOTIFICATIONS ===== */
+  .toast-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
   }
 
-  .save-error::after {
-    content: "✗ Failed";
-    position: absolute;
-    top: 50%;
-    right: -3.5rem;
-    transform: translateY(-50%);
-    font-size: 0.65rem;
-    font-weight: 500;
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+    font-size: 0.75rem;
+    cursor: pointer;
+    pointer-events: auto;
+    animation: toast-enter 0.2s ease-out;
+  }
+
+  .toast-error {
+    border-left: 3px solid rgb(239 68 68);
+  }
+
+  .toast-error .toast-icon {
     color: rgb(239 68 68);
-    white-space: nowrap;
-    animation: checkmark-fade 1.5s ease-out forwards;
+  }
+
+  .toast-exit {
+    animation: toast-exit 0.2s ease-out forwards;
+  }
+
+  @keyframes toast-enter {
+    from {
+      opacity: 0;
+      transform: translateX(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes toast-exit {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(1rem);
+    }
   }
 
   /* Inline editable elements */

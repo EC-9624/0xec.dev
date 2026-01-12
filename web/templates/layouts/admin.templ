@@ -44,24 +44,51 @@ templ adminBase(title string) {
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }
+			@toastContainer()
 			@htmxErrorHandler()
 		</body>
 	</html>
 }
 
+// toastContainer renders the fixed container for toast notifications
+templ toastContainer() {
+	<div id="toast-container" class="toast-container"></div>
+}
+
 // htmxErrorHandler adds global error handling for HTMX requests
 templ htmxErrorHandler() {
 	<script>
+		// Show toast notification
+		function showToast(message, type = 'error') {
+			const container = document.getElementById('toast-container');
+			const toast = document.createElement('div');
+			toast.className = `toast toast-${type}`;
+			toast.innerHTML = `<span class="toast-icon">✗</span> ${message}`;
+			
+			// Click to dismiss
+			toast.addEventListener('click', () => dismissToast(toast));
+			
+			container.appendChild(toast);
+			
+			// Auto-dismiss after 3 seconds
+			setTimeout(() => dismissToast(toast), 3000);
+		}
+
+		// Dismiss toast with animation
+		function dismissToast(toast) {
+			if (toast.classList.contains('toast-exit')) return; // Already dismissing
+			toast.classList.add('toast-exit');
+			setTimeout(() => toast.remove(), 200);
+		}
+
 		// Handle server errors (4xx/5xx) - element stays in original state
 		document.body.addEventListener('htmx:responseError', function(evt) {
-			evt.detail.elt.classList.add('save-error');
-			setTimeout(() => evt.detail.elt.classList.remove('save-error'), 1000);
+			showToast('Failed to save');
 		});
 
 		// Handle network errors (offline, timeout, etc.) - element stays in original state
 		document.body.addEventListener('htmx:sendError', function(evt) {
-			evt.detail.elt.classList.add('save-error');
-			setTimeout(() => evt.detail.elt.classList.remove('save-error'), 1000);
+			showToast('Connection error');
 		});
 	</script>
 }
