@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
 )
 
 // AdminCollectionsList handles the admin collections listing
@@ -197,19 +199,23 @@ func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request)
 func (h *Handlers) AdminCollectionBookmarks(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		render(w, r, components.InlineError("Collection not found"))
 		return
 	}
 
 	collection, err := h.service.GetCollectionByID(r.Context(), id)
 	if err != nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		render(w, r, components.InlineError("Collection not found"))
 		return
 	}
 
 	bookmarks, err := h.service.GetBookmarksByCollectionID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
+		retryURL := fmt.Sprintf("/admin/collections/%d/bookmarks", id)
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, components.InlineErrorWithRetry("Failed to load bookmarks", retryURL))
 		return
 	}
 

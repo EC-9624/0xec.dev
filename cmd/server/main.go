@@ -156,6 +156,16 @@ func main() {
 	adminMux.HandleFunc("GET /admin/tags/{id}/posts", h.AdminTagPosts)
 	adminMux.HandleFunc("DELETE /admin/tags/{id}", h.AdminTagDelete)
 
+	// Test routes (development only)
+	if cfg.IsDevelopment() {
+		adminMux.HandleFunc("GET /admin/test/errors", h.TestErrorPage)
+		adminMux.HandleFunc("GET /admin/test/error-500", h.TestError500)
+		adminMux.HandleFunc("GET /admin/test/slow", h.TestSlow)
+		adminMux.HandleFunc("GET /admin/test/success", h.TestSuccess)
+		adminMux.HandleFunc("GET /admin/test/retry-workflow", h.TestRetryWorkflow)
+		adminMux.HandleFunc("POST /admin/test/reset-retry", h.TestResetRetry)
+	}
+
 	// Wrap admin routes with CSRF + Auth middleware
 	// Order: CSRF runs first (sets token), then Auth checks session
 	authMiddleware := middleware.Auth(h.Service())

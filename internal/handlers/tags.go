@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
 )
 
 // AdminTagsList handles the admin tags listing
@@ -80,13 +82,16 @@ func (h *Handlers) AdminTagCreateInline(w http.ResponseWriter, r *http.Request) 
 func (h *Handlers) AdminTagPosts(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		render(w, r, components.InlineError("Tag not found"))
 		return
 	}
 
 	posts, err := h.service.GetPostsByTagID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to load posts", http.StatusInternalServerError)
+		retryURL := fmt.Sprintf("/admin/tags/%d/posts", id)
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, components.InlineErrorWithRetry("Failed to load posts", retryURL))
 		return
 	}
 

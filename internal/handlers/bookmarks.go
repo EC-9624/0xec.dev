@@ -10,6 +10,7 @@ import (
 	"github.com/EC-9624/0xec.dev/internal/service"
 	"github.com/EC-9624/0xec.dev/web/templates"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
 )
 
@@ -72,7 +73,8 @@ func (h *Handlers) HTMXBookmarksMore(w http.ResponseWriter, r *http.Request) {
 
 	bookmarks, err := h.service.ListBookmarks(ctx, opts)
 	if err != nil {
-		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, components.InlineError("Failed to load"))
 		return
 	}
 

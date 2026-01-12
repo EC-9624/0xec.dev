@@ -113,17 +113,21 @@ templ BookmarkGridAppend(bookmarks []models.Bookmark, collection *models.Collect
 
 // LoadMoreButton renders the load more button with loading indicator
 templ LoadMoreButton(collection *models.Collection, nextPage int) {
-	<div id="load-more-container" class="pt-4 text-center">
-		<button
-			hx-get={ loadMoreURL(collection, nextPage) }
-			hx-target="this"
-			hx-swap="outerHTML"
-			hx-indicator="this"
-			class="btn-outline"
-		>
-			<span class="htmx-indicator">Loading...</span>
-			<span class="htmx-hide-on-request">Load more</span>
+	<div
+		id="load-more-container"
+		class="pt-4 text-center"
+		hx-get={ loadMoreURL(collection, nextPage) }
+		hx-target="this"
+		hx-swap="outerHTML"
+		hx-indicator="this"
+		hx-target-error="this"
+	>
+		<button class="btn-outline htmx-hide-on-request">
+			Load more
 		</button>
+		<div class="htmx-indicator text-muted-foreground">
+			@components.SpinnerIcon(components.IconMD)
+		</div>
 	</div>
 }
 

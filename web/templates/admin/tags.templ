@@ -113,10 +113,10 @@ templ tagRow(tag service.TagWithCount) {
 				hx-get={ "/admin/tags/" + strconv.FormatInt(tag.ID, 10) + "/posts" }
 				hx-trigger="fetchContent"
 				hx-swap="innerHTML"
+				hx-target-error="this"
 			>
-				<!-- Loading placeholder -->
-				<div class="px-8 py-4 text-sm text-muted-foreground">
-					Loading posts...
+				<div class="px-8 py-4 flex justify-center text-muted-foreground">
+					@components.SpinnerIcon(components.IconSM)
 				</div>
 			</div>
 		</td>

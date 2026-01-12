@@ -21,8 +21,8 @@ func getBookmarkCSRFToken(ctx context.Context) string {
 
 // BookmarksListData contains data for the bookmarks list page
 type BookmarksListData struct {
-	Bookmarks              []models.Bookmark
-	Collections            []models.Collection
+	Bookmarks               []models.Bookmark
+	Collections             []models.Collection
 	PreselectedCollectionID int64 // 0 means no preselection
 }
 
@@ -473,8 +473,8 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, i
 							/>
 							@components.FieldError(errors, "url")
 						</div>
-						<div id="metadata-loading" class="htmx-indicator text-sm text-muted-foreground py-2">
-							Fetching page metadata...
+						<div id="metadata-loading" class="htmx-indicator text-muted-foreground py-2">
+							@components.SpinnerIcon(components.IconSM)
 						</div>
 						<div id="metadata-fields">
 							@BookmarkMetadataFieldsWithErrors(bookmark, errors, input)

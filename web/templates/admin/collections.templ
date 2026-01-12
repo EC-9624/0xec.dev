@@ -181,10 +181,10 @@ templ collectionRow(collection models.Collection) {
 				hx-get={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
 				hx-trigger="fetchContent"
 				hx-swap="innerHTML"
+				hx-target-error="this"
 			>
-				<!-- Loading placeholder -->
-				<div class="px-8 py-4 text-sm text-muted-foreground">
-					Loading bookmarks...
+				<div class="px-8 py-4 flex justify-center text-muted-foreground">
+					@components.SpinnerIcon(components.IconSM)
 				</div>
 			</div>
 		</td>

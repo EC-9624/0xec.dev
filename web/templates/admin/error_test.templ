@@ -1,0 +1,177 @@
+package admin
+
+import (
+	"fmt"
+
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// ErrorTestPage renders a page for testing error handling scenarios
+templ ErrorTestPage() {
+	@layouts.Admin("Error Handling Tests") {
+		<div class="space-y-8">
+			@components.PageHeaderSimple("Error Handling Tests", "Test various error scenarios for HTMX inline content loading")
+
+			<div class="grid gap-6">
+				// Test 1: Server Error (500)
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">1. Server Error (500)</h3>
+						<p class="card-description">
+							Click to trigger a server error. Should show spinner, then inline error with retry button.
+						</p>
+					</div>
+					<div class="card-content">
+						<div
+							id="test-server-error"
+							class="border border-dashed rounded-lg p-4 min-h-[100px]"
+							hx-get="/admin/test/error-500"
+							hx-swap="innerHTML"
+							hx-trigger="click"
+							hx-indicator="#test-server-error-spinner"
+						>
+							<div id="test-server-error-spinner" class="htmx-indicator flex justify-center py-4 text-muted-foreground">
+								@components.SpinnerIcon(components.IconMD)
+							</div>
+							<div class="htmx-hide-on-request text-center text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+								Click here to trigger server error
+							</div>
+						</div>
+					</div>
+				</div>
+
+				// Test 2: Slow Response (Timeout)
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">2. Slow Response (15s delay)</h3>
+						<p class="card-description">
+							Click to trigger a slow response. Should show spinner, then timeout error after 10s.
+						</p>
+					</div>
+					<div class="card-content">
+						<div
+							id="test-slow-response"
+							class="border border-dashed rounded-lg p-4 min-h-[100px]"
+							hx-get="/admin/test/slow"
+							hx-swap="innerHTML"
+							hx-trigger="click"
+							hx-indicator="#test-slow-response-spinner"
+						>
+							<div id="test-slow-response-spinner" class="htmx-indicator flex justify-center py-4 text-muted-foreground">
+								@components.SpinnerIcon(components.IconMD)
+							</div>
+							<div class="htmx-hide-on-request text-center text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+								Click here to trigger slow response (15s)
+							</div>
+						</div>
+					</div>
+				</div>
+
+				// Test 3: Success Response
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">3. Success Response</h3>
+						<p class="card-description">
+							Click to trigger a successful response. Should show spinner briefly, then content.
+						</p>
+					</div>
+					<div class="card-content">
+						<div
+							id="test-success"
+							class="border border-dashed rounded-lg p-4 min-h-[100px]"
+							hx-get="/admin/test/success"
+							hx-swap="innerHTML"
+							hx-trigger="click"
+							hx-indicator="#test-success-spinner"
+						>
+							<div id="test-success-spinner" class="htmx-indicator flex justify-center py-4 text-muted-foreground">
+								@components.SpinnerIcon(components.IconMD)
+							</div>
+							<div class="htmx-hide-on-request text-center text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+								Click here to trigger success response
+							</div>
+						</div>
+					</div>
+				</div>
+
+				// Test 4: Network Error
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">4. Network Error (Offline)</h3>
+						<p class="card-description">
+							To test: Open Chrome DevTools → Network tab → Check "Offline", then click below.
+						</p>
+					</div>
+					<div class="card-content">
+						<div
+							id="test-network-error"
+							class="border border-dashed rounded-lg p-4 min-h-[100px]"
+							hx-get="/admin/test/success"
+							hx-swap="innerHTML"
+							hx-trigger="click"
+							hx-indicator="#test-network-error-spinner"
+						>
+							<div id="test-network-error-spinner" class="htmx-indicator flex justify-center py-4 text-muted-foreground">
+								@components.SpinnerIcon(components.IconMD)
+							</div>
+							<div class="htmx-hide-on-request text-center text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+								Click here while offline to test network error
+							</div>
+						</div>
+					</div>
+				</div>
+
+				// Test 5: Retry After Error
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">5. Retry Workflow</h3>
+						<p class="card-description">
+							Tests the full retry workflow: error → retry → success
+						</p>
+					</div>
+					<div class="card-content">
+						<div
+							id="test-retry-workflow"
+							class="border border-dashed rounded-lg p-4 min-h-[100px]"
+							hx-get="/admin/test/retry-workflow"
+							hx-swap="innerHTML"
+							hx-trigger="click"
+							hx-indicator="#test-retry-workflow-spinner"
+						>
+							<div id="test-retry-workflow-spinner" class="htmx-indicator flex justify-center py-4 text-muted-foreground">
+								@components.SpinnerIcon(components.IconMD)
+							</div>
+							<div class="htmx-hide-on-request text-center text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+								Click here to start retry workflow test
+							</div>
+						</div>
+						<p class="text-xs text-muted-foreground mt-2">
+							First request fails, retry succeeds (uses session to track attempts)
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+// ErrorTestSuccess renders a success message for the test
+templ ErrorTestSuccess() {
+	<div class="flex items-center justify-center gap-2 py-4 text-sm text-green-600">
+		@components.CheckCircleIcon(components.IconMD)
+		<span>Success! Content loaded successfully.</span>
+	</div>
+}
+
+// ErrorTestRetrySuccess renders success after retry
+templ ErrorTestRetrySuccess(attempts int) {
+	<div class="flex items-center justify-center gap-2 py-4 text-sm text-green-600">
+		@components.CheckCircleIcon(components.IconMD)
+		<span>Success on attempt #{ itoa(attempts) }!</span>
+	</div>
+}
+
+func itoa(i int) string {
+	return fmt.Sprintf("%d", i)
+}
