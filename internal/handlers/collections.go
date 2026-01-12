@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
@@ -157,63 +156,4 @@ func (h *Handlers) AdminToggleCollectionPublic(w http.ResponseWriter, r *http.Re
 
 	// Return the updated badge
 	render(w, r, admin.CollectionPublicBadge(id, newIsPublic, true))
-}
-
-// AdminGetCollectionNameEdit returns the name edit input field
-func (h *Handlers) AdminGetCollectionNameEdit(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
-		return
-	}
-
-	ctx := r.Context()
-	collection, err := h.service.GetCollectionByID(ctx, id)
-	if err != nil {
-		http.Error(w, "Collection not found", http.StatusNotFound)
-		return
-	}
-
-	render(w, r, admin.CollectionNameEdit(id, collection.Name))
-}
-
-// AdminUpdateCollectionName updates the name of a collection
-func (h *Handlers) AdminUpdateCollectionName(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Invalid form data", http.StatusBadRequest)
-		return
-	}
-
-	ctx := r.Context()
-	name := strings.TrimSpace(r.FormValue("name"))
-
-	// Get current collection
-	collection, err := h.service.GetCollectionByID(ctx, id)
-	if err != nil {
-		http.Error(w, "Collection not found", http.StatusNotFound)
-		return
-	}
-
-	// Validate name
-	if name == "" {
-		// Return display mode with original name
-		render(w, r, admin.CollectionNameDisplay(id, collection.Name, collection.GetDescription(), collection.GetColor(), false))
-		return
-	}
-
-	// Update the name
-	err = h.service.UpdateCollectionName(ctx, id, name)
-	if err != nil {
-		render(w, r, admin.CollectionNameDisplay(id, collection.Name, collection.GetDescription(), collection.GetColor(), false))
-		return
-	}
-
-	// Return the updated display with success animation
-	render(w, r, admin.CollectionNameDisplay(id, name, collection.GetDescription(), collection.GetColor(), true))
 }

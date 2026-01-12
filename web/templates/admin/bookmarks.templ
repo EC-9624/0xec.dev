@@ -110,7 +110,7 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 		data-is-public={ strconv.FormatBool(bookmark.IsPublic) }
 		data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
 	>
-		<!-- Title (inline editable) -->
+		<!-- Title -->
 		<td class="table-cell overflow-hidden">
 			<div class="flex items-center gap-2 min-w-0">
 				<!-- Favicon -->
@@ -124,7 +124,23 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 					/>
 					<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
 				</div>
-				@BookmarkTitleDisplay(bookmark.ID, bookmark.Title, bookmark.URL, false)
+				<div class="min-w-0 flex-1">
+					<a
+						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
+						class="font-medium text-foreground hover:underline block truncate"
+						title={ bookmark.Title }
+					>
+						{ bookmark.Title }
+					</a>
+					<a
+						href={ templ.URL(bookmark.URL) }
+						target="_blank"
+						class="text-[11px] text-muted-foreground hover:underline truncate block"
+						title={ bookmark.URL }
+					>
+						{ truncateURL(bookmark.URL, 50) }
+					</a>
+				</div>
 			</div>
 		</td>
 		<!-- Collection (inline dropdown) -->
@@ -661,56 +677,6 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 				</button>
 			}
 		</div>
-	</div>
-}
-
-// BookmarkTitleDisplay renders the clickable title (display mode)
-templ BookmarkTitleDisplay(id int64, title string, url string, success bool) {
-	<div class={ "min-w-0 flex-1", templ.KV("save-success", success) }>
-		<span
-			class="font-medium text-foreground block truncate inline-editable"
-			tabindex="0"
-			hx-get={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/edit-title" }
-			hx-trigger="click, keydown[key=='Enter']"
-			hx-swap="outerHTML"
-			hx-target="closest div"
-			title={ "Click to edit: " + title }
-		>
-			{ title }
-		</span>
-		<a
-			href={ templ.URL(url) }
-			target="_blank"
-			class="text-[11px] text-muted-foreground hover:underline truncate block"
-			title={ url }
-		>
-			{ truncateURL(url, 50) }
-		</a>
-	</div>
-}
-
-// BookmarkTitleEdit renders the input field (edit mode)
-templ BookmarkTitleEdit(id int64, title string, url string) {
-	<div class="min-w-0 flex-1">
-		<input
-			type="text"
-			value={ title }
-			class="inline-edit-input w-full"
-			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/title" }
-			hx-trigger="blur, keyup[key=='Enter']"
-			hx-swap="outerHTML"
-			hx-target="closest div"
-			name="title"
-			autofocus
-		/>
-		<a
-			href={ templ.URL(url) }
-			target="_blank"
-			class="text-[11px] text-muted-foreground hover:underline truncate block"
-			title={ url }
-		>
-			{ truncateURL(url, 50) }
-		</a>
 	</div>
 }
 

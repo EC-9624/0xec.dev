@@ -85,9 +85,31 @@ templ collectionRow(collection models.Collection) {
 		data-description={ collection.GetDescription() }
 		data-is-public={ strconv.FormatBool(collection.IsPublic) }
 	>
-		<!-- Name (inline editable) -->
-		<td class="table-cell overflow-hidden">
-			@CollectionNameDisplay(collection.ID, collection.Name, collection.GetDescription(), collection.GetColor(), false)
+		<!-- Name -->
+		<td class="table-cell">
+			<div class="min-w-0">
+				<div class="flex items-center gap-2">
+					if collection.GetColor() != "" {
+						<span
+							class="w-3 h-3 rounded-full shrink-0"
+							style={ "background-color: " + collection.GetColor() }
+							title={ "Color: " + collection.GetColor() }
+						></span>
+					}
+					<a
+						href={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit") }
+						class="font-medium text-foreground hover:underline block truncate"
+						title={ collection.Name }
+					>
+						{ collection.Name }
+					</a>
+				</div>
+				if collection.GetDescription() != "" {
+					<p class="text-xs text-muted-foreground truncate mt-0.5">
+						{ truncateCollectionText(collection.GetDescription(), 60) }
+					</p>
+				}
+			</div>
 		</td>
 		<!-- Bookmarks Count -->
 		<td class="table-cell text-muted-foreground">
@@ -111,7 +133,7 @@ templ collectionRow(collection models.Collection) {
 				<a
 					href={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit") }
 					class="btn-ghost btn-xs"
-					title="Full edit"
+					title="Edit"
 				>
 					@components.EditIcon(components.IconMD)
 				</a>
@@ -365,50 +387,4 @@ templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
 	}
 }
 
-// CollectionNameDisplay renders the clickable name (display mode)
-templ CollectionNameDisplay(id int64, name string, description string, color string, success bool) {
-	<div class={ "min-w-0", templ.KV("save-success", success) }>
-		<div class="flex items-center">
-			if color != "" {
-				<span
-					class="w-3 h-3 rounded-full shrink-0"
-					style={ "background-color: " + color }
-					title={ "Color: " + color }
-				></span>
-			}
-			<span
-				class="font-medium text-foreground block truncate inline-editable"
-				tabindex="0"
-				hx-get={ "/admin/collections/" + strconv.FormatInt(id, 10) + "/edit-name" }
-				hx-trigger="click, keydown[key=='Enter']"
-				hx-swap="outerHTML"
-				hx-target="closest div.min-w-0"
-				title={ "Click to edit: " + name }
-			>
-				{ name }
-			</span>
-		</div>
-		if description != "" {
-			<p class="text-xs text-muted-foreground truncate mt-0.5">
-				{ truncateCollectionText(description, 60) }
-			</p>
-		}
-	</div>
-}
 
-// CollectionNameEdit renders the input field (edit mode)
-templ CollectionNameEdit(id int64, name string) {
-	<div class="min-w-0">
-		<input
-			type="text"
-			value={ name }
-			class="inline-edit-input w-full"
-			hx-post={ "/admin/collections/" + strconv.FormatInt(id, 10) + "/name" }
-			hx-trigger="blur, keyup[key=='Enter']"
-			hx-swap="outerHTML"
-			hx-target="closest div"
-			name="name"
-			autofocus
-		/>
-	</div>
-}

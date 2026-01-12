@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/internal/service"
@@ -573,71 +572,4 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	}
 
 	render(w, r, admin.BookmarkCollectionDropdown(id, currentCollectionID, hasCollection, collections, true))
-}
-
-// AdminGetBookmarkTitleEdit returns the title edit input field
-func (h *Handlers) AdminGetBookmarkTitleEdit(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
-		return
-	}
-
-	ctx := r.Context()
-	bookmark, err := h.service.GetBookmarkByID(ctx, id)
-	if err != nil {
-		http.Error(w, "Bookmark not found", http.StatusNotFound)
-		return
-	}
-
-	// Return the edit input
-	render(w, r, admin.BookmarkTitleEdit(id, bookmark.Title, bookmark.URL))
-}
-
-// AdminUpdateBookmarkTitle updates the title of a bookmark
-func (h *Handlers) AdminUpdateBookmarkTitle(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Invalid form data", http.StatusBadRequest)
-		return
-	}
-
-	ctx := r.Context()
-	title := strings.TrimSpace(r.FormValue("title"))
-
-	// Get current bookmark for URL (needed for display)
-	bookmark, err := h.service.GetBookmarkByID(ctx, id)
-	if err != nil {
-		http.Error(w, "Bookmark not found", http.StatusNotFound)
-		return
-	}
-
-	// Validate title
-	if title == "" {
-		// Return display mode with error (revert to original)
-		render(w, r, admin.BookmarkTitleDisplay(id, bookmark.Title, bookmark.URL, false))
-		return
-	}
-
-	// Update the title
-	err = h.service.UpdateBookmarkTitle(ctx, id, title)
-	if err != nil {
-		// Return display mode with original title on error
-		render(w, r, admin.BookmarkTitleDisplay(id, bookmark.Title, bookmark.URL, false))
-		return
-	}
-
-	// Send HX-Trigger to update row data attributes for filtering
-	// Escape the title for JSON
-	escapedTitle := strings.ReplaceAll(title, `\`, `\\`)
-	escapedTitle = strings.ReplaceAll(escapedTitle, `"`, `\"`)
-	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"updateRowData": {"id": %d, "title": "%s"}}`, id, escapedTitle))
-
-	// Return the updated display with success animation
-	render(w, r, admin.BookmarkTitleDisplay(id, title, bookmark.URL, true))
 }
