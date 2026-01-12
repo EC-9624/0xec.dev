@@ -28,7 +28,7 @@ func main() {
 	defer db.Close()
 
 	// Create handlers
-	h := handlers.New(cfg, db)
+	h := handlers.NewWithDB(cfg, db)
 
 	// Ensure admin user exists
 	if err := h.Service().EnsureAdminExists(context.Background(), cfg.AdminUser, cfg.AdminPass); err != nil {

@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"context"
 	"database/sql"
-	"io"
 	"net/http"
 
 	"github.com/EC-9624/0xec.dev/internal/config"
@@ -15,25 +13,32 @@ import (
 // Handlers contains all HTTP handlers and their dependencies
 type Handlers struct {
 	config  *config.Config
-	service *service.Service
+	service service.ServiceInterface
 }
 
-// New creates a new Handlers instance with all dependencies
-func New(cfg *config.Config, db *sql.DB) *Handlers {
+// New creates a new Handlers instance with a service interface.
+// Use this constructor when you have a pre-configured service (e.g., for testing).
+func New(cfg *config.Config, svc service.ServiceInterface) *Handlers {
 	return &Handlers{
 		config:  cfg,
-		service: service.New(db),
+		service: svc,
 	}
 }
 
-// Service returns the service for middleware use
-func (h *Handlers) Service() *service.Service {
-	return h.service
+// NewWithDB creates a new Handlers instance with a database connection.
+// This is the standard constructor for production use.
+func NewWithDB(cfg *config.Config, db *sql.DB) *Handlers {
+	return New(cfg, service.New(db))
 }
 
-// templComponent is an interface that matches templ.Component
-type templComponent interface {
-	Render(ctx context.Context, w io.Writer) error
+// Service returns the service for middleware use.
+// Note: Returns the concrete *service.Service for compatibility with middleware.
+func (h *Handlers) Service() *service.Service {
+	// Type assertion - this will work in production where we use NewWithDB
+	if svc, ok := h.service.(*service.Service); ok {
+		return svc
+	}
+	return nil
 }
 
 // render is a helper to render templ components

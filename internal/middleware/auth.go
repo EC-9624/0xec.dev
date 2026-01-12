@@ -5,15 +5,21 @@ import (
 	"net/http"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
-	"github.com/EC-9624/0xec.dev/internal/service"
 )
 
 type contextKey string
 
 const UserContextKey contextKey = "user"
 
+// AuthService defines the interface for authentication-related service methods.
+// This interface allows for easier testing by enabling mock implementations.
+type AuthService interface {
+	GetSession(ctx context.Context, sessionID string) (*models.Session, error)
+	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+}
+
 // Auth middleware checks for valid session
-func Auth(svc *service.Service) func(http.Handler) http.Handler {
+func Auth(svc AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
