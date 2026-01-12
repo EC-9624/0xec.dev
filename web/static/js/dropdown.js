@@ -85,8 +85,16 @@
         return;
       }
 
-      // Move menu to portal if portal exists
-      if (this.portal && this.menu) {
+      // Check if any option has HTMX attributes
+      const hasHtmxOptions = [...this.options].some(opt => 
+        opt.hasAttribute('hx-post') || opt.hasAttribute('hx-get') || 
+        opt.hasAttribute('hx-put') || opt.hasAttribute('hx-delete') || 
+        opt.hasAttribute('hx-patch')
+      );
+
+      // Move menu to portal if portal exists AND no HTMX options
+      // (HTMX options need to stay in DOM tree for "closest" selectors to work)
+      if (this.portal && this.menu && !hasHtmxOptions) {
         this.menu.remove();
         this.portal.appendChild(this.menu);
       }
@@ -127,8 +135,16 @@
       // Handle option selection
       this.options.forEach(opt => {
         const handler = (e) => {
-          e.preventDefault();
-          this.select(opt);
+          // Check if this option has HTMX attributes - if so, let HTMX handle the click
+          const hasHtmx = opt.hasAttribute('hx-post') || opt.hasAttribute('hx-get') || 
+                          opt.hasAttribute('hx-put') || opt.hasAttribute('hx-delete') || 
+                          opt.hasAttribute('hx-patch');
+          
+          if (!hasHtmx) {
+            e.preventDefault();
+          }
+          
+          this.select(opt, hasHtmx);
         };
         this._handlers.optionClicks.push({ element: opt, handler });
         opt.addEventListener('click', handler);
@@ -230,8 +246,15 @@
     /**
      * Select an option
      * @param {HTMLElement} opt - Option element to select
+     * @param {boolean} isHtmx - Whether this option has HTMX attributes (skip UI updates, HTMX will replace element)
      */
-    select(opt) {
+    select(opt, isHtmx = false) {
+      // For HTMX options, just close - HTMX will handle the rest and replace the element
+      if (isHtmx) {
+        this.close();
+        return;
+      }
+
       const value = opt.dataset.value;
       const label = opt.textContent.trim();
 

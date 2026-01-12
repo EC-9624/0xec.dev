@@ -104,11 +104,11 @@ templ collectionRow(collection models.Collection) {
 		<td class="table-cell">
 			<div class="min-w-0">
 				<div class="flex items-center gap-1.5">
-				if collection.BookmarkCount > 0 {
-					<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
-						@components.ChevronRightIcon(components.IconSM)
-					</span>
-				} else {
+					if collection.BookmarkCount > 0 {
+						<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+							@components.ChevronRightIcon(components.IconSM)
+						</span>
+					} else {
 						<span class="w-5"></span>
 					}
 					if collection.GetColor() != "" {
@@ -506,11 +506,13 @@ templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
 // ============================================
 
 // handleCollectionRowKeydown handles keyboard events for expandable rows
+
 script handleCollectionRowKeydown(collectionID int64) {
 	ExpandableRow.handleKeydown(event, 'collection', collectionID.toString());
 }
 
 // toggleCollectionExpand generates the onclick handler for expanding/collapsing collection bookmarks
+
 script toggleCollectionExpand(collectionID int64) {
 	ExpandableRow.toggle('collection', collectionID.toString());
 }
@@ -543,22 +545,23 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 							{ bookmark.Title }
 						</a>
 					</div>
-					<!-- Domain -->
-					<div class="text-xs text-muted-foreground w-32 shrink-0 truncate">
+					<!-- Domain (external link) -->
+					<a
+						href={ templ.URL(bookmark.URL) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-32 shrink-0 truncate"
+						title={ bookmark.URL }
+					>
 						{ bookmark.Domain }
-					</div>
+						@components.ExternalLinkIcon(components.IconXS)
+					</a>
 					<!-- Favorite -->
 					<div class="shrink-0 w-6 text-center">
 						if bookmark.IsFavorite {
-							<span class="text-amber-500" title="Favorite">★</span>
-						}
-					</div>
-					<!-- Status -->
-					<div class="shrink-0 w-16">
-						if bookmark.IsPublic {
-							<span class="badge-success text-xs">Public</span>
-						} else {
-							<span class="badge-muted text-xs">Private</span>
+							<span class="text-amber-500" title="Favorite">
+								@components.StarFilledIcon(components.IconSM)
+							</span>
 						}
 					</div>
 					<!-- Actions -->
