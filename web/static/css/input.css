@@ -957,21 +957,30 @@
     @apply flex items-center gap-2 p-3 mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/50;
   }
 
-  .form-error-icon {
-    @apply shrink-0 text-base;
-  }
-
-  /* Field-level error state */
+  /* Field-level error state - border only, no focus ring */
   .input-error {
-    @apply border-destructive focus-visible:ring-destructive;
+    @apply border-destructive focus-visible:ring-0 focus-visible:ring-offset-0;
   }
 
   .textarea-error {
-    @apply border-destructive focus-visible:ring-destructive;
+    @apply border-destructive focus-visible:ring-0 focus-visible:ring-offset-0;
   }
 
   .select-error {
-    @apply border-destructive focus-visible:ring-destructive;
+    @apply border-destructive focus-visible:ring-0 focus-visible:ring-offset-0;
+  }
+
+  /* Form select trigger - match input styling for dropdown in forms */
+  .form-select-trigger {
+    @apply flex items-center justify-between gap-2 w-full
+           h-10 bg-background border border-input px-3 text-sm text-left
+           hover:bg-muted/50 cursor-pointer
+           focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .form-select-trigger-error {
+    @apply border-destructive focus-visible:ring-0 focus-visible:ring-offset-0;
   }
 
   /* Field error message */

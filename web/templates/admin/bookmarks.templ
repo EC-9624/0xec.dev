@@ -485,20 +485,13 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, i
 							@BookmarkMetadataFieldsWithErrors(bookmark, errors, input)
 						</div>
 						<div class="space-y-2">
-							<label for="collection_id" class="label">Collection</label>
-							<select id="collection_id" name="collection_id" class="input">
-								<option value="">No collection</option>
-								for _, collection := range collections {
-									<option
-										value={ strconv.FormatInt(collection.ID, 10) }
-										if bookmarkFormCollectionSelected(bookmark, input, collection.ID) {
-											selected
-										}
-									>
-										{ collection.Name }
-									</option>
-								}
-							</select>
+							<label class="label">Collection</label>
+							@components.FormSelect(components.FormSelectProps{
+								ID:          "collection_id",
+								Options:     collectionsToFormOptions(collections),
+								Selected:    getSelectedCollectionValue(bookmark, input),
+								Placeholder: "No collection",
+							})
 						</div>
 						<div class="flex items-center gap-6">
 							<div class="flex items-center space-x-2">
@@ -689,6 +682,29 @@ func bookmarkFormIsFavorite(bookmark *models.Bookmark, input *models.CreateBookm
 	return false // Default to not favorite for new bookmarks
 }
 
+// collectionsToFormOptions converts collections to FormSelect options
+func collectionsToFormOptions(collections []models.Collection) []components.FormSelectOption {
+	opts := make([]components.FormSelectOption, len(collections))
+	for i, c := range collections {
+		opts[i] = components.FormSelectOption{
+			Value: strconv.FormatInt(c.ID, 10),
+			Label: c.Name,
+		}
+	}
+	return opts
+}
+
+// getSelectedCollectionValue returns the selected collection ID as string for form select
+func getSelectedCollectionValue(bookmark *models.Bookmark, input *models.CreateBookmarkInput) string {
+	if input != nil && input.CollectionID != nil {
+		return strconv.FormatInt(*input.CollectionID, 10)
+	}
+	if bookmark != nil && bookmark.CollectionID.Valid {
+		return strconv.FormatInt(bookmark.CollectionID.Int64, 10)
+	}
+	return ""
+}
+
 // ============================================
 // INLINE EDIT PARTIALS (for HTMX responses)
 // ============================================
@@ -877,20 +893,13 @@ templ BookmarkFormDrawer(bookmark *models.Bookmark, collections []models.Collect
 			</div>
 			<!-- Collection -->
 			<div class="space-y-2 mb-6">
-				<label for="collection_id" class="label">Collection</label>
-				<select id="collection_id" name="collection_id" class="input">
-					<option value="">No collection</option>
-					for _, collection := range collections {
-						<option
-							value={ strconv.FormatInt(collection.ID, 10) }
-							if bookmarkFormCollectionSelected(bookmark, input, collection.ID) {
-								selected
-							}
-						>
-							{ collection.Name }
-						</option>
-					}
-				</select>
+				<label class="label">Collection</label>
+				@components.FormSelect(components.FormSelectProps{
+					ID:          "collection_id",
+					Options:     collectionsToFormOptions(collections),
+					Selected:    getSelectedCollectionValue(bookmark, input),
+					Placeholder: "No collection",
+				})
 			</div>
 			<!-- Checkboxes -->
 			<div class="flex items-center gap-6">

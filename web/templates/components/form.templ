@@ -3,15 +3,11 @@ package components
 import "github.com/EC-9624/0xec.dev/internal/models"
 
 // FormErrorBanner displays the form-level error banner at the top of a form
+// Only shows when there's a general error message (not for field-level errors)
 templ FormErrorBanner(errors *models.FormErrors) {
-	if errors != nil && errors.HasErrors() {
+	if errors != nil && errors.General != "" {
 		<div class="form-error">
-			<span class="form-error-icon">!</span>
-			if errors.General != "" {
-				{ errors.General }
-			} else {
-				Please fix the errors below
-			}
+			{ errors.General }
 		</div>
 	}
 }
@@ -45,4 +41,109 @@ func SelectClass(errors *models.FormErrors, field string) string {
 		return "input select-error"
 	}
 	return "input"
+}
+
+// ============================================
+// FORM SELECT COMPONENT
+// ============================================
+
+// FormSelectOption represents a single option in a form select dropdown
+type FormSelectOption struct {
+	Value string
+	Label string
+}
+
+// FormSelectProps contains properties for the FormSelect component
+type FormSelectProps struct {
+	ID          string             // Hidden input ID (also used as name if Name not set)
+	Name        string             // Form field name (optional, defaults to ID)
+	Options     []FormSelectOption // Available options
+	Selected    string             // Currently selected value
+	Placeholder string             // Placeholder text when nothing selected
+	Errors      *models.FormErrors // For error styling (optional)
+	Field       string             // Field name for error lookup (optional)
+}
+
+// FormSelect renders a custom dropdown for use in forms
+// Works with existing dropdown.js - uses hidden input for form submission
+templ FormSelect(props FormSelectProps) {
+	<div data-dropdown class="dropdown w-full">
+		<input
+			type="hidden"
+			id={ props.ID }
+			name={ formSelectName(props) }
+			value={ props.Selected }
+		/>
+		<button
+			type="button"
+			data-dropdown-trigger
+			class={ formSelectTriggerClass(props.Errors, props.Field) }
+			aria-expanded="false"
+		>
+			<span data-dropdown-label class="truncate">
+				{ formSelectLabel(props) }
+			</span>
+			@ChevronDownIcon(IconSM)
+		</button>
+		<div data-dropdown-menu class="dropdown-menu hidden">
+			if props.Placeholder != "" {
+				<button
+					type="button"
+					data-dropdown-option
+					data-value=""
+					class="dropdown-option"
+					if props.Selected == "" {
+						data-selected="true"
+					}
+				>
+					{ props.Placeholder }
+				</button>
+			}
+			for _, opt := range props.Options {
+				<button
+					type="button"
+					data-dropdown-option
+					data-value={ opt.Value }
+					class="dropdown-option"
+					if props.Selected == opt.Value {
+						data-selected="true"
+					}
+				>
+					{ opt.Label }
+				</button>
+			}
+		</div>
+	</div>
+}
+
+// formSelectName returns the name attribute value for the hidden input
+func formSelectName(props FormSelectProps) string {
+	if props.Name != "" {
+		return props.Name
+	}
+	return props.ID
+}
+
+// formSelectTriggerClass returns the CSS class for the trigger button
+func formSelectTriggerClass(errors *models.FormErrors, field string) string {
+	if errors != nil && field != "" && errors.HasField(field) {
+		return "form-select-trigger form-select-trigger-error"
+	}
+	return "form-select-trigger"
+}
+
+// formSelectLabel returns the label to display in the trigger
+func formSelectLabel(props FormSelectProps) string {
+	if props.Selected == "" {
+		if props.Placeholder != "" {
+			return props.Placeholder
+		}
+		return "Select..."
+	}
+	for _, opt := range props.Options {
+		if opt.Value == props.Selected {
+			return opt.Label
+		}
+	}
+	return props.Placeholder
 }
