@@ -1,6 +1,6 @@
 -- name: CreateBookmark :one
-INSERT INTO bookmarks (url, title, description, excerpt, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+INSERT INTO bookmarks (url, title, description, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING *;
 
 -- name: UpdateBookmark :exec

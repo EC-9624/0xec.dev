@@ -35,7 +35,6 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 		Url:          input.URL,
 		Title:        input.Title,
 		Description:  strPtr(input.Description),
-		Excerpt:      nil,
 		CoverImage:   strPtr(input.CoverImage),
 		Favicon:      strPtr(input.Favicon),
 		Domain:       strPtr(domain),
@@ -262,9 +261,6 @@ func dbBookmarkToModel(b db.Bookmark, tags []db.Tag) *models.Bookmark {
 
 	if b.Description != nil {
 		bookmark.Description = sql.NullString{String: *b.Description, Valid: true}
-	}
-	if b.Excerpt != nil {
-		bookmark.Excerpt = sql.NullString{String: *b.Excerpt, Valid: true}
 	}
 	if b.CoverImage != nil {
 		bookmark.CoverImage = sql.NullString{String: *b.CoverImage, Valid: true}

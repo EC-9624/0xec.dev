@@ -1,4 +1,4 @@
-.PHONY: dev build run clean templ css install setup sqlc seed
+.PHONY: dev build run clean templ css install setup sqlc seed db db-backup db-reset
 
 # Tailwind standalone CLI
 TAILWIND := ./bin/tailwindcss
@@ -48,6 +48,23 @@ sqlc:
 # Seed database with sample data
 seed:
 	go run ./cmd/seed
+
+# Open database with sqlite3 CLI (pretty formatting)
+db:
+	@sqlite3 -header -box ./data/site.db
+
+# Backup database with timestamp
+db-backup:
+	@mkdir -p ./data/backups
+	@cp ./data/site.db "./data/backups/site.db.$(shell date +%Y%m%d_%H%M%S)"
+	@echo "Database backed up to ./data/backups/"
+
+# Reset database (delete and recreate)
+db-reset:
+	@echo "This will DELETE all data. Press Ctrl+C to cancel, Enter to continue..."
+	@read _
+	@rm -f ./data/site.db
+	@echo "Database deleted. Run 'make dev' or 'make run' to recreate."
 
 # Build CSS
 css:
@@ -100,6 +117,9 @@ help:
 	@echo "  make css        - Build CSS"
 	@echo "  make css-watch  - Watch CSS for changes"
 	@echo "  make seed       - Seed database with sample data"
+	@echo "  make db         - Open SQLite CLI with pretty formatting"
+	@echo "  make db-backup  - Backup database with timestamp"
+	@echo "  make db-reset   - Delete database (recreated on next run)"
 	@echo "  make clean      - Clean build artifacts"
 	@echo "  make fmt        - Format code"
 	@echo "  make test       - Run tests"

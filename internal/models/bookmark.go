@@ -12,7 +12,6 @@ type Bookmark struct {
 	URL          string         `json:"url"`
 	Title        string         `json:"title"`
 	Description  sql.NullString `json:"description"`
-	Excerpt      sql.NullString `json:"excerpt"`
 	CoverImage   sql.NullString `json:"cover_image"`
 	Favicon      sql.NullString `json:"favicon"`
 	Domain       sql.NullString `json:"domain"`

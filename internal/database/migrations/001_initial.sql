@@ -73,7 +73,6 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     url             TEXT NOT NULL,
     title           TEXT NOT NULL,
     description     TEXT,
-    excerpt         TEXT,
     cover_image     TEXT,
     favicon         TEXT,
     domain          TEXT,

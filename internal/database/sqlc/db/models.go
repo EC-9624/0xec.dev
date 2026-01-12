@@ -23,7 +23,6 @@ type Bookmark struct {
 	Url          string     `json:"url"`
 	Title        string     `json:"title"`
 	Description  *string    `json:"description"`
-	Excerpt      *string    `json:"excerpt"`
 	CoverImage   *string    `json:"cover_image"`
 	Favicon      *string    `json:"favicon"`
 	Domain       *string    `json:"domain"`
