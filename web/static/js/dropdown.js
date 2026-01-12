@@ -1,6 +1,11 @@
 /**
- * Custom Dropdown Component
- * Lightweight vanilla JS dropdown that matches boxy monospace design
+ * Custom Dropdown Component with Portal Pattern
+ * Renders dropdown menus in a portal container to escape overflow constraints.
+ * Features:
+ * - Portal rendering (escapes overflow:hidden)
+ * - Close on click outside
+ * - Keyboard navigation
+ * - HTMX cleanup support
  */
 class Dropdown {
   constructor(el) {
@@ -11,6 +16,13 @@ class Dropdown {
     this.labelEl = el.querySelector('[data-dropdown-label]');
     this.options = el.querySelectorAll('[data-dropdown-option]');
     this.isOpen = false;
+    this.portal = document.getElementById('dropdown-portal');
+
+    // Move menu to portal if portal exists
+    if (this.portal && this.menu) {
+      this.menu.remove();
+      this.portal.appendChild(this.menu);
+    }
 
     this.init();
   }
@@ -25,7 +37,9 @@ class Dropdown {
 
     // Close on click outside
     document.addEventListener('click', (e) => {
-      if (!this.el.contains(e.target)) this.close();
+      if (!this.el.contains(e.target) && !this.menu.contains(e.target)) {
+        this.close();
+      }
     });
 
     // Handle option selection
@@ -38,6 +52,7 @@ class Dropdown {
 
     // Keyboard navigation
     this.el.addEventListener('keydown', (e) => this.handleKeydown(e));
+    this.menu.addEventListener('keydown', (e) => this.handleKeydown(e));
   }
 
   toggle() {
@@ -45,15 +60,62 @@ class Dropdown {
   }
 
   open() {
+    // Close any other open dropdowns first
+    window.dropdowns.forEach((dropdown, key) => {
+      if (dropdown !== this && dropdown.isOpen) {
+        dropdown.close();
+      }
+    });
+
     this.isOpen = true;
-    this.menu.classList.remove('hidden');
+    this.menu.style.display = 'block';
+    this.positionMenu();
     this.trigger.setAttribute('aria-expanded', 'true');
+
+    // Close on scroll (except scrolling within the dropdown menu itself)
+    this._scrollHandler = (e) => {
+      // Don't close if scrolling inside the dropdown menu
+      if (this.menu.contains(e.target)) return;
+      this.close();
+    };
+    window.addEventListener('scroll', this._scrollHandler, true);
   }
 
   close() {
     this.isOpen = false;
-    this.menu.classList.add('hidden');
+    this.menu.style.display = 'none';
     this.trigger.setAttribute('aria-expanded', 'false');
+
+    // Remove scroll listener
+    if (this._scrollHandler) {
+      window.removeEventListener('scroll', this._scrollHandler, true);
+      this._scrollHandler = null;
+    }
+  }
+
+  positionMenu() {
+    const triggerRect = this.trigger.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - triggerRect.bottom - 4; // 4px margin from viewport edge
+    const spaceAbove = triggerRect.top - 4; // 4px margin from viewport top
+    const defaultMaxHeight = 240;
+
+    // Set width
+    this.menu.style.width = `${triggerRect.width}px`;
+    this.menu.style.left = `${triggerRect.left}px`;
+
+    // Decide direction: open upward if not enough space below but more space above
+    if (spaceBelow < defaultMaxHeight && spaceAbove > spaceBelow) {
+      // Open upward
+      const maxHeight = Math.min(defaultMaxHeight, spaceAbove);
+      this.menu.style.maxHeight = `${maxHeight}px`;
+      this.menu.style.top = `${triggerRect.top - Math.min(this.menu.scrollHeight, maxHeight) - 2}px`;
+    } else {
+      // Open downward (default)
+      const maxHeight = Math.min(defaultMaxHeight, spaceBelow);
+      this.menu.style.maxHeight = `${maxHeight}px`;
+      this.menu.style.top = `${triggerRect.bottom + 2}px`;
+    }
   }
 
   select(opt) {
@@ -92,6 +154,7 @@ class Dropdown {
   handleKeydown(e) {
     if (e.key === 'Escape') {
       this.close();
+      this.trigger.focus();
     }
     if (e.key === 'Enter' && !this.isOpen) {
       e.preventDefault();
@@ -111,6 +174,15 @@ class Dropdown {
       items[next].focus();
     }
   }
+
+  // Cleanup method for HTMX integration
+  destroy() {
+    this.close();
+    // Remove menu from portal
+    if (this.menu && this.menu.parentNode === this.portal) {
+      this.menu.remove();
+    }
+  }
 }
 
 // Store dropdown instances for external access
@@ -118,8 +190,13 @@ window.dropdowns = new Map();
 
 // Initialize a single dropdown element
 function initDropdown(el) {
-  const dropdown = new Dropdown(el);
+  // Skip if already initialized
   const input = el.querySelector('input[type="hidden"]');
+  if (input && input.id && window.dropdowns.has(input.id)) {
+    return window.dropdowns.get(input.id);
+  }
+
+  const dropdown = new Dropdown(el);
   if (input && input.id) {
     window.dropdowns.set(input.id, dropdown);
   }
@@ -144,4 +221,19 @@ document.addEventListener('htmx:afterSettle', (e) => {
   if (target.querySelectorAll) {
     target.querySelectorAll('[data-dropdown]').forEach(initDropdown);
   }
+});
+
+// Clean up dropdowns before HTMX swaps content (prevents orphan menus in portal)
+document.addEventListener('htmx:beforeSwap', (e) => {
+  const target = e.detail.elt;
+  if (!target || !target.querySelectorAll) return;
+  
+  // Find dropdowns being removed and destroy them
+  target.querySelectorAll('[data-dropdown]').forEach(el => {
+    const input = el.querySelector('input[type="hidden"]');
+    if (input && input.id && window.dropdowns.has(input.id)) {
+      window.dropdowns.get(input.id).destroy();
+      window.dropdowns.delete(input.id);
+    }
+  });
 });

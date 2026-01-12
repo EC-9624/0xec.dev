@@ -266,8 +266,10 @@
   }
 
   // Re-initialize after HTMX swaps
-  document.body.addEventListener('htmx:afterSwap', (e) => {
-    e.detail.target.querySelectorAll('[data-tag-select]').forEach(initTagSelect);
+  document.addEventListener('htmx:afterSwap', (e) => {
+    if (e.detail && e.detail.target && e.detail.target.querySelectorAll) {
+      e.detail.target.querySelectorAll('[data-tag-select]').forEach(initTagSelect);
+    }
   });
 
   // Export for manual initialization

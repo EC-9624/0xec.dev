@@ -201,9 +201,11 @@
   }
 
   // Re-initialize after HTMX swaps (for dynamic content)
-  document.body.addEventListener('htmx:afterSwap', function(e) {
-    const forms = e.detail.target.querySelectorAll('form[data-validate]');
-    forms.forEach(initForm);
+  document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail && e.detail.target) {
+      const forms = e.detail.target.querySelectorAll('form[data-validate]');
+      forms.forEach(initForm);
+    }
   });
 
   // Export for manual initialization

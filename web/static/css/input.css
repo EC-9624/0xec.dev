@@ -630,8 +630,8 @@
   }
 
   .dropdown-menu {
-    @apply absolute top-full left-0 mt-0.5 w-full z-50
-           bg-card border border-border shadow-md max-h-60 overflow-y-auto;
+    @apply fixed z-[100] bg-card border border-border shadow-md max-h-60 overflow-y-auto;
+    display: none;
   }
 
   .dropdown-option {
