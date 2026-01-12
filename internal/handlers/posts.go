@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/models"
@@ -226,4 +227,42 @@ func (h *Handlers) AdminPostDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/posts", http.StatusSeeOther)
+}
+
+// ============================================
+// INLINE EDITING HANDLERS
+// ============================================
+
+// AdminTogglePostDraft toggles the draft/published status of a post
+func (h *Handlers) AdminTogglePostDraft(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	post, err := h.service.GetPostByID(ctx, id)
+	if err != nil {
+		http.Error(w, "Post not found", http.StatusNotFound)
+		return
+	}
+
+	// Toggle the draft status
+	newIsDraft := !post.IsDraft
+	err = h.service.UpdatePostDraft(ctx, id, newIsDraft)
+	if err != nil {
+		http.Error(w, "Failed to update post", http.StatusInternalServerError)
+		return
+	}
+
+	// Get updated post for the new published_at date
+	updatedPost, err := h.service.GetPostByID(ctx, id)
+	if err != nil {
+		http.Error(w, "Failed to get updated post", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the updated badge
+	render(w, r, admin.PostDraftBadge(updatedPost.ID, updatedPost.IsDraft, updatedPost.PublishedAt, true))
 }

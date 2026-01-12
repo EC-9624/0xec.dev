@@ -240,6 +240,54 @@ func dbPostToModel(p db.Post, tags []db.Tag) *models.Post {
 	return post
 }
 
+// ============================================
+// INLINE EDITING METHODS
+// ============================================
+
+// UpdatePostDraft updates the draft status of a post
+// When publishing: sets is_draft=0 and published_at=now (overwrites previous date)
+// When unpublishing: sets is_draft=1 and keeps published_at unchanged
+func (s *Service) UpdatePostDraft(ctx context.Context, id int64, isDraft bool) error {
+	post, err := s.GetPostByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	var draftVal int64 = 1
+	var publishedAt *time.Time
+
+	if isDraft {
+		// Unpublishing - keep existing published_at
+		draftVal = 1
+		if post.PublishedAt.Valid {
+			publishedAt = &post.PublishedAt.Time
+		}
+	} else {
+		// Publishing - set new published_at
+		draftVal = 0
+		now := time.Now()
+		publishedAt = &now
+	}
+
+	err = s.queries.UpdatePostDraft(ctx, db.UpdatePostDraftParams{
+		IsDraft:     &draftVal,
+		PublishedAt: publishedAt,
+		ID:          id,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Log activity
+	if !isDraft {
+		s.LogActivity(ctx, ActionPostPublished, EntityPost, id, post.Title, nil)
+	} else {
+		s.LogActivity(ctx, ActionPostUpdated, EntityPost, id, post.Title, nil)
+	}
+
+	return nil
+}
+
 func strPtr(s string) *string {
 	if s == "" {
 		return nil

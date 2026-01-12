@@ -336,3 +336,35 @@ func (q *Queries) UpdateCollection(ctx context.Context, arg UpdateCollectionPara
 	)
 	return err
 }
+
+const updateCollectionName = `-- name: UpdateCollectionName :exec
+
+UPDATE collections SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type UpdateCollectionNameParams struct {
+	Name string `json:"name"`
+	ID   int64  `json:"id"`
+}
+
+// ============================================
+// INLINE EDITING QUERIES
+// ============================================
+func (q *Queries) UpdateCollectionName(ctx context.Context, arg UpdateCollectionNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateCollectionName, arg.Name, arg.ID)
+	return err
+}
+
+const updateCollectionPublic = `-- name: UpdateCollectionPublic :exec
+UPDATE collections SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type UpdateCollectionPublicParams struct {
+	IsPublic *int64 `json:"is_public"`
+	ID       int64  `json:"id"`
+}
+
+func (q *Queries) UpdateCollectionPublic(ctx context.Context, arg UpdateCollectionPublicParams) error {
+	_, err := q.db.ExecContext(ctx, updateCollectionPublic, arg.IsPublic, arg.ID)
+	return err
+}

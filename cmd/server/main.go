@@ -117,6 +117,8 @@ func main() {
 	adminMux.HandleFunc("GET /admin/posts/{slug}/edit", h.AdminPostEdit)
 	adminMux.HandleFunc("POST /admin/posts/{slug}", h.AdminPostUpdate)
 	adminMux.HandleFunc("DELETE /admin/posts/{slug}", h.AdminPostDelete)
+	// Inline editing routes (HTMX)
+	adminMux.HandleFunc("POST /admin/posts/{id}/toggle-draft", h.AdminTogglePostDraft)
 
 	// Bookmarks admin
 	adminMux.HandleFunc("GET /admin/bookmarks", h.AdminBookmarksList)
@@ -146,6 +148,10 @@ func main() {
 	adminMux.HandleFunc("GET /admin/collections/{id}/edit", h.AdminCollectionEdit)
 	adminMux.HandleFunc("POST /admin/collections/{id}", h.AdminCollectionUpdate)
 	adminMux.HandleFunc("DELETE /admin/collections/{id}", h.AdminCollectionDelete)
+	// Inline editing routes (HTMX)
+	adminMux.HandleFunc("POST /admin/collections/{id}/toggle-public", h.AdminToggleCollectionPublic)
+	adminMux.HandleFunc("GET /admin/collections/{id}/edit-name", h.AdminGetCollectionNameEdit)
+	adminMux.HandleFunc("POST /admin/collections/{id}/name", h.AdminUpdateCollectionName)
 
 	// Wrap admin routes with CSRF + Auth middleware
 	// Order: CSRF runs first (sets token), then Auth checks session

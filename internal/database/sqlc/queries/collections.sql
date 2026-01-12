@@ -39,3 +39,13 @@ ORDER BY c.sort_order, c.name;
 
 -- name: GetCollectionBookmarkCount :one
 SELECT COUNT(*) FROM bookmarks WHERE collection_id = ?;
+
+-- ============================================
+-- INLINE EDITING QUERIES
+-- ============================================
+
+-- name: UpdateCollectionName :exec
+UPDATE collections SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+
+-- name: UpdateCollectionPublic :exec
+UPDATE collections SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;

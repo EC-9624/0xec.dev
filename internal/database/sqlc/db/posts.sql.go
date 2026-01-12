@@ -308,3 +308,22 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
 	)
 	return err
 }
+
+const updatePostDraft = `-- name: UpdatePostDraft :exec
+
+UPDATE posts SET is_draft = ?, published_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type UpdatePostDraftParams struct {
+	IsDraft     *int64     `json:"is_draft"`
+	PublishedAt *time.Time `json:"published_at"`
+	ID          int64      `json:"id"`
+}
+
+// ============================================
+// INLINE EDITING QUERIES
+// ============================================
+func (q *Queries) UpdatePostDraft(ctx context.Context, arg UpdatePostDraftParams) error {
+	_, err := q.db.ExecContext(ctx, updatePostDraft, arg.IsDraft, arg.PublishedAt, arg.ID)
+	return err
+}

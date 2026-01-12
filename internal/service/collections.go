@@ -178,6 +178,44 @@ func dbCollectionToModel(c db.Collection, bookmarkCount int) *models.Collection 
 	return collection
 }
 
+// ============================================
+// INLINE EDITING METHODS
+// ============================================
+
+// UpdateCollectionName updates only the name of a collection
+func (s *Service) UpdateCollectionName(ctx context.Context, id int64, name string) error {
+	err := s.queries.UpdateCollectionName(ctx, db.UpdateCollectionNameParams{
+		Name: name,
+		ID:   id,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Log activity
+	s.LogActivity(ctx, ActionCollectionUpdated, EntityCollection, id, name, nil)
+
+	return nil
+}
+
+// UpdateCollectionPublic updates only the public status of a collection
+func (s *Service) UpdateCollectionPublic(ctx context.Context, id int64, isPublic bool) error {
+	var val int64 = 0
+	if isPublic {
+		val = 1
+	}
+
+	err := s.queries.UpdateCollectionPublic(ctx, db.UpdateCollectionPublicParams{
+		IsPublic: &val,
+		ID:       id,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Helper function to convert sqlc ListAllCollectionsWithCountsRow to domain model
 func dbCollectionRowToModel(c db.ListAllCollectionsWithCountsRow) *models.Collection {
 	collection := &models.Collection{

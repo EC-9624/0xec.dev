@@ -46,3 +46,10 @@ DELETE FROM post_tags WHERE post_id = ?;
 
 -- name: AddPostTag :exec
 INSERT INTO post_tags (post_id, tag_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP);
+
+-- ============================================
+-- INLINE EDITING QUERIES
+-- ============================================
+
+-- name: UpdatePostDraft :exec
+UPDATE posts SET is_draft = ?, published_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
