@@ -19,11 +19,14 @@ class SimpleMasonry {
   init() {
     this.container.style.position = 'relative';
 
-    // Debounced window resize handler
-    window.addEventListener('resize', () => {
+    // Store bound handler for cleanup
+    this._resizeHandler = () => {
       clearTimeout(this.resizeTimeout);
       this.resizeTimeout = setTimeout(() => this.layout(), 150);
-    });
+    };
+
+    // Debounced window resize handler
+    window.addEventListener('resize', this._resizeHandler);
 
     // Use ResizeObserver to detect when items change size (e.g., lazy images load)
     this.resizeObserver = new ResizeObserver((entries) => {
@@ -123,11 +126,17 @@ class SimpleMasonry {
     this.container.style.height = `${maxHeight}px`;
   }
 
-  // Clean up observers
+  // Clean up observers and event listeners
   destroy() {
     this.resizeObserver.disconnect();
     clearTimeout(this.resizeTimeout);
     clearTimeout(this.layoutTimeout);
+    
+    // Remove window resize listener
+    if (this._resizeHandler) {
+      window.removeEventListener('resize', this._resizeHandler);
+      this._resizeHandler = null;
+    }
   }
 }
 

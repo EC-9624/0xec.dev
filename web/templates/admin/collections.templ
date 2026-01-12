@@ -88,11 +88,12 @@ templ collectionRow(collection models.Collection) {
 			aria-expanded="false"
 			onclick={ toggleCollectionExpand(collection.ID) }
 			onkeydown={ handleCollectionRowKeydown(collection.ID) }
+			data-expandable-id={ strconv.FormatInt(collection.ID, 10) }
+			data-expandable-type="collection"
 		} else {
 			class="table-row group"
 		}
 		id={ "collection-row-" + strconv.FormatInt(collection.ID, 10) }
-		data-collection-id={ strconv.FormatInt(collection.ID, 10) }
 		data-expanded="false"
 		data-name={ collection.Name }
 		data-slug={ collection.Slug }
@@ -103,11 +104,11 @@ templ collectionRow(collection models.Collection) {
 		<td class="table-cell">
 			<div class="min-w-0">
 				<div class="flex items-center gap-1.5">
-					if collection.BookmarkCount > 0 {
-						<span class="collection-expand-btn p-0.5 -ml-1 transition-transform duration-200">
-							@components.ChevronRightIcon(components.IconSM)
-						</span>
-					} else {
+				if collection.BookmarkCount > 0 {
+					<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+						@components.ChevronRightIcon(components.IconSM)
+					</span>
+				} else {
 						<span class="w-5"></span>
 					}
 					if collection.GetColor() != "" {
@@ -170,12 +171,12 @@ templ collectionRow(collection models.Collection) {
 	</tr>
 	<!-- Expandable bookmarks container (inserted after row) -->
 	<tr
-		id={ "collection-bookmarks-" + strconv.FormatInt(collection.ID, 10) }
+		id={ "collection-details-" + strconv.FormatInt(collection.ID, 10) }
 		class="hidden"
 	>
 		<td colspan="4" class="p-0 border-t-0">
 			<div
-				id={ "collection-bookmarks-content-" + strconv.FormatInt(collection.ID, 10) }
+				id={ "collection-content-" + strconv.FormatInt(collection.ID, 10) }
 				class="bg-muted/20"
 				hx-get={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
 				hx-trigger="fetchContent"
@@ -506,70 +507,17 @@ templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
 
 // handleCollectionRowKeydown handles keyboard events for expandable rows
 script handleCollectionRowKeydown(collectionID int64) {
-	if (event.key === 'Enter' || event.key === ' ') {
-		event.preventDefault();
-		window.toggleCollectionRow(collectionID);
-	}
+	ExpandableRow.handleKeydown(event, 'collection', collectionID.toString());
 }
 
 // toggleCollectionExpand generates the onclick handler for expanding/collapsing collection bookmarks
 script toggleCollectionExpand(collectionID int64) {
-	window.toggleCollectionRow(collectionID);
+	ExpandableRow.toggle('collection', collectionID.toString());
 }
 
-// collectionExpandScript adds the shared toggle function to window with prefetch on hover/focus
+// collectionExpandScript is deprecated - expandable-row.js now handles this
+// Kept as empty templ for backward compatibility
 templ collectionExpandScript() {
-	<script>
-		// Prefetch content for a collection row (only once)
-		window.prefetchCollectionRow = function(collectionID) {
-			const id = collectionID.toString();
-			const contentDiv = document.getElementById('collection-bookmarks-content-' + id);
-			if (contentDiv && !contentDiv.dataset.loaded) {
-				contentDiv.dataset.loaded = 'true';
-				htmx.trigger(contentDiv, 'fetchContent');
-			}
-		};
-
-		// Toggle expand/collapse for a collection row
-		window.toggleCollectionRow = function(collectionID) {
-			const id = collectionID.toString();
-			const row = document.getElementById('collection-row-' + id);
-			const bookmarksRow = document.getElementById('collection-bookmarks-' + id);
-			const expandBtn = row.querySelector('.collection-expand-btn');
-			const isExpanded = row.dataset.expanded === 'true';
-			
-			if (isExpanded) {
-				// Collapse
-				row.dataset.expanded = 'false';
-				row.setAttribute('aria-expanded', 'false');
-				bookmarksRow.classList.add('hidden');
-				expandBtn.classList.remove('rotate-90');
-			} else {
-				// Expand - trigger fetch if not already loaded
-				window.prefetchCollectionRow(collectionID);
-				row.dataset.expanded = 'true';
-				row.setAttribute('aria-expanded', 'true');
-				bookmarksRow.classList.remove('hidden');
-				expandBtn.classList.add('rotate-90');
-			}
-		};
-
-		// Setup prefetch on hover/focus for all expandable collection rows
-		document.addEventListener('DOMContentLoaded', function() {
-			document.querySelectorAll('[data-collection-id]').forEach(function(row) {
-				const collectionID = row.dataset.collectionId;
-				// Only add listeners if row is expandable (has count > 0)
-				if (row.getAttribute('role') === 'button') {
-					row.addEventListener('mouseenter', function() {
-						window.prefetchCollectionRow(collectionID);
-					}, { once: true });
-					row.addEventListener('focus', function() {
-						window.prefetchCollectionRow(collectionID);
-					}, { once: true });
-				}
-			});
-		});
-	</script>
 }
 
 // CollectionBookmarksExpanded renders the expanded bookmarks list for a collection

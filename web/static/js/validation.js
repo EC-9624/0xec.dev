@@ -15,12 +15,6 @@
 
   // URL pattern for validation
   const URL_PATTERN = /^https?:\/\/.+/i;
-  
-  // Slug pattern for validation
-  const SLUG_PATTERN = /^[a-z0-9-]+$/;
-  
-  // Hex color pattern for validation  
-  const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
   /**
    * Validate a single input field

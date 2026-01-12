@@ -54,21 +54,22 @@ templ tagRow(tag service.TagWithCount) {
 			aria-expanded="false"
 			onclick={ toggleTagExpand(tag.ID) }
 			onkeydown={ handleTagRowKeydown(tag.ID) }
+			data-expandable-id={ strconv.FormatInt(tag.ID, 10) }
+			data-expandable-type="tag"
 		} else {
 			class="table-row group"
 		}
 		id={ "tag-row-" + strconv.FormatInt(tag.ID, 10) }
-		data-tag-id={ strconv.FormatInt(tag.ID, 10) }
 		data-expanded="false"
 	>
 		<!-- Name with expand chevron -->
 		<td class="table-cell">
 			<div class="flex items-center gap-2">
-				if tag.Count > 0 {
-					<span class="tag-expand-btn p-0.5 -ml-1 transition-transform duration-200">
-						@components.ChevronRightIcon(components.IconSM)
-					</span>
-				} else {
+			if tag.Count > 0 {
+				<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+					@components.ChevronRightIcon(components.IconSM)
+				</span>
+			} else {
 					<span class="w-5"></span>
 				}
 				<span class="font-medium text-foreground">{ tag.Name }</span>
@@ -102,12 +103,12 @@ templ tagRow(tag service.TagWithCount) {
 	</tr>
 	<!-- Expandable posts container (inserted after row) -->
 	<tr
-		id={ "tag-posts-" + strconv.FormatInt(tag.ID, 10) }
+		id={ "tag-details-" + strconv.FormatInt(tag.ID, 10) }
 		class="hidden"
 	>
 		<td colspan="4" class="p-0 border-t-0">
 			<div
-				id={ "tag-posts-content-" + strconv.FormatInt(tag.ID, 10) }
+				id={ "tag-content-" + strconv.FormatInt(tag.ID, 10) }
 				class="bg-muted/20"
 				hx-get={ "/admin/tags/" + strconv.FormatInt(tag.ID, 10) + "/posts" }
 				hx-trigger="fetchContent"
@@ -124,70 +125,17 @@ templ tagRow(tag service.TagWithCount) {
 
 // handleTagRowKeydown handles keyboard events for expandable rows
 script handleTagRowKeydown(tagID int64) {
-	if (event.key === 'Enter' || event.key === ' ') {
-		event.preventDefault();
-		window.toggleTagRow(tagID);
-	}
+	ExpandableRow.handleKeydown(event, 'tag', tagID.toString());
 }
 
 // toggleTagExpand generates the onclick handler for expanding/collapsing tag posts
 script toggleTagExpand(tagID int64) {
-	window.toggleTagRow(tagID);
+	ExpandableRow.toggle('tag', tagID.toString());
 }
 
-// tagExpandScript adds the shared toggle function to window with prefetch on hover/focus
+// tagExpandScript is deprecated - expandable-row.js now handles this
+// Kept as empty templ for backward compatibility
 templ tagExpandScript() {
-	<script>
-		// Prefetch content for a tag row (only once)
-		window.prefetchTagRow = function(tagID) {
-			const id = tagID.toString();
-			const contentDiv = document.getElementById('tag-posts-content-' + id);
-			if (contentDiv && !contentDiv.dataset.loaded) {
-				contentDiv.dataset.loaded = 'true';
-				htmx.trigger(contentDiv, 'fetchContent');
-			}
-		};
-
-		// Toggle expand/collapse for a tag row
-		window.toggleTagRow = function(tagID) {
-			const id = tagID.toString();
-			const row = document.getElementById('tag-row-' + id);
-			const postsRow = document.getElementById('tag-posts-' + id);
-			const expandBtn = row.querySelector('.tag-expand-btn');
-			const isExpanded = row.dataset.expanded === 'true';
-			
-			if (isExpanded) {
-				// Collapse
-				row.dataset.expanded = 'false';
-				row.setAttribute('aria-expanded', 'false');
-				postsRow.classList.add('hidden');
-				expandBtn.classList.remove('rotate-90');
-			} else {
-				// Expand - trigger fetch if not already loaded
-				window.prefetchTagRow(tagID);
-				row.dataset.expanded = 'true';
-				row.setAttribute('aria-expanded', 'true');
-				postsRow.classList.remove('hidden');
-				expandBtn.classList.add('rotate-90');
-			}
-		};
-
-		// Setup prefetch on hover/focus for all expandable tag rows
-		document.addEventListener('DOMContentLoaded', function() {
-			document.querySelectorAll('[data-tag-id]').forEach(function(row) {
-				const tagID = row.dataset.tagId;
-				// Only add listeners if row is expandable (has count > 0)
-				if (row.getAttribute('role') === 'button') {
-					row.addEventListener('mouseenter', function() {
-						window.prefetchTagRow(tagID);
-					}, { once: true });
-					row.addEventListener('focus', function() {
-						window.prefetchTagRow(tagID);
-					}, { once: true });
-				}
-			});
-		});
-	</script>
 }
 
 // TagPostsExpanded renders the expanded posts list for a tag
