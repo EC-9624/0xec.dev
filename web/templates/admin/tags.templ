@@ -110,7 +110,7 @@ templ tagRow(tag service.TagWithCount) {
 			<div
 				id={ "tag-content-" + strconv.FormatInt(tag.ID, 10) }
 				class="bg-muted/20"
-				hx-get={ "/admin/tags/" + strconv.FormatInt(tag.ID, 10) + "/posts" }
+				hx-get={ "/admin/htmx/tags/" + strconv.FormatInt(tag.ID, 10) + "/posts" }
 				hx-trigger="fetchContent"
 				hx-swap="innerHTML"
 				hx-target-error="this"

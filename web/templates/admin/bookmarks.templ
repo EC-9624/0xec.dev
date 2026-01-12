@@ -33,7 +33,7 @@ templ BookmarksList(data BookmarksListData) {
 			@components.PageHeader("Bookmarks", strconv.Itoa(len(data.Bookmarks))+" bookmarks") {
 				@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
 				@components.ImportButton("/admin/import")
-				@components.NewButtonDrawer("/admin/bookmarks/new-drawer", "New Bookmark", "New Bookmark")
+				@components.NewButtonDrawer("/admin/htmx/bookmarks/new-drawer", "New Bookmark", "New Bookmark")
 			}
 			<!-- Refresh Progress Banner (hidden by default) -->
 			<div id="refresh-progress" class="hidden">
@@ -129,7 +129,7 @@ templ bookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
 				<div class="min-w-0 flex-1">
 					<button
 						type="button"
-						hx-get={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+						hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
 						hx-target="#drawer-content"
 						hx-swap="innerHTML"
 						onclick="window.drawerOpen('Edit Bookmark')"
@@ -237,7 +237,7 @@ templ bookmarksFilterScript() {
 			status.textContent = 'Connecting...';
 			bar.style.width = '0%';
 
-			const eventSource = new EventSource('/admin/bookmarks/refresh-all');
+			const eventSource = new EventSource('/admin/htmx/bookmarks/refresh-all');
 
 			eventSource.onmessage = (event) => {
 				const parts = event.data.split(':');
@@ -311,8 +311,8 @@ templ bookmarksFilterScript() {
 			for (const r of rows) {
 				// Check if this row contains an element with matching bookmark id
 				const dropdown = r.querySelector(`[data-bookmark-id="${data.id}"]`);
-				const titleEdit = r.querySelector(`[hx-get*="/admin/bookmarks/${data.id}/"]`);
-				const publicBtn = r.querySelector(`[hx-post*="/admin/bookmarks/${data.id}/"]`);
+				const titleEdit = r.querySelector(`[hx-get*="/admin/htmx/bookmarks/${data.id}/"]`);
+				const publicBtn = r.querySelector(`[hx-post*="/admin/htmx/bookmarks/${data.id}/"]`);
 				if (dropdown || titleEdit || publicBtn) {
 					targetRow = r;
 					break;
@@ -468,7 +468,7 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, i
 								data-error-required="URL is required"
 								data-error-url="URL must be a valid HTTP or HTTPS URL"
 								if isNew {
-									hx-post="/admin/bookmarks/fetch-metadata"
+									hx-post="/admin/htmx/bookmarks/fetch-metadata"
 									hx-trigger="blur"
 									hx-include="this"
 									hx-target="#metadata-fields"
@@ -698,7 +698,7 @@ templ BookmarkPublicBadge(id int64, isPublic bool, success bool) {
 	if isPublic {
 		<button
 			type="button"
-			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
 			hx-swap="outerHTML"
 			class={ "badge-success cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
 			title="Click to make private"
@@ -709,7 +709,7 @@ templ BookmarkPublicBadge(id int64, isPublic bool, success bool) {
 	} else {
 		<button
 			type="button"
-			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-public" }
 			hx-swap="outerHTML"
 			class={ "badge-muted cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
 			title="Click to make public"
@@ -725,7 +725,7 @@ templ BookmarkFavoriteStar(id int64, isFavorite bool, success bool) {
 	if isFavorite {
 		<button
 			type="button"
-			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-favorite" }
+			hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-favorite" }
 			hx-swap="outerHTML"
 			class={ "text-amber-500 cursor-pointer hover:text-amber-600", templ.KV("save-success", success) }
 			title="Remove from favorites"
@@ -735,7 +735,7 @@ templ BookmarkFavoriteStar(id int64, isFavorite bool, success bool) {
 	} else {
 		<button
 			type="button"
-			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-favorite" }
+			hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/toggle-favorite" }
 			hx-swap="outerHTML"
 			class={ "text-muted-foreground/40 cursor-pointer hover:text-amber-500", templ.KV("save-success", success) }
 			title="Add to favorites"
@@ -763,7 +763,7 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 				data-dropdown-option
 				data-value=""
 				class="dropdown-option"
-				hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
+				hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
 				hx-vals='{"collection_id": ""}'
 				hx-target="closest [data-dropdown]"
 				hx-swap="outerHTML"
@@ -779,7 +779,7 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 					data-dropdown-option
 					data-value={ strconv.FormatInt(collection.ID, 10) }
 					class="dropdown-option"
-					hx-post={ "/admin/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
+					hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
 					hx-vals={ `{"collection_id": "` + strconv.FormatInt(collection.ID, 10) + `"}` }
 					hx-target="closest [data-dropdown]"
 					hx-swap="outerHTML"
@@ -859,7 +859,7 @@ templ BookmarkFormDrawer(bookmark *models.Bookmark, collections []models.Collect
 					data-error-required="URL is required"
 					data-error-url="URL must be a valid HTTP or HTTPS URL"
 					if isNew {
-						hx-post="/admin/bookmarks/fetch-metadata"
+						hx-post="/admin/htmx/bookmarks/fetch-metadata"
 						hx-trigger="blur"
 						hx-include="this"
 						hx-target="#metadata-fields"
@@ -978,7 +978,7 @@ templ BookmarkRowOOB(bookmark models.Bookmark, collections []models.Collection) 
 				<div class="min-w-0 flex-1">
 					<button
 						type="button"
-						hx-get={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+						hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
 						hx-target="#drawer-content"
 						hx-swap="innerHTML"
 						onclick="window.drawerOpen('Edit Bookmark')"
@@ -1073,7 +1073,7 @@ templ BookmarkRowOOBPrepend(bookmark models.Bookmark, collections []models.Colle
 					<div class="min-w-0 flex-1">
 				<button
 					type="button"
-						hx-get={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+						hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
 						hx-target="#drawer-content"
 						hx-swap="innerHTML"
 						onclick="window.drawerOpen('Edit Bookmark')"

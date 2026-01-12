@@ -34,6 +34,8 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	isDrawer := r.FormValue("_drawer") == "true"
+
 	input := models.CreateCollectionInput{
 		Name:        r.FormValue("name"),
 		Slug:        r.FormValue("slug"),
@@ -59,17 +61,33 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 	// Re-render form with errors if validation failed
 	if errors != nil && errors.HasErrors() {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		render(w, r, admin.CollectionForm(nil, true, errors, &input))
+		if isDrawer {
+			render(w, r, admin.CollectionFormDrawer(nil, true, errors, &input))
+		} else {
+			render(w, r, admin.CollectionForm(nil, true, errors, &input))
+		}
 		return
 	}
 
-	_, err := h.service.CreateCollection(r.Context(), input)
+	collection, err := h.service.CreateCollection(r.Context(), input)
 	if err != nil {
 		log.Printf("Failed to create collection: %v", err)
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to create collection. Please try again."
 		w.WriteHeader(http.StatusInternalServerError)
-		render(w, r, admin.CollectionForm(nil, true, formErrors, &input))
+		if isDrawer {
+			render(w, r, admin.CollectionFormDrawer(nil, true, formErrors, &input))
+		} else {
+			render(w, r, admin.CollectionForm(nil, true, formErrors, &input))
+		}
+		return
+	}
+
+	// For drawer requests, return success response with close trigger and OOB row
+	if isDrawer {
+		w.Header().Set("HX-Trigger", "closeDrawer")
+		w.Header().Set("HX-Reswap", "none")
+		render(w, r, admin.CollectionRowOOBPrepend(*collection))
 		return
 	}
 
@@ -112,6 +130,8 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	isDrawer := r.FormValue("_drawer") == "true"
+
 	input := models.UpdateCollectionInput{
 		Name:        r.FormValue("name"),
 		Slug:        r.FormValue("slug"),
@@ -145,11 +165,15 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 			IsPublic:    input.IsPublic,
 		}
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		render(w, r, admin.CollectionForm(collection, false, errors, formInput))
+		if isDrawer {
+			render(w, r, admin.CollectionFormDrawer(collection, false, errors, formInput))
+		} else {
+			render(w, r, admin.CollectionForm(collection, false, errors, formInput))
+		}
 		return
 	}
 
-	_, err = h.service.UpdateCollection(r.Context(), id, input)
+	updatedCollection, err := h.service.UpdateCollection(r.Context(), id, input)
 	if err != nil {
 		log.Printf("Failed to update collection: %v", err)
 		formErrors := models.NewFormErrors()
@@ -162,7 +186,19 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 			IsPublic:    input.IsPublic,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		render(w, r, admin.CollectionForm(collection, false, formErrors, formInput))
+		if isDrawer {
+			render(w, r, admin.CollectionFormDrawer(collection, false, formErrors, formInput))
+		} else {
+			render(w, r, admin.CollectionForm(collection, false, formErrors, formInput))
+		}
+		return
+	}
+
+	// For drawer requests, return success response with close trigger and OOB row update
+	if isDrawer {
+		w.Header().Set("HX-Trigger", "closeDrawer")
+		w.Header().Set("HX-Reswap", "none")
+		render(w, r, admin.CollectionRowOOB(*updatedCollection))
 		return
 	}
 
@@ -247,4 +283,30 @@ func (h *Handlers) AdminToggleCollectionPublic(w http.ResponseWriter, r *http.Re
 
 	// Return the updated badge
 	render(w, r, admin.CollectionPublicBadge(id, newIsPublic, true))
+}
+
+// ============================================
+// HTMX PARTIAL HANDLERS (DRAWER)
+// ============================================
+
+// HTMXAdminCollectionNewDrawer returns the new collection form for the drawer
+func (h *Handlers) HTMXAdminCollectionNewDrawer(w http.ResponseWriter, r *http.Request) {
+	render(w, r, admin.CollectionFormDrawer(nil, true, nil, nil))
+}
+
+// HTMXAdminCollectionEditDrawer returns the edit collection form for the drawer
+func (h *Handlers) HTMXAdminCollectionEditDrawer(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	collection, err := h.service.GetCollectionByID(r.Context(), id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	render(w, r, admin.CollectionFormDrawer(collection, false, nil, nil))
 }

@@ -691,11 +691,11 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 }
 
 // ============================================
-// DRAWER HANDLERS
+// HTMX PARTIAL HANDLERS (DRAWER)
 // ============================================
 
-// AdminBookmarkNewDrawer returns the new bookmark form for the drawer
-func (h *Handlers) AdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Request) {
+// HTMXAdminBookmarkNewDrawer returns the new bookmark form for the drawer
+func (h *Handlers) HTMXAdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collections, err := h.service.ListCollections(ctx, false)
 	if err != nil {
@@ -704,8 +704,8 @@ func (h *Handlers) AdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Request
 	render(w, r, admin.BookmarkFormDrawer(nil, collections, true, nil, nil))
 }
 
-// AdminBookmarkEditDrawer returns the edit bookmark form for the drawer
-func (h *Handlers) AdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Request) {
+// HTMXAdminBookmarkEditDrawer returns the edit bookmark form for the drawer
+func (h *Handlers) HTMXAdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {

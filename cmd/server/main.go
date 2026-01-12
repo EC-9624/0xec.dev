@@ -110,53 +110,68 @@ func main() {
 	// Logout (in admin routes so it gets auth + csrf)
 	adminMux.HandleFunc("POST /admin/logout", h.Logout)
 
-	// Posts admin
+	// ============================================
+	// ADMIN PAGE ROUTES
+	// ============================================
+
+	// Posts
 	adminMux.HandleFunc("GET /admin/posts", h.AdminPostsList)
 	adminMux.HandleFunc("POST /admin/posts", h.AdminPostCreate)
 	adminMux.HandleFunc("GET /admin/posts/new", h.AdminPostNew)
 	adminMux.HandleFunc("GET /admin/posts/{slug}/edit", h.AdminPostEdit)
 	adminMux.HandleFunc("POST /admin/posts/{slug}", h.AdminPostUpdate)
 	adminMux.HandleFunc("DELETE /admin/posts/{slug}", h.AdminPostDelete)
-	// Inline editing routes (HTMX)
-	adminMux.HandleFunc("POST /admin/posts/{id}/toggle-draft", h.AdminTogglePostDraft)
 
-	// Bookmarks admin
+	// Bookmarks
 	adminMux.HandleFunc("GET /admin/bookmarks", h.AdminBookmarksList)
 	adminMux.HandleFunc("POST /admin/bookmarks", h.AdminBookmarkCreate)
 	adminMux.HandleFunc("GET /admin/bookmarks/new", h.AdminBookmarkNew)
-	adminMux.HandleFunc("GET /admin/bookmarks/new-drawer", h.AdminBookmarkNewDrawer)
-	adminMux.HandleFunc("POST /admin/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)
-	adminMux.HandleFunc("GET /admin/bookmarks/refresh-all", h.AdminRefreshAllMetadata)
 	adminMux.HandleFunc("GET /admin/bookmarks/{id}/edit", h.AdminBookmarkEdit)
-	adminMux.HandleFunc("GET /admin/bookmarks/{id}/edit-drawer", h.AdminBookmarkEditDrawer)
 	adminMux.HandleFunc("POST /admin/bookmarks/{id}", h.AdminBookmarkUpdate)
 	adminMux.HandleFunc("DELETE /admin/bookmarks/{id}", h.AdminBookmarkDelete)
-	adminMux.HandleFunc("POST /admin/bookmarks/{id}/refresh", h.AdminRefreshBookmarkMetadata)
-	// Inline editing routes (HTMX)
-	adminMux.HandleFunc("POST /admin/bookmarks/{id}/toggle-public", h.AdminToggleBookmarkPublic)
-	adminMux.HandleFunc("POST /admin/bookmarks/{id}/toggle-favorite", h.AdminToggleBookmarkFavorite)
-	adminMux.HandleFunc("POST /admin/bookmarks/{id}/collection", h.AdminUpdateBookmarkCollection)
 
 	// Import
 	adminMux.HandleFunc("GET /admin/import", h.AdminImportPage)
 	adminMux.HandleFunc("POST /admin/import", h.AdminImportBookmarks)
 
-	// Collections admin
+	// Collections
 	adminMux.HandleFunc("GET /admin/collections", h.AdminCollectionsList)
 	adminMux.HandleFunc("POST /admin/collections", h.AdminCollectionCreate)
 	adminMux.HandleFunc("GET /admin/collections/new", h.AdminCollectionNew)
 	adminMux.HandleFunc("GET /admin/collections/{id}/edit", h.AdminCollectionEdit)
 	adminMux.HandleFunc("POST /admin/collections/{id}", h.AdminCollectionUpdate)
 	adminMux.HandleFunc("DELETE /admin/collections/{id}", h.AdminCollectionDelete)
-	adminMux.HandleFunc("GET /admin/collections/{id}/bookmarks", h.AdminCollectionBookmarks)
-	// Inline editing routes (HTMX)
-	adminMux.HandleFunc("POST /admin/collections/{id}/toggle-public", h.AdminToggleCollectionPublic)
 
-	// Tags admin
+	// Tags
 	adminMux.HandleFunc("GET /admin/tags", h.AdminTagsList)
-	adminMux.HandleFunc("POST /admin/tags/create-inline", h.AdminTagCreateInline)
-	adminMux.HandleFunc("GET /admin/tags/{id}/posts", h.AdminTagPosts)
 	adminMux.HandleFunc("DELETE /admin/tags/{id}", h.AdminTagDelete)
+
+	// ============================================
+	// ADMIN HTMX PARTIAL ROUTES
+	// ============================================
+
+	// Posts (HTMX)
+	adminMux.HandleFunc("POST /admin/htmx/posts/{id}/toggle-draft", h.AdminTogglePostDraft)
+
+	// Bookmarks (HTMX)
+	adminMux.HandleFunc("GET /admin/htmx/bookmarks/new-drawer", h.HTMXAdminBookmarkNewDrawer)
+	adminMux.HandleFunc("GET /admin/htmx/bookmarks/{id}/edit-drawer", h.HTMXAdminBookmarkEditDrawer)
+	adminMux.HandleFunc("POST /admin/htmx/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)
+	adminMux.HandleFunc("GET /admin/htmx/bookmarks/refresh-all", h.AdminRefreshAllMetadata)
+	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/refresh", h.AdminRefreshBookmarkMetadata)
+	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/toggle-public", h.AdminToggleBookmarkPublic)
+	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/toggle-favorite", h.AdminToggleBookmarkFavorite)
+	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/collection", h.AdminUpdateBookmarkCollection)
+
+	// Collections (HTMX)
+	adminMux.HandleFunc("GET /admin/htmx/collections/new-drawer", h.HTMXAdminCollectionNewDrawer)
+	adminMux.HandleFunc("GET /admin/htmx/collections/{id}/edit-drawer", h.HTMXAdminCollectionEditDrawer)
+	adminMux.HandleFunc("GET /admin/htmx/collections/{id}/bookmarks", h.AdminCollectionBookmarks)
+	adminMux.HandleFunc("POST /admin/htmx/collections/{id}/toggle-public", h.AdminToggleCollectionPublic)
+
+	// Tags (HTMX)
+	adminMux.HandleFunc("POST /admin/htmx/tags/create-inline", h.AdminTagCreateInline)
+	adminMux.HandleFunc("GET /admin/htmx/tags/{id}/posts", h.AdminTagPosts)
 
 	// Test routes (development only)
 	if cfg.IsDevelopment() {

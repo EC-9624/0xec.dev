@@ -25,7 +25,7 @@ templ CollectionsList(collections []models.Collection) {
 		<div class="space-y-4">
 			<!-- Header -->
 			@components.PageHeader("Collections", strconv.Itoa(len(collections))+" collections") {
-				@components.NewButton("/admin/collections/new", "New Collection")
+				@components.NewButtonDrawer("/admin/htmx/collections/new-drawer", "New Collection", "New Collection")
 			}
 			<!-- Filters Bar -->
 			@components.FilterBar(components.FilterBarProps{}) {
@@ -148,13 +148,17 @@ templ collectionRow(collection models.Collection) {
 						@components.ExternalLinkIcon(components.IconMD)
 					</a>
 				}
-				<a
-					href={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit") }
-					class="btn-ghost btn-xs"
+				<button
+					type="button"
+					hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit-drawer" }
+					hx-target="#drawer-content"
+					hx-swap="innerHTML"
+					onclick="window.drawerOpen('Edit Collection')"
+					class="btn-ghost btn-xs cursor-pointer"
 					title="Edit"
 				>
 					@components.EditIcon(components.IconMD)
-				</a>
+				</button>
 				<button
 					type="button"
 					hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
@@ -178,7 +182,7 @@ templ collectionRow(collection models.Collection) {
 			<div
 				id={ "collection-content-" + strconv.FormatInt(collection.ID, 10) }
 				class="bg-muted/20"
-				hx-get={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
+				hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
 				hx-trigger="fetchContent"
 				hx-swap="innerHTML"
 				hx-target-error="this"
@@ -479,7 +483,7 @@ templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
 	if isPublic {
 		<button
 			type="button"
-			hx-post={ "/admin/collections/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-post={ "/admin/htmx/collections/" + strconv.FormatInt(id, 10) + "/toggle-public" }
 			hx-swap="outerHTML"
 			class={ "badge-success cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
 			title="Click to make private"
@@ -490,7 +494,7 @@ templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
 	} else {
 		<button
 			type="button"
-			hx-post={ "/admin/collections/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-post={ "/admin/htmx/collections/" + strconv.FormatInt(id, 10) + "/toggle-public" }
 			hx-swap="outerHTML"
 			class={ "badge-muted cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
 			title="Click to make public"
@@ -606,4 +610,380 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 			</div>
 		}
 	</div>
+}
+
+// ============================================
+// DRAWER FORM COMPONENTS
+// ============================================
+
+// CollectionFormDrawer renders the collection form for use in a drawer
+templ CollectionFormDrawer(collection *models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateCollectionInput) {
+	<form
+		if isNew {
+			hx-post="/admin/collections"
+		} else {
+			hx-post={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+		}
+		hx-target="#drawer-content"
+		hx-swap="innerHTML"
+		class="flex flex-col h-full"
+		data-validate
+		novalidate
+	>
+		<input type="hidden" name="csrf_token" value={ getCollectionCSRFToken(ctx) }/>
+		<input type="hidden" name="_drawer" value="true"/>
+		<!-- Scrollable form content -->
+		<div class="drawer-form flex-1 overflow-y-auto">
+			<p class="text-sm text-muted-foreground mb-6">
+				if isNew {
+					Create a new collection to organize your bookmarks.
+				} else {
+					Update collection details.
+				}
+			</p>
+			@components.FormErrorBanner(errors)
+			<!-- Name Field -->
+			<div class="space-y-2 mb-6">
+				<label for="name" class="label">Name <span class="text-destructive">*</span></label>
+				<input
+					type="text"
+					id="name"
+					name="name"
+					class={ components.InputClass(errors, "name") }
+					value={ collectionFormValue(collection, input, "name") }
+					placeholder="Collection name"
+					required
+					maxlength="100"
+					data-error-required="Name is required"
+					data-error-maxlength="Name cannot exceed 100 characters"
+				/>
+				@components.FieldError(errors, "name")
+			</div>
+			<!-- Slug Field -->
+			<div class="space-y-2 mb-6">
+				<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
+				<input
+					type="text"
+					id="slug"
+					name="slug"
+					class={ components.InputClass(errors, "slug") }
+					value={ collectionFormValue(collection, input, "slug") }
+					placeholder="collection-url-slug"
+					required
+					maxlength="100"
+					pattern="[a-z0-9-]+"
+					data-error-required="Slug is required"
+					data-error-maxlength="Slug cannot exceed 100 characters"
+					data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
+				/>
+				@components.FieldError(errors, "slug")
+			</div>
+			<!-- Description Field -->
+			<div class="space-y-2 mb-6">
+				<label for="description" class="label">Description</label>
+				<textarea
+					id="description"
+					name="description"
+					rows="3"
+					class={ components.TextareaClass(errors, "description") }
+					placeholder="What is this collection about?"
+					maxlength="500"
+					data-error-maxlength="Description cannot exceed 500 characters"
+				>{ collectionFormValue(collection, input, "description") }</textarea>
+				@components.FieldError(errors, "description")
+			</div>
+			<!-- Color Field -->
+			<div class="space-y-2 mb-6">
+				<label for="color" class="label">Color</label>
+				<div class="flex items-center gap-3">
+					<input
+						type="color"
+						id="drawer-color"
+						name="color"
+						value={ collectionFormColorValue(collection, input) }
+						class="h-10 w-14 cursor-pointer rounded border border-input bg-background p-1"
+					/>
+					<input
+						type="text"
+						id="drawer-color-hex"
+						value={ collectionFormColorValue(collection, input) }
+						placeholder="#3b82f6"
+						class={ components.InputClass(errors, "color") + " w-28 font-mono text-sm" }
+						oninput="document.getElementById('drawer-color').value = this.value"
+						pattern="#[0-9a-fA-F]{6}"
+						data-error-pattern="Color must be a valid hex color (e.g., #3b82f6)"
+					/>
+					<button
+						type="button"
+						class="btn-ghost btn-sm text-muted-foreground"
+						onclick="document.getElementById('drawer-color').value = ''; document.getElementById('drawer-color-hex').value = ''"
+					>
+						Clear
+					</button>
+				</div>
+				@components.FieldError(errors, "color")
+				<p class="text-xs text-muted-foreground">Used for the bar chart on the dashboard</p>
+			</div>
+			<!-- Public Checkbox -->
+			<div class="flex items-center space-x-2">
+				<input
+					type="checkbox"
+					id="is_public"
+					name="is_public"
+					value="true"
+					if collectionFormIsPublic(collection, input) {
+						checked
+					}
+					class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+				/>
+				<label for="is_public" class="label">Public</label>
+			</div>
+		</div>
+		<!-- Sticky footer actions -->
+		<div class="drawer-form-actions">
+			<button type="submit" class="btn-default">
+				if isNew {
+					Create Collection
+				} else {
+					Save Changes
+				}
+			</button>
+			<button type="button" onclick="window.drawerClose()" class="btn-outline">
+				Cancel
+			</button>
+			if !isNew {
+				<button
+					type="button"
+					hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+					hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+					class="btn-destructive ml-auto"
+				>
+					Delete
+				</button>
+			}
+		</div>
+	</form>
+	<script>
+		// Sync color picker with hex input
+		document.getElementById('drawer-color').addEventListener('input', function() {
+			document.getElementById('drawer-color-hex').value = this.value;
+		});
+	</script>
+}
+
+// CollectionRowOOB renders a collection row for out-of-band swap after update
+templ CollectionRowOOB(collection models.Collection) {
+	<tr
+		if collection.BookmarkCount > 0 {
+			class="table-row group cursor-pointer hover:bg-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+			tabindex="0"
+			role="button"
+			aria-expanded="false"
+			onclick={ toggleCollectionExpand(collection.ID) }
+			onkeydown={ handleCollectionRowKeydown(collection.ID) }
+			data-expandable-id={ strconv.FormatInt(collection.ID, 10) }
+			data-expandable-type="collection"
+		} else {
+			class="table-row group"
+		}
+		id={ "collection-row-" + strconv.FormatInt(collection.ID, 10) }
+		hx-swap-oob="true"
+		data-expanded="false"
+		data-name={ collection.Name }
+		data-slug={ collection.Slug }
+		data-description={ collection.GetDescription() }
+		data-is-public={ strconv.FormatBool(collection.IsPublic) }
+	>
+		<!-- Name with expand chevron -->
+		<td class="table-cell">
+			<div class="min-w-0">
+				<div class="flex items-center gap-1.5">
+					if collection.BookmarkCount > 0 {
+						<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+							@components.ChevronRightIcon(components.IconSM)
+						</span>
+					} else {
+						<span class="w-5"></span>
+					}
+					if collection.GetColor() != "" {
+						<span
+							class="w-2 h-2 rounded-full shrink-0"
+							style={ "background-color: " + collection.GetColor() }
+							title={ "Color: " + collection.GetColor() }
+						></span>
+					}
+					<span class="font-medium text-foreground">{ collection.Name }</span>
+				</div>
+				if collection.GetDescription() != "" {
+					<p class="text-xs text-muted-foreground truncate mt-0.5 ml-6">
+						{ truncateCollectionText(collection.GetDescription(), 60) }
+					</p>
+				}
+			</div>
+		</td>
+		<!-- Bookmarks Count -->
+		<td class="table-cell text-muted-foreground">
+			{ strconv.Itoa(collection.BookmarkCount) }
+		</td>
+		<!-- Status (inline toggle) -->
+		<td class="table-cell" onclick="event.stopPropagation()">
+			@CollectionPublicBadge(collection.ID, collection.IsPublic, false)
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right" onclick="event.stopPropagation()">
+			<div class="row-actions">
+				if collection.IsPublic {
+					<a
+						href={ templ.URL("/bookmarks/" + collection.Slug) }
+						class="btn-ghost btn-xs"
+						target="_blank"
+						title="View collection"
+					>
+						@components.ExternalLinkIcon(components.IconMD)
+					</a>
+				}
+				<button
+					type="button"
+					hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit-drawer" }
+					hx-target="#drawer-content"
+					hx-swap="innerHTML"
+					onclick="window.drawerOpen('Edit Collection')"
+					class="btn-ghost btn-xs cursor-pointer"
+					title="Edit"
+				>
+					@components.EditIcon(components.IconMD)
+				</button>
+				<button
+					type="button"
+					hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+					hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+					hx-target={ "#collection-row-" + strconv.FormatInt(collection.ID, 10) }
+					hx-swap="delete swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+}
+
+// CollectionRowOOBPrepend renders a new collection row for out-of-band prepend after create
+templ CollectionRowOOBPrepend(collection models.Collection) {
+	<tbody id="collections-tbody" hx-swap-oob="afterbegin">
+		<tr
+			if collection.BookmarkCount > 0 {
+				class="table-row group cursor-pointer hover:bg-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+				tabindex="0"
+				role="button"
+				aria-expanded="false"
+				onclick={ toggleCollectionExpand(collection.ID) }
+				onkeydown={ handleCollectionRowKeydown(collection.ID) }
+				data-expandable-id={ strconv.FormatInt(collection.ID, 10) }
+				data-expandable-type="collection"
+			} else {
+				class="table-row group"
+			}
+			id={ "collection-row-" + strconv.FormatInt(collection.ID, 10) }
+			data-expanded="false"
+			data-name={ collection.Name }
+			data-slug={ collection.Slug }
+			data-description={ collection.GetDescription() }
+			data-is-public={ strconv.FormatBool(collection.IsPublic) }
+		>
+			<!-- Name with expand chevron -->
+			<td class="table-cell">
+				<div class="min-w-0">
+					<div class="flex items-center gap-1.5">
+						if collection.BookmarkCount > 0 {
+							<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+								@components.ChevronRightIcon(components.IconSM)
+							</span>
+						} else {
+							<span class="w-5"></span>
+						}
+						if collection.GetColor() != "" {
+							<span
+								class="w-2 h-2 rounded-full shrink-0"
+								style={ "background-color: " + collection.GetColor() }
+								title={ "Color: " + collection.GetColor() }
+							></span>
+						}
+						<span class="font-medium text-foreground">{ collection.Name }</span>
+					</div>
+					if collection.GetDescription() != "" {
+						<p class="text-xs text-muted-foreground truncate mt-0.5 ml-6">
+							{ truncateCollectionText(collection.GetDescription(), 60) }
+						</p>
+					}
+				</div>
+			</td>
+			<!-- Bookmarks Count -->
+			<td class="table-cell text-muted-foreground">
+				{ strconv.Itoa(collection.BookmarkCount) }
+			</td>
+			<!-- Status (inline toggle) -->
+			<td class="table-cell" onclick="event.stopPropagation()">
+				@CollectionPublicBadge(collection.ID, collection.IsPublic, false)
+			</td>
+			<!-- Actions -->
+			<td class="table-cell text-right" onclick="event.stopPropagation()">
+				<div class="row-actions">
+					if collection.IsPublic {
+						<a
+							href={ templ.URL("/bookmarks/" + collection.Slug) }
+							class="btn-ghost btn-xs"
+							target="_blank"
+							title="View collection"
+						>
+							@components.ExternalLinkIcon(components.IconMD)
+						</a>
+					}
+					<button
+						type="button"
+						hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit-drawer" }
+						hx-target="#drawer-content"
+						hx-swap="innerHTML"
+						onclick="window.drawerOpen('Edit Collection')"
+						class="btn-ghost btn-xs cursor-pointer"
+						title="Edit"
+					>
+						@components.EditIcon(components.IconMD)
+					</button>
+					<button
+						type="button"
+						hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+						hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+						hx-target={ "#collection-row-" + strconv.FormatInt(collection.ID, 10) }
+						hx-swap="delete swap:0.2s"
+						class="btn-ghost btn-xs text-destructive hover:text-destructive"
+						title="Delete"
+					>
+						@components.TrashIcon(components.IconMD)
+					</button>
+				</div>
+			</td>
+		</tr>
+		<!-- Expandable bookmarks container (inserted after row) -->
+		<tr
+			id={ "collection-details-" + strconv.FormatInt(collection.ID, 10) }
+			class="hidden"
+		>
+			<td colspan="4" class="p-0 border-t-0">
+				<div
+					id={ "collection-content-" + strconv.FormatInt(collection.ID, 10) }
+					class="bg-muted/20"
+					hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
+					hx-trigger="fetchContent"
+					hx-swap="innerHTML"
+					hx-target-error="this"
+				>
+					<div class="px-8 py-4 flex justify-center text-muted-foreground">
+						@components.SpinnerIcon(components.IconSM)
+					</div>
+				</div>
+			</td>
+		</tr>
+	</tbody>
 }

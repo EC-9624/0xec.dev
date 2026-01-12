@@ -445,7 +445,7 @@ templ PostDraftBadge(id int64, isDraft bool, success bool) {
 	if isDraft {
 		<button
 			type="button"
-			hx-post={ "/admin/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
+			hx-post={ "/admin/htmx/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
 			hx-swap="outerHTML"
 			class={ "badge-warning cursor-pointer hover:bg-amber-100", templ.KV("save-success", success) }
 			title="Click to publish"
@@ -456,7 +456,7 @@ templ PostDraftBadge(id int64, isDraft bool, success bool) {
 	} else {
 		<button
 			type="button"
-			hx-post={ "/admin/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
+			hx-post={ "/admin/htmx/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
 			hx-swap="outerHTML"
 			class="badge-success cursor-pointer hover:bg-green-100"
 			title="Click to unpublish"
