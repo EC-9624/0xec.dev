@@ -408,6 +408,7 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 				method="POST"
 				class="space-y-6"
 				data-validate
+				novalidate
 			>
 				<input type="hidden" name="csrf_token" value={ getBookmarkCSRFToken(ctx) }/>
 				<div class="card">

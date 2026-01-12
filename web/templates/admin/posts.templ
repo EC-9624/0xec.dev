@@ -210,6 +210,7 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 				method="POST"
 				class="space-y-6"
 				data-validate
+				novalidate
 			>
 				<input type="hidden" name="csrf_token" value={ getPostCSRFToken(ctx) }/>
 				<div class="card">
