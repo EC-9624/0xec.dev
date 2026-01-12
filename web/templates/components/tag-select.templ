@@ -1,0 +1,108 @@
+package components
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+)
+
+// TagSelectProps contains properties for the tag multi-select component
+type TagSelectProps struct {
+	AllTags      []models.Tag // All available tags
+	SelectedIDs  []int64      // Currently selected tag IDs
+	FieldName    string       // Form field name (default: "tag_ids")
+}
+
+// isTagSelected checks if a tag ID is in the selected list
+func isTagSelected(id int64, selectedIDs []int64) bool {
+	for _, sid := range selectedIDs {
+		if sid == id {
+			return true
+		}
+	}
+	return false
+}
+
+// TagSelect renders a multi-select dropdown for tags with inline creation
+templ TagSelect(props TagSelectProps) {
+	{{
+		fieldName := props.FieldName
+		if fieldName == "" {
+			fieldName = "tag_ids"
+		}
+	}}
+	<div class="space-y-2">
+		<label class="label">Tags</label>
+		<div 
+			class="tag-select" 
+			data-tag-select
+			data-field-name={ fieldName }
+		>
+			<!-- Selected tags display (chips) -->
+			<div class="tag-select-trigger" data-tag-trigger>
+				<div class="tag-select-chips" data-tag-chips>
+					for _, tag := range props.AllTags {
+						if isTagSelected(tag.ID, props.SelectedIDs) {
+							<span class="tag-chip" data-tag-id={ strconv.FormatInt(tag.ID, 10) }>
+								{ tag.Name }
+								<button type="button" class="tag-chip-remove" data-remove-tag={ strconv.FormatInt(tag.ID, 10) }>
+									@XIcon(IconXS)
+								</button>
+							</span>
+						}
+					}
+				</div>
+				<span class="tag-select-placeholder" data-tag-placeholder>
+					if len(props.SelectedIDs) == 0 {
+						Select tags...
+					}
+				</span>
+				@ChevronDownIcon(IconSM)
+			</div>
+			<!-- Dropdown -->
+			<div class="tag-select-dropdown hidden" data-tag-dropdown>
+				<!-- Filter input -->
+				<div class="tag-select-search">
+					<input 
+						type="text" 
+						placeholder="Filter or create tag..." 
+						class="tag-select-input"
+						data-tag-filter
+						autocomplete="off"
+					/>
+				</div>
+				<!-- Options list -->
+				<div class="tag-select-options" data-tag-options>
+					for _, tag := range props.AllTags {
+						<label class="tag-select-option" data-tag-option data-tag-name={ tag.Name }>
+							<input 
+								type="checkbox" 
+								name={ fieldName }
+								value={ strconv.FormatInt(tag.ID, 10) }
+								if isTagSelected(tag.ID, props.SelectedIDs) {
+									checked
+								}
+								data-tag-checkbox
+								data-tag-id={ strconv.FormatInt(tag.ID, 10) }
+							/>
+							<span>{ tag.Name }</span>
+						</label>
+					}
+				</div>
+				<!-- Create new tag option -->
+				<div class="tag-select-create hidden" data-tag-create>
+					<button 
+						type="button" 
+						class="tag-select-create-btn"
+						data-create-tag-btn
+					>
+						@PlusIcon(IconSM)
+						<span>Create "<span data-create-tag-name></span>"</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+

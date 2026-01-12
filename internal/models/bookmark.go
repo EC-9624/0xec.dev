@@ -21,7 +21,6 @@ type Bookmark struct {
 	SortOrder    int            `json:"sort_order"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
-	Tags         []Tag          `json:"tags,omitempty"`
 	Collection   *Collection    `json:"collection,omitempty"`
 }
 
@@ -74,28 +73,26 @@ func (b *Bookmark) GetDomain() string {
 
 // CreateBookmarkInput represents input for creating a bookmark
 type CreateBookmarkInput struct {
-	URL          string  `json:"url"`
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	CoverImage   string  `json:"cover_image"`
-	Favicon      string  `json:"favicon"`
-	CollectionID *int64  `json:"collection_id"`
-	IsPublic     bool    `json:"is_public"`
-	IsFavorite   bool    `json:"is_favorite"`
-	TagIDs       []int64 `json:"tag_ids"`
+	URL          string `json:"url"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	CoverImage   string `json:"cover_image"`
+	Favicon      string `json:"favicon"`
+	CollectionID *int64 `json:"collection_id"`
+	IsPublic     bool   `json:"is_public"`
+	IsFavorite   bool   `json:"is_favorite"`
 }
 
 // UpdateBookmarkInput represents input for updating a bookmark
 type UpdateBookmarkInput struct {
-	URL          string  `json:"url"`
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	CoverImage   string  `json:"cover_image"`
-	Favicon      string  `json:"favicon"`
-	CollectionID *int64  `json:"collection_id"`
-	IsPublic     bool    `json:"is_public"`
-	IsFavorite   bool    `json:"is_favorite"`
-	TagIDs       []int64 `json:"tag_ids"`
+	URL          string `json:"url"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	CoverImage   string `json:"cover_image"`
+	Favicon      string `json:"favicon"`
+	CollectionID *int64 `json:"collection_id"`
+	IsPublic     bool   `json:"is_public"`
+	IsFavorite   bool   `json:"is_favorite"`
 }
 
 // Validate validates the CreateBookmarkInput and returns field-level errors

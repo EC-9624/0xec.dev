@@ -48,10 +48,11 @@ templ PostsList(posts []models.Post) {
 					<table class="table" id="posts-table">
 						<thead class="table-header bg-muted/50">
 							<tr class="table-row">
-								<th class="table-head w-[50%]">Title</th>
+								<th class="table-head w-[40%]">Title</th>
+								<th class="table-head w-[15%]">Tags</th>
 								<th class="table-head w-[10%]">Status</th>
-								<th class="table-head w-[15%]">Published</th>
-								<th class="table-head w-[15%]">Created</th>
+								<th class="table-head w-[12%]">Published</th>
+								<th class="table-head w-[13%]">Created</th>
 								<th class="table-head w-[10%] text-right">Actions</th>
 							</tr>
 						</thead>
@@ -103,6 +104,18 @@ templ postRow(post models.Post) {
 					</p>
 				}
 			</div>
+		</td>
+		<!-- Tags -->
+		<td class="table-cell">
+			if len(post.Tags) > 0 {
+				<div class="flex flex-wrap gap-1">
+					for _, tag := range post.Tags {
+						<span class="badge-muted text-xs">{ tag.Name }</span>
+					}
+				</div>
+			} else {
+				<span class="text-muted-foreground/50">—</span>
+			}
 		</td>
 		<!-- Status -->
 		<td class="table-cell">
@@ -284,6 +297,11 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 							/>
 							@components.FieldError(errors, "cover_image")
 						</div>
+						@components.TagSelect(components.TagSelectProps{
+							AllTags:     allTags,
+							SelectedIDs: postFormTagIDs(post, tags, input),
+							FieldName:   "tag_ids",
+						})
 						<div class="flex items-center space-x-2">
 							<input
 								type="checkbox"
@@ -380,6 +398,23 @@ func postFormIsDraft(post *models.Post, input *models.CreatePostInput) bool {
 		return post.IsDraft
 	}
 	return true // Default to draft for new posts
+}
+
+// postFormTagIDs returns the tag IDs for the form, preferring input over post's tags
+func postFormTagIDs(post *models.Post, tags []models.Tag, input *models.CreatePostInput) []int64 {
+	// If we have input (from a failed submission), use that
+	if input != nil && len(input.TagIDs) > 0 {
+		return input.TagIDs
+	}
+	// Otherwise extract IDs from the post's tags
+	if len(tags) > 0 {
+		ids := make([]int64, len(tags))
+		for i, tag := range tags {
+			ids[i] = tag.ID
+		}
+		return ids
+	}
+	return nil
 }
 
 func postValue(post *models.Post, field string) string {

@@ -229,11 +229,7 @@ func (h *Handlers) AdminBookmarkNew(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to load collections for new bookmark form: %v", err)
 	}
-	tags, err := h.service.ListTags(ctx)
-	if err != nil {
-		log.Printf("Failed to load tags for new bookmark form: %v", err)
-	}
-	render(w, r, admin.BookmarkForm(nil, collections, tags, true, nil, nil))
+	render(w, r, admin.BookmarkForm(nil, collections, true, nil, nil))
 }
 
 // AdminBookmarkCreate handles creating a new bookmark
@@ -280,9 +276,8 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 	// Re-render form with errors if validation failed
 	if errors != nil && errors.HasErrors() {
 		collections, _ := h.service.ListCollections(ctx, false)
-		tags, _ := h.service.ListTags(ctx)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		render(w, r, admin.BookmarkForm(nil, collections, tags, true, errors, &input))
+		render(w, r, admin.BookmarkForm(nil, collections, true, errors, &input))
 		return
 	}
 
@@ -292,9 +287,8 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to create bookmark. Please try again."
 		collections, _ := h.service.ListCollections(ctx, false)
-		tags, _ := h.service.ListTags(ctx)
 		w.WriteHeader(http.StatusInternalServerError)
-		render(w, r, admin.BookmarkForm(nil, collections, tags, true, formErrors, &input))
+		render(w, r, admin.BookmarkForm(nil, collections, true, formErrors, &input))
 		return
 	}
 
@@ -320,11 +314,7 @@ func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to load collections for bookmark edit form: %v", err)
 	}
-	tags, err := h.service.ListTags(ctx)
-	if err != nil {
-		log.Printf("Failed to load tags for bookmark edit form: %v", err)
-	}
-	render(w, r, admin.BookmarkForm(bookmark, collections, tags, false, nil, nil))
+	render(w, r, admin.BookmarkForm(bookmark, collections, false, nil, nil))
 }
 
 // AdminBookmarkUpdate handles updating a bookmark
@@ -383,7 +373,6 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 	// Re-render form with errors if validation failed
 	if errors != nil && errors.HasErrors() {
 		collections, _ := h.service.ListCollections(ctx, false)
-		tags, _ := h.service.ListTags(ctx)
 		// Convert UpdateBookmarkInput to CreateBookmarkInput for re-rendering
 		formInput := &models.CreateBookmarkInput{
 			URL:          input.URL,
@@ -395,7 +384,7 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 			IsFavorite:   input.IsFavorite,
 		}
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		render(w, r, admin.BookmarkForm(bookmark, collections, tags, false, errors, formInput))
+		render(w, r, admin.BookmarkForm(bookmark, collections, false, errors, formInput))
 		return
 	}
 
@@ -405,7 +394,6 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to update bookmark. Please try again."
 		collections, _ := h.service.ListCollections(ctx, false)
-		tags, _ := h.service.ListTags(ctx)
 		formInput := &models.CreateBookmarkInput{
 			URL:          input.URL,
 			Title:        input.Title,
@@ -416,7 +404,7 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 			IsFavorite:   input.IsFavorite,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		render(w, r, admin.BookmarkForm(bookmark, collections, tags, false, formErrors, formInput))
+		render(w, r, admin.BookmarkForm(bookmark, collections, false, formErrors, formInput))
 		return
 	}
 

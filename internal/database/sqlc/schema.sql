@@ -91,32 +91,16 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_favorite ON bookmarks(is_favorite);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_public ON bookmarks(is_public, created_at DESC);
 
 -- ============================================
--- TAGS (shared across posts & bookmarks)
+-- TAGS (for posts)
 -- ============================================
 CREATE TABLE IF NOT EXISTS tags (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     name            TEXT NOT NULL UNIQUE,
     slug            TEXT NOT NULL UNIQUE,
-    color           TEXT,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug);
-
--- ============================================
--- BOOKMARK_TAGS (many-to-many)
--- ============================================
-CREATE TABLE IF NOT EXISTS bookmark_tags (
-    bookmark_id     INTEGER NOT NULL,
-    tag_id          INTEGER NOT NULL,
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
-    PRIMARY KEY (bookmark_id, tag_id),
-    FOREIGN KEY (bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_bookmark_tags_tag ON bookmark_tags(tag_id);
 
 -- ============================================
 -- POST_TAGS (many-to-many)

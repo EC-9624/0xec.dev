@@ -107,6 +107,22 @@ func (h *Handlers) AdminPostNew(w http.ResponseWriter, r *http.Request) {
 	render(w, r, admin.PostForm(nil, nil, tags, true, nil, nil))
 }
 
+// parseTagIDs extracts and parses tag_ids from form values
+func parseTagIDs(r *http.Request) []int64 {
+	tagStrs := r.Form["tag_ids"]
+	if len(tagStrs) == 0 {
+		return nil
+	}
+
+	tagIDs := make([]int64, 0, len(tagStrs))
+	for _, s := range tagStrs {
+		if id, err := strconv.ParseInt(s, 10, 64); err == nil {
+			tagIDs = append(tagIDs, id)
+		}
+	}
+	return tagIDs
+}
+
 // AdminPostCreate handles creating a new post
 func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
@@ -121,6 +137,7 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 		Excerpt:    r.FormValue("excerpt"),
 		CoverImage: r.FormValue("cover_image"),
 		IsDraft:    r.FormValue("is_draft") == "true",
+		TagIDs:     parseTagIDs(r),
 	}
 
 	// Validate input
@@ -206,6 +223,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 		Excerpt:    r.FormValue("excerpt"),
 		CoverImage: r.FormValue("cover_image"),
 		IsDraft:    r.FormValue("is_draft") == "true",
+		TagIDs:     parseTagIDs(r),
 	}
 
 	// Validate input
@@ -233,6 +251,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 			Excerpt:    input.Excerpt,
 			CoverImage: input.CoverImage,
 			IsDraft:    input.IsDraft,
+			TagIDs:     input.TagIDs,
 		}
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		render(w, r, admin.PostForm(post, post.Tags, tags, false, errors, formInput))
@@ -252,6 +271,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 			Excerpt:    input.Excerpt,
 			CoverImage: input.CoverImage,
 			IsDraft:    input.IsDraft,
+			TagIDs:     input.TagIDs,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		render(w, r, admin.PostForm(post, post.Tags, tags, false, formErrors, formInput))

@@ -12,9 +12,8 @@ import (
 // CreateTag creates a new tag
 func (s *Service) CreateTag(ctx context.Context, input models.CreateTagInput) (*models.Tag, error) {
 	tag, err := s.queries.CreateTag(ctx, db.CreateTagParams{
-		Name:  input.Name,
-		Slug:  input.Slug,
-		Color: strPtr(input.Color),
+		Name: input.Name,
+		Slug: input.Slug,
 	})
 	if err != nil {
 		return nil, err
@@ -26,10 +25,9 @@ func (s *Service) CreateTag(ctx context.Context, input models.CreateTagInput) (*
 // UpdateTag updates an existing tag
 func (s *Service) UpdateTag(ctx context.Context, id int64, input models.CreateTagInput) (*models.Tag, error) {
 	err := s.queries.UpdateTag(ctx, db.UpdateTagParams{
-		Name:  input.Name,
-		Slug:  input.Slug,
-		Color: strPtr(input.Color),
-		ID:    id,
+		Name: input.Name,
+		Slug: input.Slug,
+		ID:   id,
 	})
 	if err != nil {
 		return nil, err
@@ -81,9 +79,8 @@ func (s *Service) GetOrCreateTag(ctx context.Context, name, slug string) (*model
 	tag, err := s.GetTagBySlug(ctx, slug)
 	if err == sql.ErrNoRows {
 		return s.CreateTag(ctx, models.CreateTagInput{
-			Name:  name,
-			Slug:  slug,
-			Color: "",
+			Name: name,
+			Slug: slug,
 		})
 	}
 	if err != nil {
@@ -112,11 +109,50 @@ func (s *Service) GetTagsWithCounts(ctx context.Context) ([]TagWithCount, error)
 				ID:        t.ID,
 				Name:      t.Name,
 				Slug:      t.Slug,
-				Color:     toNullString(t.Color),
 				CreatedAt: derefTime(t.CreatedAt),
 			},
 			Count: int(t.UsageCount),
 		})
+	}
+
+	return result, nil
+}
+
+// TagPost represents a minimal post for tag listings
+type TagPost struct {
+	ID          int64
+	Title       string
+	Slug        string
+	IsDraft     bool
+	PublishedAt sql.NullTime
+	CreatedAt   time.Time
+}
+
+// GetPostsByTagID returns all posts that have a specific tag
+func (s *Service) GetPostsByTagID(ctx context.Context, tagID int64) ([]TagPost, error) {
+	rows, err := s.queries.GetPostsByTagID(ctx, tagID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]TagPost, 0, len(rows))
+	for _, r := range rows {
+		post := TagPost{
+			ID:    r.ID,
+			Title: r.Title,
+			Slug:  r.Slug,
+		}
+		// Handle nullable fields
+		if r.IsDraft != nil {
+			post.IsDraft = *r.IsDraft == 1
+		}
+		if r.PublishedAt != nil {
+			post.PublishedAt = sql.NullTime{Time: *r.PublishedAt, Valid: true}
+		}
+		if r.CreatedAt != nil {
+			post.CreatedAt = *r.CreatedAt
+		}
+		result = append(result, post)
 	}
 
 	return result, nil
@@ -128,7 +164,6 @@ func dbTagToModel(t db.Tag) *models.Tag {
 		ID:        t.ID,
 		Name:      t.Name,
 		Slug:      t.Slug,
-		Color:     toNullString(t.Color),
 		CreatedAt: derefTime(t.CreatedAt),
 	}
 }
