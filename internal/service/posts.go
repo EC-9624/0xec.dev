@@ -245,8 +245,8 @@ func dbPostToModel(p db.Post, tags []db.Tag) *models.Post {
 // ============================================
 
 // UpdatePostDraft updates the draft status of a post
-// When publishing: sets is_draft=0 and published_at=now (overwrites previous date)
-// When unpublishing: sets is_draft=1 and keeps published_at unchanged
+// When publishing: sets is_draft=0 and published_at=now
+// When unpublishing: sets is_draft=1 and clears published_at
 func (s *Service) UpdatePostDraft(ctx context.Context, id int64, isDraft bool) error {
 	post, err := s.GetPostByID(ctx, id)
 	if err != nil {
@@ -257,11 +257,9 @@ func (s *Service) UpdatePostDraft(ctx context.Context, id int64, isDraft bool) e
 	var publishedAt *time.Time
 
 	if isDraft {
-		// Unpublishing - keep existing published_at
+		// Unpublishing - clear published_at
 		draftVal = 1
-		if post.PublishedAt.Valid {
-			publishedAt = &post.PublishedAt.Time
-		}
+		publishedAt = nil
 	} else {
 		// Publishing - set new published_at
 		draftVal = 0

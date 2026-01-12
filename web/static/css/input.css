@@ -833,36 +833,51 @@
   }
 
   /* ===== INLINE EDIT FEEDBACK ===== */
-  /* Success flash - subtle green fade with outline */
+  /* Success flash - checkmark that appears and fades */
   .save-success {
-    animation: save-flash-success 1s ease-out;
+    position: relative;
   }
 
-  @keyframes save-flash-success {
+  .save-success::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    right: -1rem;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(34 197 94);
+    animation: checkmark-fade 1s ease-out forwards;
+  }
+
+  @keyframes checkmark-fade {
     0% { 
-      outline: 2px solid hsl(142 76% 50%);
-      outline-offset: 1px;
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
     }
     100% { 
-      outline: 2px solid transparent;
-      outline-offset: 1px;
+      opacity: 0;
     }
   }
 
-  /* Error flash - subtle red fade with outline */
+  /* Error flash - red X with "Failed" text that appears and fades */
   .save-error {
-    animation: save-flash-error 1s ease-out;
+    position: relative;
   }
 
-  @keyframes save-flash-error {
-    0% { 
-      outline: 2px solid hsl(0 76% 50%);
-      outline-offset: 1px;
-    }
-    100% { 
-      outline: 2px solid transparent;
-      outline-offset: 1px;
-    }
+  .save-error::after {
+    content: "✗ Failed";
+    position: absolute;
+    top: 50%;
+    right: -3.5rem;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: rgb(239 68 68);
+    white-space: nowrap;
+    animation: checkmark-fade 1.5s ease-out forwards;
   }
 
   /* Inline editable elements */

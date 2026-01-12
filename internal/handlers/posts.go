@@ -256,13 +256,13 @@ func (h *Handlers) AdminTogglePostDraft(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Get updated post for the new published_at date
+	// Get updated post to get the new published_at date
 	updatedPost, err := h.service.GetPostByID(ctx, id)
 	if err != nil {
 		http.Error(w, "Failed to get updated post", http.StatusInternalServerError)
 		return
 	}
 
-	// Return the updated badge
-	render(w, r, admin.PostDraftBadge(updatedPost.ID, updatedPost.IsDraft, updatedPost.PublishedAt, true))
+	// Return the updated badge + OOB published date update
+	render(w, r, admin.PostDraftToggleResponse(id, newIsDraft, updatedPost.PublishedAt))
 }

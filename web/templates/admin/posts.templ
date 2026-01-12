@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/EC-9624/0xec.dev/internal/middleware"
 	"github.com/EC-9624/0xec.dev/internal/models"
@@ -50,9 +49,10 @@ templ PostsList(posts []models.Post) {
 						<thead class="table-header bg-muted/50">
 							<tr class="table-row">
 								<th class="table-head w-[50%]">Title</th>
-								<th class="table-head w-[15%]">Status</th>
-								<th class="table-head w-[20%]">Date</th>
-								<th class="table-head w-[15%] text-right">Actions</th>
+								<th class="table-head w-[10%]">Status</th>
+								<th class="table-head w-[15%]">Published</th>
+								<th class="table-head w-[15%]">Created</th>
+								<th class="table-head w-[10%] text-right">Actions</th>
 							</tr>
 						</thead>
 						<tbody class="table-body" id="posts-tbody">
@@ -104,19 +104,19 @@ templ postRow(post models.Post) {
 				}
 			</div>
 		</td>
-		<!-- Status & Date (combined, inline toggle) -->
+		<!-- Status -->
 		<td class="table-cell">
-			@PostDraftBadge(post.ID, post.IsDraft, post.PublishedAt, false)
+			@PostDraftBadge(post.ID, post.IsDraft, false)
 		</td>
-		<!-- Date -->
-		<td class="table-cell text-muted-foreground text-sm">
-			if post.PublishedAt.Valid {
-				<div>{ post.PublishedAt.Time.Format("Jan 2, 2006") }</div>
-				<div class="text-xs">Published</div>
-			} else {
-				<div>{ post.CreatedAt.Format("Jan 2, 2006") }</div>
-				<div class="text-xs">Created</div>
-			}
+		<!-- Published -->
+		<td class="table-cell text-xs">
+			<span id={ "post-published-" + strconv.FormatInt(post.ID, 10) }>
+				@PostPublishedDate(post.PublishedAt)
+			</span>
+		</td>
+		<!-- Created -->
+		<td class="table-cell text-xs text-muted-foreground">
+			{ post.CreatedAt.Format("Jan 2, 2006") }
 		</td>
 		<!-- Actions -->
 		<td class="table-cell text-right">
@@ -343,13 +343,13 @@ func postValue(post *models.Post, field string) string {
 // ============================================
 
 // PostDraftBadge renders the draft/published toggle badge
-templ PostDraftBadge(id int64, isDraft bool, publishedAt sql.NullTime, success bool) {
+templ PostDraftBadge(id int64, isDraft bool, success bool) {
 	if isDraft {
 		<button
 			type="button"
 			hx-post={ "/admin/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
 			hx-swap="outerHTML"
-			class={ "badge-muted cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
+			class={ "badge-warning cursor-pointer hover:bg-amber-100", templ.KV("save-success", success) }
 			title="Click to publish"
 		>
 			@components.FileTextIcon(components.IconXS)
@@ -360,19 +360,31 @@ templ PostDraftBadge(id int64, isDraft bool, publishedAt sql.NullTime, success b
 			type="button"
 			hx-post={ "/admin/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
 			hx-swap="outerHTML"
-			class={ "badge-success cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
+			class="badge-success cursor-pointer hover:bg-green-100"
 			title="Click to unpublish"
 		>
 			@components.CheckIcon(components.IconXS)
 			Published
-			if publishedAt.Valid {
-				<span class="text-[10px] opacity-75 ml-1">{ formatPublishedDate(publishedAt.Time) }</span>
-			}
 		</button>
 	}
 }
 
-// formatPublishedDate formats the published date for display
-func formatPublishedDate(t time.Time) string {
-	return t.Format("Jan 2")
+// PostPublishedDate renders the published date (or dash if not published)
+templ PostPublishedDate(publishedAt sql.NullTime) {
+	if publishedAt.Valid {
+		<span class="text-muted-foreground">{ publishedAt.Time.Format("Jan 2, 2006") }</span>
+	} else {
+		<span class="text-muted-foreground/50">—</span>
+	}
+}
+
+// PostDraftToggleResponse renders both the badge and OOB published date update
+templ PostDraftToggleResponse(id int64, isDraft bool, publishedAt sql.NullTime) {
+	@PostDraftBadge(id, isDraft, true)
+	<span
+		id={ "post-published-" + strconv.FormatInt(id, 10) }
+		hx-swap-oob={ "outerHTML:#post-published-" + strconv.FormatInt(id, 10) }
+	>
+		@PostPublishedDate(publishedAt)
+	</span>
 }
