@@ -379,7 +379,7 @@ func truncateURL(url string, maxLen int) string {
 	return url[:maxLen-3] + "..."
 }
 
-templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool) {
+templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreateBookmarkInput) {
 	@layouts.Admin(bookmarkFormTitle(bookmark, isNew)) {
 		<div class="max-w-2xl space-y-6">
 			<div>
@@ -398,6 +398,7 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 					}
 				</p>
 			</div>
+			@components.FormErrorBanner(errors)
 			<form
 				if isNew {
 					action="/admin/bookmarks"
@@ -406,20 +407,23 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 				}
 				method="POST"
 				class="space-y-6"
+				data-validate
 			>
 				<input type="hidden" name="csrf_token" value={ getBookmarkCSRFToken(ctx) }/>
 				<div class="card">
 					<div class="card-content pt-6 space-y-6">
 						<div class="space-y-2">
-							<label for="url" class="label">URL</label>
+							<label for="url" class="label">URL <span class="text-destructive">*</span></label>
 							<input
 								type="url"
 								id="url"
 								name="url"
-								class="input"
-								value={ bookmarkValue(bookmark, "url") }
+								class={ components.InputClass(errors, "url") }
+								value={ bookmarkFormValue(bookmark, input, "url") }
 								placeholder="https://example.com"
 								required
+								data-error-required="URL is required"
+								data-error-url="URL must be a valid HTTP or HTTPS URL"
 								if isNew {
 									hx-post="/admin/bookmarks/fetch-metadata"
 									hx-trigger="blur"
@@ -429,12 +433,13 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 									hx-indicator="#metadata-loading"
 								}
 							/>
+							@components.FieldError(errors, "url")
 						</div>
 						<div id="metadata-loading" class="htmx-indicator text-sm text-muted-foreground py-2">
 							Fetching page metadata...
 						</div>
 						<div id="metadata-fields">
-							@BookmarkMetadataFields(bookmark)
+							@BookmarkMetadataFieldsWithErrors(bookmark, errors, input)
 						</div>
 						<div class="space-y-2">
 							<label for="collection_id" class="label">Collection</label>
@@ -443,7 +448,7 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 								for _, collection := range collections {
 									<option
 										value={ strconv.FormatInt(collection.ID, 10) }
-										if bookmark != nil && bookmark.CollectionID.Valid && bookmark.CollectionID.Int64 == collection.ID {
+										if bookmarkFormCollectionSelected(bookmark, input, collection.ID) {
 											selected
 										}
 									>
@@ -459,7 +464,7 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 									id="is_public"
 									name="is_public"
 									value="true"
-									if bookmark == nil || bookmark.IsPublic {
+									if bookmarkFormIsPublic(bookmark, input) {
 										checked
 									}
 									class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
@@ -474,7 +479,7 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 									id="is_favorite"
 									name="is_favorite"
 									value="true"
-									if bookmark != nil && bookmark.IsFavorite {
+									if bookmarkFormIsFavorite(bookmark, input) {
 										checked
 									}
 									class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
@@ -514,18 +519,26 @@ templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, a
 }
 
 templ BookmarkMetadataFields(bookmark *models.Bookmark) {
+	@BookmarkMetadataFieldsWithErrors(bookmark, nil, nil)
+}
+
+templ BookmarkMetadataFieldsWithErrors(bookmark *models.Bookmark, errors *models.FormErrors, input *models.CreateBookmarkInput) {
 	<div class="space-y-6">
 		<div class="space-y-2">
-			<label for="title" class="label">Title</label>
+			<label for="title" class="label">Title <span class="text-destructive">*</span></label>
 			<input
 				type="text"
 				id="title"
 				name="title"
-				class="input"
-				value={ bookmarkValue(bookmark, "title") }
+				class={ components.InputClass(errors, "title") }
+				value={ bookmarkFormValue(bookmark, input, "title") }
 				placeholder="Page title"
 				required
+				maxlength="200"
+				data-error-required="Title is required"
+				data-error-maxlength="Title cannot exceed 200 characters"
 			/>
+			@components.FieldError(errors, "title")
 		</div>
 		<div class="space-y-2">
 			<label for="description" class="label">Description</label>
@@ -533,9 +546,12 @@ templ BookmarkMetadataFields(bookmark *models.Bookmark) {
 				id="description"
 				name="description"
 				rows="3"
-				class="textarea"
+				class={ components.TextareaClass(errors, "description") }
 				placeholder="Brief description"
-			>{ bookmarkValue(bookmark, "description") }</textarea>
+				maxlength="500"
+				data-error-maxlength="Description cannot exceed 500 characters"
+			>{ bookmarkFormValue(bookmark, input, "description") }</textarea>
+			@components.FieldError(errors, "description")
 		</div>
 		<div class="space-y-2">
 			<label for="cover_image" class="label">Cover Image URL</label>
@@ -543,10 +559,12 @@ templ BookmarkMetadataFields(bookmark *models.Bookmark) {
 				type="url"
 				id="cover_image"
 				name="cover_image"
-				class="input"
-				value={ bookmarkValue(bookmark, "cover_image") }
+				class={ components.InputClass(errors, "cover_image") }
+				value={ bookmarkFormValue(bookmark, input, "cover_image") }
 				placeholder="https://example.com/image.jpg"
+				data-error-url="Cover image must be a valid URL"
 			/>
+			@components.FieldError(errors, "cover_image")
 		</div>
 	</div>
 }
@@ -573,6 +591,59 @@ func bookmarkValue(bookmark *models.Bookmark, field string) string {
 		return bookmark.GetCoverImage()
 	}
 	return ""
+}
+
+// bookmarkFormValue returns the value for a form field, preferring input over bookmark
+// This preserves user input on validation errors
+func bookmarkFormValue(bookmark *models.Bookmark, input *models.CreateBookmarkInput, field string) string {
+	// If we have input (from a failed submission), use that
+	if input != nil {
+		switch field {
+		case "url":
+			return input.URL
+		case "title":
+			return input.Title
+		case "description":
+			return input.Description
+		case "cover_image":
+			return input.CoverImage
+		}
+	}
+	// Otherwise use the bookmark data
+	return bookmarkValue(bookmark, field)
+}
+
+// bookmarkFormCollectionSelected returns whether a collection option should be selected
+func bookmarkFormCollectionSelected(bookmark *models.Bookmark, input *models.CreateBookmarkInput, collectionID int64) bool {
+	if input != nil && input.CollectionID != nil {
+		return *input.CollectionID == collectionID
+	}
+	if bookmark != nil && bookmark.CollectionID.Valid {
+		return bookmark.CollectionID.Int64 == collectionID
+	}
+	return false
+}
+
+// bookmarkFormIsPublic returns whether the public checkbox should be checked
+func bookmarkFormIsPublic(bookmark *models.Bookmark, input *models.CreateBookmarkInput) bool {
+	if input != nil {
+		return input.IsPublic
+	}
+	if bookmark != nil {
+		return bookmark.IsPublic
+	}
+	return true // Default to public for new bookmarks
+}
+
+// bookmarkFormIsFavorite returns whether the favorite checkbox should be checked
+func bookmarkFormIsFavorite(bookmark *models.Bookmark, input *models.CreateBookmarkInput) bool {
+	if input != nil {
+		return input.IsFavorite
+	}
+	if bookmark != nil {
+		return bookmark.IsFavorite
+	}
+	return false // Default to not favorite for new bookmarks
 }
 
 // ============================================

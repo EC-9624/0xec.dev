@@ -2,7 +2,7 @@ package models
 
 import (
 	"database/sql"
-	"errors"
+	"strings"
 	"time"
 )
 
@@ -59,24 +59,78 @@ type UpdateCollectionInput struct {
 	SortOrder   int    `json:"sort_order"`
 }
 
-// Validate validates the CreateCollectionInput
-func (input CreateCollectionInput) Validate() error {
-	if input.Name == "" {
-		return errors.New("name is required")
+// Validate validates the CreateCollectionInput and returns field-level errors
+func (input CreateCollectionInput) Validate() *FormErrors {
+	errors := NewFormErrors()
+
+	// Name validation
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		errors.AddField("name", "Name is required")
+	} else if len(name) > 100 {
+		errors.AddField("name", "Name cannot exceed 100 characters")
 	}
-	if input.Slug == "" {
-		return errors.New("slug is required")
+
+	// Slug validation
+	slug := strings.TrimSpace(input.Slug)
+	if slug == "" {
+		errors.AddField("slug", "Slug is required")
+	} else if len(slug) > 100 {
+		errors.AddField("slug", "Slug cannot exceed 100 characters")
+	} else if !IsValidSlug(slug) {
+		errors.AddField("slug", "Slug can only contain lowercase letters, numbers, and hyphens")
+	}
+
+	// Description validation (optional, max 500)
+	if len(input.Description) > 500 {
+		errors.AddField("description", "Description cannot exceed 500 characters")
+	}
+
+	// Color validation (optional, must be valid hex if provided)
+	if input.Color != "" && !IsValidHexColor(input.Color) {
+		errors.AddField("color", "Color must be a valid hex color (e.g., #3b82f6)")
+	}
+
+	if errors.HasErrors() {
+		return errors
 	}
 	return nil
 }
 
-// Validate validates the UpdateCollectionInput
-func (input UpdateCollectionInput) Validate() error {
-	if input.Name == "" {
-		return errors.New("name is required")
+// Validate validates the UpdateCollectionInput and returns field-level errors
+func (input UpdateCollectionInput) Validate() *FormErrors {
+	errors := NewFormErrors()
+
+	// Name validation
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		errors.AddField("name", "Name is required")
+	} else if len(name) > 100 {
+		errors.AddField("name", "Name cannot exceed 100 characters")
 	}
-	if input.Slug == "" {
-		return errors.New("slug is required")
+
+	// Slug validation
+	slug := strings.TrimSpace(input.Slug)
+	if slug == "" {
+		errors.AddField("slug", "Slug is required")
+	} else if len(slug) > 100 {
+		errors.AddField("slug", "Slug cannot exceed 100 characters")
+	} else if !IsValidSlug(slug) {
+		errors.AddField("slug", "Slug can only contain lowercase letters, numbers, and hyphens")
+	}
+
+	// Description validation (optional, max 500)
+	if len(input.Description) > 500 {
+		errors.AddField("description", "Description cannot exceed 500 characters")
+	}
+
+	// Color validation (optional, must be valid hex if provided)
+	if input.Color != "" && !IsValidHexColor(input.Color) {
+		errors.AddField("color", "Color must be a valid hex color (e.g., #3b82f6)")
+	}
+
+	if errors.HasErrors() {
+		return errors
 	}
 	return nil
 }

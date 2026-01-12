@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -21,7 +22,7 @@ func (h *Handlers) AdminCollectionsList(w http.ResponseWriter, r *http.Request) 
 
 // AdminCollectionNew handles the new collection form
 func (h *Handlers) AdminCollectionNew(w http.ResponseWriter, r *http.Request) {
-	render(w, r, admin.CollectionForm(nil, true))
+	render(w, r, admin.CollectionForm(nil, true, nil, nil))
 }
 
 // AdminCollectionCreate handles creating a new collection
@@ -39,14 +40,34 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 
-	if err := input.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate input
+	errors := input.Validate()
+
+	// Check slug uniqueness (only if slug is valid so far)
+	if errors == nil || !errors.HasField("slug") {
+		existing, _ := h.service.GetCollectionBySlug(r.Context(), input.Slug)
+		if existing != nil {
+			if errors == nil {
+				errors = models.NewFormErrors()
+			}
+			errors.AddField("slug", "This slug is already in use")
+		}
+	}
+
+	// Re-render form with errors if validation failed
+	if errors != nil && errors.HasErrors() {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		render(w, r, admin.CollectionForm(nil, true, errors, &input))
 		return
 	}
 
 	_, err := h.service.CreateCollection(r.Context(), input)
 	if err != nil {
-		http.Error(w, "Failed to create collection", http.StatusInternalServerError)
+		log.Printf("Failed to create collection: %v", err)
+		formErrors := models.NewFormErrors()
+		formErrors.General = "Failed to create collection. Please try again."
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, admin.CollectionForm(nil, true, formErrors, &input))
 		return
 	}
 
@@ -67,12 +88,18 @@ func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, admin.CollectionForm(collection, false))
+	render(w, r, admin.CollectionForm(collection, false, nil, nil))
 }
 
 // AdminCollectionUpdate handles updating a collection
 func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	collection, err := h.service.GetCollectionByID(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -91,14 +118,49 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		IsPublic:    r.FormValue("is_public") == "true",
 	}
 
-	if err := input.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate input
+	errors := input.Validate()
+
+	// Check slug uniqueness (only if slug changed and is valid so far)
+	if (errors == nil || !errors.HasField("slug")) && input.Slug != collection.Slug {
+		existing, _ := h.service.GetCollectionBySlug(r.Context(), input.Slug)
+		if existing != nil {
+			if errors == nil {
+				errors = models.NewFormErrors()
+			}
+			errors.AddField("slug", "This slug is already in use")
+		}
+	}
+
+	// Re-render form with errors if validation failed
+	if errors != nil && errors.HasErrors() {
+		// Convert UpdateCollectionInput to CreateCollectionInput for re-rendering
+		formInput := &models.CreateCollectionInput{
+			Name:        input.Name,
+			Slug:        input.Slug,
+			Description: input.Description,
+			Color:       input.Color,
+			IsPublic:    input.IsPublic,
+		}
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		render(w, r, admin.CollectionForm(collection, false, errors, formInput))
 		return
 	}
 
 	_, err = h.service.UpdateCollection(r.Context(), id, input)
 	if err != nil {
-		http.Error(w, "Failed to update collection", http.StatusInternalServerError)
+		log.Printf("Failed to update collection: %v", err)
+		formErrors := models.NewFormErrors()
+		formErrors.General = "Failed to update collection. Please try again."
+		formInput := &models.CreateCollectionInput{
+			Name:        input.Name,
+			Slug:        input.Slug,
+			Description: input.Description,
+			Color:       input.Color,
+			IsPublic:    input.IsPublic,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, admin.CollectionForm(collection, false, formErrors, formInput))
 		return
 	}
 

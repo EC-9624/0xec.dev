@@ -2,7 +2,7 @@ package models
 
 import (
 	"database/sql"
-	"errors"
+	"strings"
 	"time"
 )
 
@@ -98,24 +98,74 @@ type UpdateBookmarkInput struct {
 	TagIDs       []int64 `json:"tag_ids"`
 }
 
-// Validate validates the CreateBookmarkInput
-func (input CreateBookmarkInput) Validate() error {
-	if input.URL == "" {
-		return errors.New("URL is required")
+// Validate validates the CreateBookmarkInput and returns field-level errors
+func (input CreateBookmarkInput) Validate() *FormErrors {
+	errors := NewFormErrors()
+
+	// URL validation
+	url := strings.TrimSpace(input.URL)
+	if url == "" {
+		errors.AddField("url", "URL is required")
+	} else if !IsValidURL(url) {
+		errors.AddField("url", "URL must be a valid HTTP or HTTPS URL")
 	}
-	if input.Title == "" {
-		return errors.New("title is required")
+
+	// Title validation
+	title := strings.TrimSpace(input.Title)
+	if title == "" {
+		errors.AddField("title", "Title is required")
+	} else if len(title) > 200 {
+		errors.AddField("title", "Title cannot exceed 200 characters")
+	}
+
+	// Description validation (optional, max 500)
+	if len(input.Description) > 500 {
+		errors.AddField("description", "Description cannot exceed 500 characters")
+	}
+
+	// Cover image URL validation (optional, must be valid URL if provided)
+	if input.CoverImage != "" && !IsValidURL(input.CoverImage) {
+		errors.AddField("cover_image", "Cover image must be a valid URL")
+	}
+
+	if errors.HasErrors() {
+		return errors
 	}
 	return nil
 }
 
-// Validate validates the UpdateBookmarkInput
-func (input UpdateBookmarkInput) Validate() error {
-	if input.URL == "" {
-		return errors.New("URL is required")
+// Validate validates the UpdateBookmarkInput and returns field-level errors
+func (input UpdateBookmarkInput) Validate() *FormErrors {
+	errors := NewFormErrors()
+
+	// URL validation
+	url := strings.TrimSpace(input.URL)
+	if url == "" {
+		errors.AddField("url", "URL is required")
+	} else if !IsValidURL(url) {
+		errors.AddField("url", "URL must be a valid HTTP or HTTPS URL")
 	}
-	if input.Title == "" {
-		return errors.New("title is required")
+
+	// Title validation
+	title := strings.TrimSpace(input.Title)
+	if title == "" {
+		errors.AddField("title", "Title is required")
+	} else if len(title) > 200 {
+		errors.AddField("title", "Title cannot exceed 200 characters")
+	}
+
+	// Description validation (optional, max 500)
+	if len(input.Description) > 500 {
+		errors.AddField("description", "Description cannot exceed 500 characters")
+	}
+
+	// Cover image URL validation (optional, must be valid URL if provided)
+	if input.CoverImage != "" && !IsValidURL(input.CoverImage) {
+		errors.AddField("cover_image", "Cover image must be a valid URL")
+	}
+
+	if errors.HasErrors() {
+		return errors
 	}
 	return nil
 }

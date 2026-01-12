@@ -180,7 +180,7 @@ func truncateCollectionText(s string, maxLen int) string {
 	return s[:maxLen-3] + "..."
 }
 
-templ CollectionForm(collection *models.Collection, isNew bool) {
+templ CollectionForm(collection *models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateCollectionInput) {
 	@layouts.Admin(collectionFormTitle(collection, isNew)) {
 		<div class="max-w-2xl space-y-6">
 			<div>
@@ -199,6 +199,7 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 					}
 				</p>
 			</div>
+			@components.FormErrorBanner(errors)
 			<form
 				if isNew {
 					action="/admin/collections"
@@ -207,33 +208,44 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 				}
 				method="POST"
 				class="space-y-6"
+				data-validate
 			>
 				<input type="hidden" name="csrf_token" value={ getCollectionCSRFToken(ctx) }/>
 				<div class="card">
 					<div class="card-content pt-6 space-y-6">
 						<div class="space-y-2">
-							<label for="name" class="label">Name</label>
+							<label for="name" class="label">Name <span class="text-destructive">*</span></label>
 							<input
 								type="text"
 								id="name"
 								name="name"
-								class="input"
-								value={ collectionValue(collection, "name") }
+								class={ components.InputClass(errors, "name") }
+								value={ collectionFormValue(collection, input, "name") }
 								placeholder="Collection name"
 								required
+								maxlength="100"
+								data-error-required="Name is required"
+								data-error-maxlength="Name cannot exceed 100 characters"
 							/>
+							@components.FieldError(errors, "name")
 						</div>
 						<div class="space-y-2">
-							<label for="slug" class="label">Slug</label>
+							<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
 							<input
 								type="text"
 								id="slug"
 								name="slug"
-								class="input"
-								value={ collectionValue(collection, "slug") }
+								class={ components.InputClass(errors, "slug") }
+								value={ collectionFormValue(collection, input, "slug") }
 								placeholder="collection-url-slug"
 								required
+								maxlength="100"
+								pattern="[a-z0-9-]+"
+								data-error-required="Slug is required"
+								data-error-maxlength="Slug cannot exceed 100 characters"
+								data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
 							/>
+							@components.FieldError(errors, "slug")
 						</div>
 						<div class="space-y-2">
 							<label for="description" class="label">Description</label>
@@ -241,9 +253,12 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								id="description"
 								name="description"
 								rows="3"
-								class="textarea"
+								class={ components.TextareaClass(errors, "description") }
 								placeholder="What is this collection about?"
-							>{ collectionValue(collection, "description") }</textarea>
+								maxlength="500"
+								data-error-maxlength="Description cannot exceed 500 characters"
+							>{ collectionFormValue(collection, input, "description") }</textarea>
+							@components.FieldError(errors, "description")
 						</div>
 						<div class="space-y-2">
 							<label for="color" class="label">Color</label>
@@ -252,16 +267,18 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 									type="color"
 									id="color"
 									name="color"
-									value={ collectionColorValue(collection) }
+									value={ collectionFormColorValue(collection, input) }
 									class="h-10 w-14 cursor-pointer rounded border border-input bg-background p-1"
 								/>
 								<input
 									type="text"
 									id="color-hex"
-									value={ collectionColorValue(collection) }
+									value={ collectionFormColorValue(collection, input) }
 									placeholder="#3b82f6"
-									class="input w-28 font-mono text-sm"
+									class={ components.InputClass(errors, "color") + " w-28 font-mono text-sm" }
 									oninput="document.getElementById('color').value = this.value"
+									pattern="#[0-9a-fA-F]{6}"
+									data-error-pattern="Color must be a valid hex color (e.g., #3b82f6)"
 								/>
 								<button
 									type="button"
@@ -271,6 +288,7 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 									Clear
 								</button>
 							</div>
+							@components.FieldError(errors, "color")
 							<p class="text-xs text-muted-foreground">Used for the bar chart on the dashboard</p>
 						</div>
 						<div class="flex items-center space-x-2">
@@ -279,7 +297,7 @@ templ CollectionForm(collection *models.Collection, isNew bool) {
 								id="is_public"
 								name="is_public"
 								value="true"
-								if collection == nil || collection.IsPublic {
+								if collectionFormIsPublic(collection, input) {
 									checked
 								}
 								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
@@ -354,6 +372,63 @@ func collectionColorValue(collection *models.Collection) string {
 		return "#3b82f6"
 	}
 	return color
+}
+
+// collectionFormValue returns the value for a form field, preferring input over collection
+// This preserves user input on validation errors
+func collectionFormValue(collection *models.Collection, input *models.CreateCollectionInput, field string) string {
+	// If we have input (from a failed submission), use that
+	if input != nil {
+		switch field {
+		case "name":
+			return input.Name
+		case "slug":
+			return input.Slug
+		case "description":
+			return input.Description
+		case "color":
+			return input.Color
+		}
+	}
+	// Otherwise use the collection data
+	if collection != nil {
+		switch field {
+		case "name":
+			return collection.Name
+		case "slug":
+			return collection.Slug
+		case "description":
+			return collection.GetDescription()
+		case "color":
+			return collection.GetColor()
+		}
+	}
+	return ""
+}
+
+// collectionFormColorValue returns the color value for the form
+func collectionFormColorValue(collection *models.Collection, input *models.CreateCollectionInput) string {
+	if input != nil && input.Color != "" {
+		return input.Color
+	}
+	if collection != nil {
+		color := collection.GetColor()
+		if color != "" {
+			return color
+		}
+	}
+	return "#3b82f6" // Default blue
+}
+
+// collectionFormIsPublic returns whether the public checkbox should be checked
+func collectionFormIsPublic(collection *models.Collection, input *models.CreateCollectionInput) bool {
+	if input != nil {
+		return input.IsPublic
+	}
+	if collection != nil {
+		return collection.IsPublic
+	}
+	return true // Default to public for new collections
 }
 
 // ============================================

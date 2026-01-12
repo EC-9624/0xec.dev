@@ -104,7 +104,7 @@ func (h *Handlers) AdminPostNew(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to load tags for new post form: %v", err)
 	}
-	render(w, r, admin.PostForm(nil, nil, tags, true))
+	render(w, r, admin.PostForm(nil, nil, tags, true, nil, nil))
 }
 
 // AdminPostCreate handles creating a new post
@@ -123,14 +123,36 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 		IsDraft:    r.FormValue("is_draft") == "true",
 	}
 
-	if err := input.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate input
+	errors := input.Validate()
+
+	// Check slug uniqueness (only if slug is valid so far)
+	if errors == nil || !errors.HasField("slug") {
+		existing, _ := h.service.GetPostBySlug(r.Context(), input.Slug)
+		if existing != nil {
+			if errors == nil {
+				errors = models.NewFormErrors()
+			}
+			errors.AddField("slug", "This slug is already in use")
+		}
+	}
+
+	// Re-render form with errors if validation failed
+	if errors != nil && errors.HasErrors() {
+		tags, _ := h.service.ListTags(r.Context())
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		render(w, r, admin.PostForm(nil, nil, tags, true, errors, &input))
 		return
 	}
 
 	_, err := h.service.CreatePost(r.Context(), input)
 	if err != nil {
-		http.Error(w, "Failed to create post", http.StatusInternalServerError)
+		log.Printf("Failed to create post: %v", err)
+		formErrors := models.NewFormErrors()
+		formErrors.General = "Failed to create post. Please try again."
+		tags, _ := h.service.ListTags(r.Context())
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, admin.PostForm(nil, nil, tags, true, formErrors, &input))
 		return
 	}
 
@@ -155,7 +177,7 @@ func (h *Handlers) AdminPostEdit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to load tags for post edit form: %v", err)
 	}
-	render(w, r, admin.PostForm(post, post.Tags, tags, false))
+	render(w, r, admin.PostForm(post, post.Tags, tags, false, nil, nil))
 }
 
 // AdminPostUpdate handles updating a post
@@ -186,14 +208,53 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 		IsDraft:    r.FormValue("is_draft") == "true",
 	}
 
-	if err := input.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate input
+	errors := input.Validate()
+
+	// Check slug uniqueness (only if slug changed and is valid so far)
+	if (errors == nil || !errors.HasField("slug")) && input.Slug != post.Slug {
+		existing, _ := h.service.GetPostBySlug(r.Context(), input.Slug)
+		if existing != nil {
+			if errors == nil {
+				errors = models.NewFormErrors()
+			}
+			errors.AddField("slug", "This slug is already in use")
+		}
+	}
+
+	// Re-render form with errors if validation failed
+	if errors != nil && errors.HasErrors() {
+		tags, _ := h.service.ListTags(r.Context())
+		// Convert UpdatePostInput to CreatePostInput for re-rendering
+		formInput := &models.CreatePostInput{
+			Title:      input.Title,
+			Slug:       input.Slug,
+			Content:    input.Content,
+			Excerpt:    input.Excerpt,
+			CoverImage: input.CoverImage,
+			IsDraft:    input.IsDraft,
+		}
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		render(w, r, admin.PostForm(post, post.Tags, tags, false, errors, formInput))
 		return
 	}
 
 	_, err = h.service.UpdatePost(r.Context(), post.ID, input)
 	if err != nil {
-		http.Error(w, "Failed to update post", http.StatusInternalServerError)
+		log.Printf("Failed to update post: %v", err)
+		formErrors := models.NewFormErrors()
+		formErrors.General = "Failed to update post. Please try again."
+		tags, _ := h.service.ListTags(r.Context())
+		formInput := &models.CreatePostInput{
+			Title:      input.Title,
+			Slug:       input.Slug,
+			Content:    input.Content,
+			Excerpt:    input.Excerpt,
+			CoverImage: input.CoverImage,
+			IsDraft:    input.IsDraft,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, admin.PostForm(post, post.Tags, tags, false, formErrors, formInput))
 		return
 	}
 

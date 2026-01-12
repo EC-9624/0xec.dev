@@ -233,11 +233,13 @@ func (h *Handlers) AdminBookmarkNew(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to load tags for new bookmark form: %v", err)
 	}
-	render(w, r, admin.BookmarkForm(nil, collections, tags, true))
+	render(w, r, admin.BookmarkForm(nil, collections, tags, true, nil, nil))
 }
 
 // AdminBookmarkCreate handles creating a new bookmark
 func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
@@ -261,14 +263,38 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}
 
-	if err := input.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate input
+	errors := input.Validate()
+
+	// Check URL uniqueness (only if URL is valid so far)
+	if errors == nil || !errors.HasField("url") {
+		existing, _ := h.service.GetBookmarkByURL(ctx, input.URL)
+		if existing != nil {
+			if errors == nil {
+				errors = models.NewFormErrors()
+			}
+			errors.AddField("url", "A bookmark with this URL already exists")
+		}
+	}
+
+	// Re-render form with errors if validation failed
+	if errors != nil && errors.HasErrors() {
+		collections, _ := h.service.ListCollections(ctx, false)
+		tags, _ := h.service.ListTags(ctx)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		render(w, r, admin.BookmarkForm(nil, collections, tags, true, errors, &input))
 		return
 	}
 
-	_, err := h.service.CreateBookmark(r.Context(), input)
+	_, err := h.service.CreateBookmark(ctx, input)
 	if err != nil {
-		http.Error(w, "Failed to create bookmark", http.StatusInternalServerError)
+		log.Printf("Failed to create bookmark: %v", err)
+		formErrors := models.NewFormErrors()
+		formErrors.General = "Failed to create bookmark. Please try again."
+		collections, _ := h.service.ListCollections(ctx, false)
+		tags, _ := h.service.ListTags(ctx)
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, admin.BookmarkForm(nil, collections, tags, true, formErrors, &input))
 		return
 	}
 
@@ -298,12 +324,20 @@ func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to load tags for bookmark edit form: %v", err)
 	}
-	render(w, r, admin.BookmarkForm(bookmark, collections, tags, false))
+	render(w, r, admin.BookmarkForm(bookmark, collections, tags, false, nil, nil))
 }
 
 // AdminBookmarkUpdate handles updating a bookmark
 func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	bookmark, err := h.service.GetBookmarkByID(ctx, id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -332,14 +366,57 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}
 
-	if err := input.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate input
+	errors := input.Validate()
+
+	// Check URL uniqueness (only if URL changed and is valid so far)
+	if (errors == nil || !errors.HasField("url")) && input.URL != bookmark.URL {
+		existing, _ := h.service.GetBookmarkByURL(ctx, input.URL)
+		if existing != nil {
+			if errors == nil {
+				errors = models.NewFormErrors()
+			}
+			errors.AddField("url", "A bookmark with this URL already exists")
+		}
+	}
+
+	// Re-render form with errors if validation failed
+	if errors != nil && errors.HasErrors() {
+		collections, _ := h.service.ListCollections(ctx, false)
+		tags, _ := h.service.ListTags(ctx)
+		// Convert UpdateBookmarkInput to CreateBookmarkInput for re-rendering
+		formInput := &models.CreateBookmarkInput{
+			URL:          input.URL,
+			Title:        input.Title,
+			Description:  input.Description,
+			CoverImage:   input.CoverImage,
+			CollectionID: input.CollectionID,
+			IsPublic:     input.IsPublic,
+			IsFavorite:   input.IsFavorite,
+		}
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		render(w, r, admin.BookmarkForm(bookmark, collections, tags, false, errors, formInput))
 		return
 	}
 
-	_, err = h.service.UpdateBookmark(r.Context(), id, input)
+	_, err = h.service.UpdateBookmark(ctx, id, input)
 	if err != nil {
-		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		log.Printf("Failed to update bookmark: %v", err)
+		formErrors := models.NewFormErrors()
+		formErrors.General = "Failed to update bookmark. Please try again."
+		collections, _ := h.service.ListCollections(ctx, false)
+		tags, _ := h.service.ListTags(ctx)
+		formInput := &models.CreateBookmarkInput{
+			URL:          input.URL,
+			Title:        input.Title,
+			Description:  input.Description,
+			CoverImage:   input.CoverImage,
+			CollectionID: input.CollectionID,
+			IsPublic:     input.IsPublic,
+			IsFavorite:   input.IsFavorite,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		render(w, r, admin.BookmarkForm(bookmark, collections, tags, false, formErrors, formInput))
 		return
 	}
 

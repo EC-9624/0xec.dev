@@ -181,7 +181,7 @@ func truncateText(text string, maxLen int) string {
 	return text[:maxLen-3] + "..."
 }
 
-templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool) {
+templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreatePostInput) {
 	@layouts.Admin(postFormTitle(post, isNew)) {
 		<div class="max-w-3xl space-y-6">
 			<div>
@@ -200,6 +200,7 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 					}
 				</p>
 			</div>
+			@components.FormErrorBanner(errors)
 			<form
 				if isNew {
 					action="/admin/posts"
@@ -208,33 +209,44 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 				}
 				method="POST"
 				class="space-y-6"
+				data-validate
 			>
 				<input type="hidden" name="csrf_token" value={ getPostCSRFToken(ctx) }/>
 				<div class="card">
 					<div class="card-content pt-6 space-y-6">
 						<div class="space-y-2">
-							<label for="title" class="label">Title</label>
+							<label for="title" class="label">Title <span class="text-destructive">*</span></label>
 							<input
 								type="text"
 								id="title"
 								name="title"
-								class="input"
-								value={ postValue(post, "title") }
+								class={ components.InputClass(errors, "title") }
+								value={ postFormValue(post, input, "title") }
 								placeholder="Enter post title"
 								required
+								maxlength="200"
+								data-error-required="Title is required"
+								data-error-maxlength="Title cannot exceed 200 characters"
 							/>
+							@components.FieldError(errors, "title")
 						</div>
 						<div class="space-y-2">
-							<label for="slug" class="label">Slug</label>
+							<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
 							<input
 								type="text"
 								id="slug"
 								name="slug"
-								class="input"
-								value={ postValue(post, "slug") }
+								class={ components.InputClass(errors, "slug") }
+								value={ postFormValue(post, input, "slug") }
 								placeholder="post-url-slug"
 								required
+								maxlength="100"
+								pattern="[a-z0-9-]+"
+								data-error-required="Slug is required"
+								data-error-maxlength="Slug cannot exceed 100 characters"
+								data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
 							/>
+							@components.FieldError(errors, "slug")
 						</div>
 						<div class="space-y-2">
 							<label for="excerpt" class="label">Excerpt</label>
@@ -244,18 +256,19 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								rows="2"
 								class="textarea"
 								placeholder="Brief description of your post"
-							>{ postValue(post, "excerpt") }</textarea>
+							>{ postFormValue(post, input, "excerpt") }</textarea>
 						</div>
 						<div class="space-y-2">
-							<label for="content" class="label">Content (Markdown)</label>
+							<label for="content" class="label">Content (Markdown) <span class="text-destructive text-xs">(required when publishing)</span></label>
 							<textarea
 								id="content"
 								name="content"
 								rows="20"
-								class="textarea font-mono text-sm"
+								class={ components.TextareaClass(errors, "content") + " font-mono text-sm" }
 								placeholder="Write your post content in Markdown..."
-								required
-							>{ postValue(post, "content") }</textarea>
+								data-error-required="Content is required when publishing"
+							>{ postFormValue(post, input, "content") }</textarea>
+							@components.FieldError(errors, "content")
 						</div>
 						<div class="space-y-2">
 							<label for="cover_image" class="label">Cover Image URL</label>
@@ -263,10 +276,12 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								type="url"
 								id="cover_image"
 								name="cover_image"
-								class="input"
-								value={ postValue(post, "cover_image") }
+								class={ components.InputClass(errors, "cover_image") }
+								value={ postFormValue(post, input, "cover_image") }
 								placeholder="https://example.com/image.jpg"
+								data-error-url="Cover image must be a valid URL"
 							/>
+							@components.FieldError(errors, "cover_image")
 						</div>
 						<div class="flex items-center space-x-2">
 							<input
@@ -274,7 +289,7 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 								id="is_draft"
 								name="is_draft"
 								value="true"
-								if post == nil || post.IsDraft {
+								if postFormIsDraft(post, input) {
 									checked
 								}
 								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
@@ -317,6 +332,53 @@ func postFormTitle(post *models.Post, isNew bool) string {
 		return "New Post"
 	}
 	return "Edit: " + post.Title
+}
+
+// postFormValue returns the value for a form field, preferring input over post
+// This preserves user input on validation errors
+func postFormValue(post *models.Post, input *models.CreatePostInput, field string) string {
+	// If we have input (from a failed submission), use that
+	if input != nil {
+		switch field {
+		case "title":
+			return input.Title
+		case "slug":
+			return input.Slug
+		case "content":
+			return input.Content
+		case "excerpt":
+			return input.Excerpt
+		case "cover_image":
+			return input.CoverImage
+		}
+	}
+	// Otherwise use the post data
+	if post != nil {
+		switch field {
+		case "title":
+			return post.Title
+		case "slug":
+			return post.Slug
+		case "content":
+			return post.Content
+		case "excerpt":
+			return post.GetExcerpt()
+		case "cover_image":
+			return post.GetCoverImage()
+		}
+	}
+	return ""
+}
+
+// postFormIsDraft returns whether the draft checkbox should be checked
+func postFormIsDraft(post *models.Post, input *models.CreatePostInput) bool {
+	if input != nil {
+		return input.IsDraft
+	}
+	if post != nil {
+		return post.IsDraft
+	}
+	return true // Default to draft for new posts
 }
 
 func postValue(post *models.Post, field string) string {

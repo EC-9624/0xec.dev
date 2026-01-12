@@ -1,0 +1,48 @@
+package components
+
+import "github.com/EC-9624/0xec.dev/internal/models"
+
+// FormErrorBanner displays the form-level error banner at the top of a form
+templ FormErrorBanner(errors *models.FormErrors) {
+	if errors != nil && errors.HasErrors() {
+		<div class="form-error">
+			<span class="form-error-icon">!</span>
+			if errors.General != "" {
+				{ errors.General }
+			} else {
+				Please fix the errors below
+			}
+		</div>
+	}
+}
+
+// FieldError displays the error message for a specific field
+templ FieldError(errors *models.FormErrors, field string) {
+	if errors != nil && errors.HasField(field) {
+		<p class="field-error">{ errors.GetField(field) }</p>
+	}
+}
+
+// InputClass returns the appropriate CSS class for an input based on error state
+func InputClass(errors *models.FormErrors, field string) string {
+	if errors != nil && errors.HasField(field) {
+		return "input input-error"
+	}
+	return "input"
+}
+
+// TextareaClass returns the appropriate CSS class for a textarea based on error state
+func TextareaClass(errors *models.FormErrors, field string) string {
+	if errors != nil && errors.HasField(field) {
+		return "textarea textarea-error"
+	}
+	return "textarea"
+}
+
+// SelectClass returns the appropriate CSS class for a select based on error state
+func SelectClass(errors *models.FormErrors, field string) string {
+	if errors != nil && errors.HasField(field) {
+		return "input select-error"
+	}
+	return "input"
+}
