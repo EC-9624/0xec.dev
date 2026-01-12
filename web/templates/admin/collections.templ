@@ -88,7 +88,7 @@ templ collectionRow(collection models.Collection) {
 		<!-- Name -->
 		<td class="table-cell">
 			<div class="min-w-0">
-				<div class="flex items-center gap-2">
+				<div class="flex items-center ">
 					if collection.GetColor() != "" {
 						<span
 							class="w-3 h-3 rounded-full shrink-0"
@@ -386,5 +386,3 @@ templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
 		</button>
 	}
 }
-
-
