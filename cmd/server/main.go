@@ -146,6 +146,7 @@ func main() {
 	adminMux.HandleFunc("GET /admin/collections/{id}/edit", h.AdminCollectionEdit)
 	adminMux.HandleFunc("POST /admin/collections/{id}", h.AdminCollectionUpdate)
 	adminMux.HandleFunc("DELETE /admin/collections/{id}", h.AdminCollectionDelete)
+	adminMux.HandleFunc("GET /admin/collections/{id}/bookmarks", h.AdminCollectionBookmarks)
 	// Inline editing routes (HTMX)
 	adminMux.HandleFunc("POST /admin/collections/{id}/toggle-public", h.AdminToggleCollectionPublic)
 
