@@ -36,7 +36,7 @@ SELECT COUNT(*) FROM posts;
 SELECT COUNT(*) FROM posts WHERE is_draft = 0;
 
 -- name: GetPostTags :many
-SELECT t.id, t.name, t.slug, t.color, t.created_at
+SELECT t.id, t.name, t.slug, t.created_at
 FROM tags t
 INNER JOIN post_tags pt ON t.id = pt.tag_id
 WHERE pt.post_id = ?;

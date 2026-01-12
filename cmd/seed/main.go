@@ -108,33 +108,31 @@ func clearData(sqlDB *sql.DB) error {
 
 func seedTags(ctx context.Context, queries *db.Queries) ([]db.Tag, error) {
 	tagData := []struct {
-		name  string
-		slug  string
-		color string
+		name string
+		slug string
 	}{
-		{"Go", "go", "#00ADD8"},
-		{"JavaScript", "javascript", "#F7DF1E"},
-		{"TypeScript", "typescript", "#3178C6"},
-		{"SQL", "sql", "#336791"},
-		{"PostgreSQL", "postgresql", "#4169E1"},
-		{"CSS", "css", "#1572B6"},
-		{"HTML", "html", "#E34F26"},
-		{"React", "react", "#61DAFB"},
-		{"Linux", "linux", "#FCC624"},
-		{"Tutorial", "tutorial", "#10B981"},
-		{"Reference", "reference", "#6366F1"},
-		{"Tool", "tool", "#8B5CF6"},
-		{"Design", "design", "#EC4899"},
-		{"Database", "database", "#059669"},
-		{"DevOps", "devops", "#F97316"},
+		{"Go", "go"},
+		{"JavaScript", "javascript"},
+		{"TypeScript", "typescript"},
+		{"SQL", "sql"},
+		{"PostgreSQL", "postgresql"},
+		{"CSS", "css"},
+		{"HTML", "html"},
+		{"React", "react"},
+		{"Linux", "linux"},
+		{"Tutorial", "tutorial"},
+		{"Reference", "reference"},
+		{"Tool", "tool"},
+		{"Design", "design"},
+		{"Database", "database"},
+		{"DevOps", "devops"},
 	}
 
 	var tags []db.Tag
 	for _, t := range tagData {
 		tag, err := queries.CreateTag(ctx, db.CreateTagParams{
-			Name:  t.name,
-			Slug:  t.slug,
-			Color: strPtr(t.color),
+			Name: t.name,
+			Slug: t.slug,
 		})
 		if err != nil {
 			return nil, err

@@ -47,13 +47,6 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 		return nil, err
 	}
 
-	// Add tags
-	if len(input.TagIDs) > 0 {
-		if err := s.setBookmarkTags(ctx, bookmark.ID, input.TagIDs); err != nil {
-			return nil, err
-		}
-	}
-
 	// Log activity
 	s.LogActivity(ctx, ActionBookmarkCreated, EntityBookmark, bookmark.ID, input.Title, nil)
 
@@ -86,11 +79,6 @@ func (s *Service) UpdateBookmark(ctx context.Context, id int64, input models.Upd
 		ID:           id,
 	})
 	if err != nil {
-		return nil, err
-	}
-
-	// Update tags
-	if err := s.setBookmarkTags(ctx, id, input.TagIDs); err != nil {
 		return nil, err
 	}
 
@@ -127,12 +115,7 @@ func (s *Service) GetBookmarkByID(ctx context.Context, id int64) (*models.Bookma
 		return nil, err
 	}
 
-	tags, err := s.queries.GetBookmarkTags(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return dbBookmarkToModel(bookmark, tags), nil
+	return dbBookmarkToModel(bookmark), nil
 }
 
 // ListBookmarks retrieves bookmarks with optional filtering
@@ -190,11 +173,7 @@ func (s *Service) ListBookmarks(ctx context.Context, opts BookmarkListOptions) (
 
 	result := make([]models.Bookmark, 0, len(bookmarks))
 	for _, b := range bookmarks {
-		tags, err := s.queries.GetBookmarkTags(ctx, b.ID)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, *dbBookmarkToModel(b, tags))
+		result = append(result, *dbBookmarkToModel(b))
 	}
 
 	return result, nil
@@ -228,26 +207,8 @@ func (s *Service) CountBookmarks(ctx context.Context, opts BookmarkListOptions) 
 	return int(count), err
 }
 
-// setBookmarkTags replaces all tags for a bookmark
-func (s *Service) setBookmarkTags(ctx context.Context, bookmarkID int64, tagIDs []int64) error {
-	if err := s.queries.DeleteBookmarkTags(ctx, bookmarkID); err != nil {
-		return err
-	}
-
-	for _, tagID := range tagIDs {
-		if err := s.queries.AddBookmarkTag(ctx, db.AddBookmarkTagParams{
-			BookmarkID: bookmarkID,
-			TagID:      tagID,
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // Helper function to convert sqlc Bookmark to domain model
-func dbBookmarkToModel(b db.Bookmark, tags []db.Tag) *models.Bookmark {
+func dbBookmarkToModel(b db.Bookmark) *models.Bookmark {
 	bookmark := &models.Bookmark{
 		ID:         b.ID,
 		URL:        b.Url,
@@ -273,11 +234,6 @@ func dbBookmarkToModel(b db.Bookmark, tags []db.Tag) *models.Bookmark {
 	}
 	if b.CollectionID != nil {
 		bookmark.CollectionID = sql.NullInt64{Int64: *b.CollectionID, Valid: true}
-	}
-
-	bookmark.Tags = make([]models.Tag, 0, len(tags))
-	for _, t := range tags {
-		bookmark.Tags = append(bookmark.Tags, *dbTagToModel(t))
 	}
 
 	return bookmark

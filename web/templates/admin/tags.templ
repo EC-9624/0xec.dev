@@ -1,0 +1,231 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/service"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+templ TagsList(tags []service.TagWithCount) {
+	@layouts.Admin("Tags") {
+		<div class="space-y-4">
+			<!-- Header -->
+			@components.PageHeader("Tags", strconv.Itoa(len(tags))+" tags") {
+			}
+			<!-- Table -->
+			if len(tags) > 0 {
+				<div class="card overflow-x-auto">
+					<table class="table" id="tags-table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head w-[40%]">Name</th>
+								<th class="table-head w-[30%]">Slug</th>
+								<th class="table-head w-[15%]">Posts</th>
+								<th class="table-head w-[15%] text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body" id="tags-tbody">
+							for _, tag := range tags {
+								@tagRow(tag)
+							}
+						</tbody>
+					</table>
+				</div>
+			} else {
+				@components.EmptyState(components.EmptyStateProps{
+					Icon:        components.TagIcon(components.IconXXL),
+					Title:       "No tags yet",
+					Description: "Tags will be created when you add them to posts.",
+				})
+			}
+		</div>
+		@tagExpandScript()
+	}
+}
+
+templ tagRow(tag service.TagWithCount) {
+	<tr
+		if tag.Count > 0 {
+			class="table-row group cursor-pointer hover:bg-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+			tabindex="0"
+			role="button"
+			aria-expanded="false"
+			onclick={ toggleTagExpand(tag.ID) }
+			onkeydown={ handleTagRowKeydown(tag.ID) }
+		} else {
+			class="table-row group"
+		}
+		id={ "tag-row-" + strconv.FormatInt(tag.ID, 10) }
+		data-tag-id={ strconv.FormatInt(tag.ID, 10) }
+		data-expanded="false"
+	>
+		<!-- Name with expand chevron -->
+		<td class="table-cell">
+			<div class="flex items-center gap-2">
+				if tag.Count > 0 {
+					<span class="tag-expand-btn p-0.5 -ml-1 transition-transform duration-200">
+						@components.ChevronRightIcon(components.IconSM)
+					</span>
+				} else {
+					<span class="w-5"></span>
+				}
+				<span class="font-medium text-foreground">{ tag.Name }</span>
+			</div>
+		</td>
+		<!-- Slug -->
+		<td class="table-cell text-muted-foreground text-sm">
+			{ tag.Slug }
+		</td>
+		<!-- Post Count -->
+		<td class="table-cell text-muted-foreground">
+			{ strconv.Itoa(tag.Count) }
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right">
+			<div class="row-actions">
+				<button
+					type="button"
+					hx-delete={ "/admin/tags/" + strconv.FormatInt(tag.ID, 10) }
+					hx-confirm={ "Delete tag \"" + tag.Name + "\"? This will remove it from all posts." }
+					hx-target={ "#tag-row-" + strconv.FormatInt(tag.ID, 10) }
+					hx-swap="delete swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+					onclick="event.stopPropagation()"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+	<!-- Expandable posts container (inserted after row) -->
+	<tr
+		id={ "tag-posts-" + strconv.FormatInt(tag.ID, 10) }
+		class="hidden"
+	>
+		<td colspan="4" class="p-0 border-t-0">
+			<div
+				id={ "tag-posts-content-" + strconv.FormatInt(tag.ID, 10) }
+				class="bg-muted/20"
+				hx-get={ "/admin/tags/" + strconv.FormatInt(tag.ID, 10) + "/posts" }
+				hx-trigger="load"
+				hx-swap="innerHTML"
+			>
+				<!-- Loading placeholder -->
+				<div class="px-8 py-4 text-sm text-muted-foreground">
+					Loading posts...
+				</div>
+			</div>
+		</td>
+	</tr>
+}
+
+// handleTagRowKeydown handles keyboard events for expandable rows
+script handleTagRowKeydown(tagID int64) {
+	if (event.key === 'Enter' || event.key === ' ') {
+		event.preventDefault();
+		window.toggleTagRow(tagID);
+	}
+}
+
+// toggleTagExpand generates the onclick handler for expanding/collapsing tag posts
+script toggleTagExpand(tagID int64) {
+	window.toggleTagRow(tagID);
+}
+
+// tagExpandScript adds the shared toggle function to window
+templ tagExpandScript() {
+	<script>
+		window.toggleTagRow = function(tagID) {
+			const id = tagID.toString();
+			const row = document.getElementById('tag-row-' + id);
+			const postsRow = document.getElementById('tag-posts-' + id);
+			const expandBtn = row.querySelector('.tag-expand-btn');
+			const isExpanded = row.dataset.expanded === 'true';
+			
+			if (isExpanded) {
+				// Collapse
+				row.dataset.expanded = 'false';
+				row.setAttribute('aria-expanded', 'false');
+				postsRow.classList.add('hidden');
+				expandBtn.classList.remove('rotate-90');
+			} else {
+				// Expand
+				row.dataset.expanded = 'true';
+				row.setAttribute('aria-expanded', 'true');
+				postsRow.classList.remove('hidden');
+				expandBtn.classList.add('rotate-90');
+			}
+		};
+	</script>
+}
+
+// TagPostsExpanded renders the expanded posts list for a tag
+templ TagPostsExpanded(tagID int64, posts []service.TagPost) {
+	<div class="divide-y divide-border">
+		for i, post := range posts {
+			<div class="flex items-center gap-4 px-8 py-2.5 hover:bg-muted/30">
+				<!-- Tree line indicator -->
+				<span class="text-muted-foreground/50 text-sm w-4 text-center shrink-0">
+					if i == len(posts) - 1 {
+						└
+					} else {
+						├
+					}
+				</span>
+				<!-- Post title -->
+				<div class="flex-1 min-w-0">
+					<a
+						href={ templ.URL("/admin/posts/" + post.Slug + "/edit") }
+						class="text-sm text-foreground hover:underline truncate block"
+					>
+						{ post.Title }
+					</a>
+				</div>
+				<!-- Status (fixed width for alignment) -->
+				<div class="shrink-0 w-20">
+					if post.IsDraft {
+						<span class="badge-warning text-xs">Draft</span>
+					} else {
+						<span class="badge-success text-xs">Published</span>
+					}
+				</div>
+				<!-- Published date -->
+				<div class="text-xs text-muted-foreground w-24 shrink-0 text-right">
+					if post.PublishedAt.Valid {
+						{ post.PublishedAt.Time.Format("Jan 2, 2006") }
+					} else {
+						<span class="text-muted-foreground/50">—</span>
+					}
+				</div>
+				<!-- Actions -->
+				<div class="flex items-center gap-1 shrink-0">
+					<a
+						href={ templ.URL("/admin/posts/" + post.Slug + "/edit") }
+						class="btn-ghost btn-xs"
+						title="Edit"
+					>
+						@components.EditIcon(components.IconSM)
+					</a>
+					if !post.IsDraft {
+						<a
+							href={ templ.URL("/posts/" + post.Slug) }
+							class="btn-ghost btn-xs"
+							target="_blank"
+							title="View"
+						>
+							@components.ExternalLinkIcon(components.IconSM)
+						</a>
+					}
+				</div>
+			</div>
+		}
+		if len(posts) == 0 {
+			<div class="px-8 py-4 text-sm text-muted-foreground">
+				No posts found.
+			</div>
+		}
+	</div>
+}

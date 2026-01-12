@@ -9,20 +9,6 @@ import (
 	"context"
 )
 
-const addBookmarkTag = `-- name: AddBookmarkTag :exec
-INSERT INTO bookmark_tags (bookmark_id, tag_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-`
-
-type AddBookmarkTagParams struct {
-	BookmarkID int64 `json:"bookmark_id"`
-	TagID      int64 `json:"tag_id"`
-}
-
-func (q *Queries) AddBookmarkTag(ctx context.Context, arg AddBookmarkTagParams) error {
-	_, err := q.db.ExecContext(ctx, addBookmarkTag, arg.BookmarkID, arg.TagID)
-	return err
-}
-
 const countAllBookmarks = `-- name: CountAllBookmarks :one
 SELECT COUNT(*) FROM bookmarks
 `
@@ -149,15 +135,6 @@ func (q *Queries) DeleteBookmark(ctx context.Context, id int64) error {
 	return err
 }
 
-const deleteBookmarkTags = `-- name: DeleteBookmarkTags :exec
-DELETE FROM bookmark_tags WHERE bookmark_id = ?
-`
-
-func (q *Queries) DeleteBookmarkTags(ctx context.Context, bookmarkID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteBookmarkTags, bookmarkID)
-	return err
-}
-
 const getBookmarkByID = `-- name: GetBookmarkByID :one
 SELECT id, url, title, description, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks WHERE id = ?
 `
@@ -206,42 +183,6 @@ func (q *Queries) GetBookmarkByURL(ctx context.Context, url string) (Bookmark, e
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const getBookmarkTags = `-- name: GetBookmarkTags :many
-SELECT t.id, t.name, t.slug, t.color, t.created_at
-FROM tags t
-INNER JOIN bookmark_tags bt ON t.id = bt.tag_id
-WHERE bt.bookmark_id = ?
-`
-
-func (q *Queries) GetBookmarkTags(ctx context.Context, bookmarkID int64) ([]Tag, error) {
-	rows, err := q.db.QueryContext(ctx, getBookmarkTags, bookmarkID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Tag{}
-	for rows.Next() {
-		var i Tag
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Slug,
-			&i.Color,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const listAllBookmarks = `-- name: ListAllBookmarks :many

@@ -964,4 +964,76 @@
   .input-valid {
     @apply border-green-500 focus-visible:ring-green-500;
   }
+
+  /* ===== TAG SELECT COMPONENT ===== */
+  .tag-select {
+    @apply relative;
+  }
+
+  .tag-select-trigger {
+    @apply flex flex-wrap items-center gap-1.5 min-h-10 w-full border border-input bg-background px-3 py-2 text-sm
+           cursor-pointer hover:bg-muted/50;
+  }
+
+  .tag-select-chips {
+    @apply flex flex-wrap gap-1;
+  }
+
+  .tag-select-placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .tag-select-placeholder:empty {
+    @apply hidden;
+  }
+
+  .tag-select-trigger > svg {
+    @apply ml-auto shrink-0 text-muted-foreground;
+  }
+
+  .tag-chip {
+    @apply inline-flex items-center gap-1 bg-muted text-foreground text-xs px-2 py-0.5;
+  }
+
+  .tag-chip-remove {
+    @apply hover:text-destructive cursor-pointer;
+  }
+
+  .tag-select-dropdown {
+    @apply absolute top-full left-0 right-0 mt-1 z-50
+           bg-card border border-border shadow-md max-h-60 overflow-hidden;
+  }
+
+  .tag-select-search {
+    @apply border-b border-border;
+  }
+
+  .tag-select-input {
+    @apply w-full px-3 py-2 text-sm bg-transparent outline-none
+           placeholder:text-muted-foreground;
+  }
+
+  .tag-select-options {
+    @apply max-h-40 overflow-y-auto;
+  }
+
+  .tag-select-option {
+    @apply flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted;
+  }
+
+  .tag-select-option[hidden] {
+    @apply hidden;
+  }
+
+  .tag-select-option input[type="checkbox"] {
+    @apply h-4 w-4 border-input;
+  }
+
+  .tag-select-create {
+    @apply border-t border-border;
+  }
+
+  .tag-select-create-btn {
+    @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-primary hover:bg-muted cursor-pointer;
+  }
 }

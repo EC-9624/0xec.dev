@@ -151,7 +151,7 @@ func (q *Queries) GetPostBySlug(ctx context.Context, slug string) (Post, error) 
 }
 
 const getPostTags = `-- name: GetPostTags :many
-SELECT t.id, t.name, t.slug, t.color, t.created_at
+SELECT t.id, t.name, t.slug, t.created_at
 FROM tags t
 INNER JOIN post_tags pt ON t.id = pt.tag_id
 WHERE pt.post_id = ?
@@ -170,7 +170,6 @@ func (q *Queries) GetPostTags(ctx context.Context, postID int64) ([]Tag, error) 
 			&i.ID,
 			&i.Name,
 			&i.Slug,
-			&i.Color,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

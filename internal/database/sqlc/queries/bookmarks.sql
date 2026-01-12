@@ -71,18 +71,6 @@ SELECT COUNT(*) FROM bookmarks WHERE is_favorite = 1;
 -- name: CountPublicFavoriteBookmarks :one
 SELECT COUNT(*) FROM bookmarks WHERE is_public = 1 AND is_favorite = 1;
 
--- name: GetBookmarkTags :many
-SELECT t.id, t.name, t.slug, t.color, t.created_at
-FROM tags t
-INNER JOIN bookmark_tags bt ON t.id = bt.tag_id
-WHERE bt.bookmark_id = ?;
-
--- name: DeleteBookmarkTags :exec
-DELETE FROM bookmark_tags WHERE bookmark_id = ?;
-
--- name: AddBookmarkTag :exec
-INSERT INTO bookmark_tags (bookmark_id, tag_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP);
-
 -- ============================================
 -- INLINE EDITING QUERIES
 -- ============================================

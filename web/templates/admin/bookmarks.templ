@@ -379,7 +379,7 @@ func truncateURL(url string, maxLen int) string {
 	return url[:maxLen-3] + "..."
 }
 
-templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreateBookmarkInput) {
+templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateBookmarkInput) {
 	@layouts.Admin(bookmarkFormTitle(bookmark, isNew)) {
 		<div class="max-w-2xl space-y-6">
 			<div>

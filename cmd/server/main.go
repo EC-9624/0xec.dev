@@ -149,6 +149,12 @@ func main() {
 	// Inline editing routes (HTMX)
 	adminMux.HandleFunc("POST /admin/collections/{id}/toggle-public", h.AdminToggleCollectionPublic)
 
+	// Tags admin
+	adminMux.HandleFunc("GET /admin/tags", h.AdminTagsList)
+	adminMux.HandleFunc("POST /admin/tags/create-inline", h.AdminTagCreateInline)
+	adminMux.HandleFunc("GET /admin/tags/{id}/posts", h.AdminTagPosts)
+	adminMux.HandleFunc("DELETE /admin/tags/{id}", h.AdminTagDelete)
+
 	// Wrap admin routes with CSRF + Auth middleware
 	// Order: CSRF runs first (sets token), then Auth checks session
 	authMiddleware := middleware.Auth(h.Service())

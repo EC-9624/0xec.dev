@@ -362,7 +362,7 @@ func (s *Service) GetBookmarkByURL(ctx context.Context, url string) (*models.Boo
 	if err != nil {
 		return nil, err
 	}
-	return dbBookmarkToModel(bookmark, nil), nil
+	return dbBookmarkToModel(bookmark), nil
 }
 
 // Helper to parse Unix timestamp string
