@@ -167,24 +167,3 @@ func dbTagToModel(t db.Tag) *models.Tag {
 		CreatedAt: derefTime(t.CreatedAt),
 	}
 }
-
-func toNullString(s *string) sql.NullString {
-	if s == nil {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: *s, Valid: true}
-}
-
-func toNullInt64(i *int64) sql.NullInt64 {
-	if i == nil {
-		return sql.NullInt64{}
-	}
-	return sql.NullInt64{Int64: *i, Valid: true}
-}
-
-func toNullTime(t *time.Time) sql.NullTime {
-	if t == nil {
-		return sql.NullTime{}
-	}
-	return sql.NullTime{Time: *t, Valid: true}
-}

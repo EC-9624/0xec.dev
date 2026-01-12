@@ -1,4 +1,4 @@
-.PHONY: dev build run clean templ css install setup sqlc seed db db-backup db-reset
+.PHONY: dev build run clean templ css install setup sqlc seed db db-backup db-reset test lint fmt check help
 
 # Tailwind standalone CLI
 TAILWIND := ./bin/tailwindcss
@@ -100,6 +100,7 @@ test:
 # Lint
 lint:
 	go vet ./...
+	staticcheck ./...
 
 # Generate and verify everything compiles
 check: templ

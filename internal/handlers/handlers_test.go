@@ -146,15 +146,6 @@ func assertBodyContains(t *testing.T, rec *httptest.ResponseRecorder, substring 
 	}
 }
 
-// assertBodyNotContains checks if the response body does NOT contain the substring
-func assertBodyNotContains(t *testing.T, rec *httptest.ResponseRecorder, substring string) {
-	t.Helper()
-	body := rec.Body.String()
-	if strings.Contains(body, substring) {
-		t.Errorf("Response body should NOT contain %q", substring)
-	}
-}
-
 // assertCookie checks if the response sets a cookie with the expected name and value
 func assertCookie(t *testing.T, rec *httptest.ResponseRecorder, name, expectedValue string) {
 	t.Helper()

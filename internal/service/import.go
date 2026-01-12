@@ -10,11 +10,6 @@ import (
 	"github.com/EC-9624/0xec.dev/internal/models"
 )
 
-// intToStr converts int to string (avoiding strconv import)
-func intToStr(i int) string {
-	return fmt.Sprintf("%d", i)
-}
-
 // ImportedBookmark represents a bookmark parsed from an import file
 type ImportedBookmark struct {
 	URL     string

@@ -120,21 +120,9 @@ func (s *Service) ListCollections(ctx context.Context, publicOnly bool) ([]model
 	if publicOnly {
 		rows, e := s.queries.ListPublicCollectionsWithCounts(ctx)
 		err = e
-		// Convert to same type
+		// Convert to same type (structs have identical fields)
 		for _, r := range rows {
-			collections = append(collections, db.ListAllCollectionsWithCountsRow{
-				ID:            r.ID,
-				Name:          r.Name,
-				Slug:          r.Slug,
-				Description:   r.Description,
-				Color:         r.Color,
-				ParentID:      r.ParentID,
-				SortOrder:     r.SortOrder,
-				IsPublic:      r.IsPublic,
-				CreatedAt:     r.CreatedAt,
-				UpdatedAt:     r.UpdatedAt,
-				BookmarkCount: r.BookmarkCount,
-			})
+			collections = append(collections, db.ListAllCollectionsWithCountsRow(r))
 		}
 	} else {
 		collections, err = s.queries.ListAllCollectionsWithCounts(ctx)
