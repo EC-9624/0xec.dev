@@ -49,3 +49,10 @@ UPDATE collections SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 
 -- name: UpdateCollectionPublic :exec
 UPDATE collections SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+
+-- name: GetBookmarksByCollectionID :many
+SELECT id, title, url, domain, is_public, is_favorite, created_at
+FROM bookmarks
+WHERE collection_id = ?
+ORDER BY sort_order, created_at DESC
+LIMIT 6;

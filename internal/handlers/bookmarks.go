@@ -216,9 +216,18 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to load collections for bookmarks list: %v", err)
 	}
 
+	// Parse preselected collection ID from query param
+	var preselectedCollectionID int64
+	if collectionParam := r.URL.Query().Get("collection"); collectionParam != "" {
+		if id, err := strconv.ParseInt(collectionParam, 10, 64); err == nil {
+			preselectedCollectionID = id
+		}
+	}
+
 	render(w, r, admin.BookmarksList(admin.BookmarksListData{
-		Bookmarks:   bookmarks,
-		Collections: collections,
+		Bookmarks:               bookmarks,
+		Collections:             collections,
+		PreselectedCollectionID: preselectedCollectionID,
 	}))
 }
 

@@ -21,8 +21,9 @@ func getBookmarkCSRFToken(ctx context.Context) string {
 
 // BookmarksListData contains data for the bookmarks list page
 type BookmarksListData struct {
-	Bookmarks   []models.Bookmark
-	Collections []models.Collection
+	Bookmarks              []models.Bookmark
+	Collections            []models.Collection
+	PreselectedCollectionID int64 // 0 means no preselection
 }
 
 templ BookmarksList(data BookmarksListData) {
@@ -55,7 +56,7 @@ templ BookmarksList(data BookmarksListData) {
 					OnInput:     "bookmarksFilter.apply()",
 				})
 				<!-- Collection Filter (custom with dynamic options) -->
-				@bookmarkCollectionFilter(data.Collections)
+				@bookmarkCollectionFilter(data.Collections, data.PreselectedCollectionID)
 				@components.FilterDropdown(components.FilterDropdownProps{
 					ID:           "status-filter",
 					DefaultLabel: "All Status",
@@ -204,7 +205,14 @@ templ bookmarksFilterScript() {
 		});
 
 		// Initialize on DOM ready
-		document.addEventListener('DOMContentLoaded', () => bookmarksFilter.init());
+		document.addEventListener('DOMContentLoaded', () => {
+			bookmarksFilter.init();
+			// Apply preselected collection filter if set
+			const collectionFilter = document.getElementById('collection-filter');
+			if (collectionFilter && collectionFilter.value) {
+				bookmarksFilter.apply();
+			}
+		});
 
 		// Metadata refresh with SSE progress
 		function startMetadataRefresh() {
@@ -329,23 +337,52 @@ templ bookmarksFilterScript() {
 }
 
 // bookmarkCollectionFilter renders the collection filter dropdown with dynamic options
-templ bookmarkCollectionFilter(collections []models.Collection) {
+templ bookmarkCollectionFilter(collections []models.Collection, preselectedID int64) {
 	<div data-dropdown class="dropdown">
-		<input type="hidden" id="collection-filter" value=""/>
+		<input type="hidden" id="collection-filter" value={ preselectedCollectionValue(preselectedID) }/>
 		<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
-			<span data-dropdown-label>All Collections</span>
+			<span data-dropdown-label>{ preselectedCollectionLabel(collections, preselectedID) }</span>
 			@components.ChevronDownIcon(components.IconSM)
 		</button>
 		<div data-dropdown-menu class="dropdown-menu hidden">
-			<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected="true">All Collections</button>
+			<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected={ boolStr(preselectedID == 0) }>All Collections</button>
 			<button type="button" data-dropdown-option data-value="none" class="dropdown-option">Unsorted</button>
 			for _, collection := range collections {
-				<button type="button" data-dropdown-option data-value={ strconv.FormatInt(collection.ID, 10) } class="dropdown-option">
+				<button type="button" data-dropdown-option data-value={ strconv.FormatInt(collection.ID, 10) } class="dropdown-option" data-selected={ boolStr(collection.ID == preselectedID) }>
 					{ collection.Name }
 				</button>
 			}
 		</div>
 	</div>
+}
+
+// preselectedCollectionValue returns the filter value for preselection
+func preselectedCollectionValue(id int64) string {
+	if id == 0 {
+		return ""
+	}
+	return strconv.FormatInt(id, 10)
+}
+
+// preselectedCollectionLabel returns the label for the preselected collection
+func preselectedCollectionLabel(collections []models.Collection, id int64) string {
+	if id == 0 {
+		return "All Collections"
+	}
+	for _, c := range collections {
+		if c.ID == id {
+			return c.Name
+		}
+	}
+	return "All Collections"
+}
+
+// boolStr returns "true" or "false" as string
+func boolStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }
 
 // Helper functions

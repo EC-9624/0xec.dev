@@ -216,6 +216,45 @@ func (s *Service) UpdateCollectionPublic(ctx context.Context, id int64, isPublic
 	return nil
 }
 
+// CollectionBookmark represents a minimal bookmark for collection preview
+type CollectionBookmark struct {
+	ID         int64
+	Title      string
+	URL        string
+	Domain     string
+	IsPublic   bool
+	IsFavorite bool
+}
+
+// GetBookmarksByCollectionID returns bookmarks for a collection (limited to 6 for preview)
+func (s *Service) GetBookmarksByCollectionID(ctx context.Context, collectionID int64) ([]CollectionBookmark, error) {
+	rows, err := s.queries.GetBookmarksByCollectionID(ctx, &collectionID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]CollectionBookmark, 0, len(rows))
+	for _, r := range rows {
+		bookmark := CollectionBookmark{
+			ID:    r.ID,
+			Title: r.Title,
+			URL:   r.Url,
+		}
+		if r.Domain != nil {
+			bookmark.Domain = *r.Domain
+		}
+		if r.IsPublic != nil {
+			bookmark.IsPublic = *r.IsPublic == 1
+		}
+		if r.IsFavorite != nil {
+			bookmark.IsFavorite = *r.IsFavorite == 1
+		}
+		result = append(result, bookmark)
+	}
+
+	return result, nil
+}
+
 // Helper function to convert sqlc ListAllCollectionsWithCountsRow to domain model
 func dbCollectionRowToModel(c db.ListAllCollectionsWithCountsRow) *models.Collection {
 	collection := &models.Collection{

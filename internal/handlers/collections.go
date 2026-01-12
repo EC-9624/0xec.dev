@@ -193,6 +193,29 @@ func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request)
 // INLINE EDITING HANDLERS
 // ============================================
 
+// AdminCollectionBookmarks returns the bookmarks for a collection as an HTMX partial
+func (h *Handlers) AdminCollectionBookmarks(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	collection, err := h.service.GetCollectionByID(r.Context(), id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	bookmarks, err := h.service.GetBookmarksByCollectionID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Failed to load bookmarks", http.StatusInternalServerError)
+		return
+	}
+
+	render(w, r, admin.CollectionBookmarksExpanded(id, bookmarks, collection.BookmarkCount))
+}
+
 // AdminToggleCollectionPublic toggles the public/private status of a collection
 func (h *Handlers) AdminToggleCollectionPublic(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

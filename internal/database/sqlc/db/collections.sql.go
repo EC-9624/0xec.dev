@@ -61,6 +61,55 @@ func (q *Queries) DeleteCollection(ctx context.Context, id int64) error {
 	return err
 }
 
+const getBookmarksByCollectionID = `-- name: GetBookmarksByCollectionID :many
+SELECT id, title, url, domain, is_public, is_favorite, created_at
+FROM bookmarks
+WHERE collection_id = ?
+ORDER BY sort_order, created_at DESC
+LIMIT 6
+`
+
+type GetBookmarksByCollectionIDRow struct {
+	ID         int64      `json:"id"`
+	Title      string     `json:"title"`
+	Url        string     `json:"url"`
+	Domain     *string    `json:"domain"`
+	IsPublic   *int64     `json:"is_public"`
+	IsFavorite *int64     `json:"is_favorite"`
+	CreatedAt  *time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetBookmarksByCollectionID(ctx context.Context, collectionID *int64) ([]GetBookmarksByCollectionIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBookmarksByCollectionID, collectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetBookmarksByCollectionIDRow{}
+	for rows.Next() {
+		var i GetBookmarksByCollectionIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Url,
+			&i.Domain,
+			&i.IsPublic,
+			&i.IsFavorite,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCollectionBookmarkCount = `-- name: GetCollectionBookmarkCount :one
 SELECT COUNT(*) FROM bookmarks WHERE collection_id = ?
 `
