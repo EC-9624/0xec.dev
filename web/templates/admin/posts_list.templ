@@ -1,0 +1,88 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+templ PostsList(posts []models.Post) {
+	@layouts.Admin("Posts") {
+		<div class="space-y-4">
+			<!-- Header -->
+			@components.PageHeader("Posts", strconv.Itoa(len(posts))+" posts") {
+				@components.NewButton("/admin/posts/new", "New Post")
+			}
+			<!-- Filters Bar -->
+			@components.FilterBar(components.FilterBarProps{}) {
+				@components.SearchInput(components.SearchInputProps{
+					ID:          "post-search",
+					Placeholder: "Search posts...",
+					OnInput:     "postsFilter.apply()",
+				})
+				@components.FilterDropdown(components.FilterDropdownProps{
+					ID:           "status-filter",
+					DefaultLabel: "All Status",
+					Options:      components.PublishStatusOptions(),
+					OnChange:     "postsFilter.apply()",
+				})
+				@components.ClearFiltersButton("postsFilter.clear()")
+			}
+			<!-- Table -->
+			if len(posts) > 0 {
+				<div class="card">
+					<table class="table" id="posts-table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head w-[40%]">Title</th>
+								<th class="table-head w-[15%]">Tags</th>
+								<th class="table-head w-[10%]">Status</th>
+								<th class="table-head w-[12%]">Published</th>
+								<th class="table-head w-[13%]">Created</th>
+								<th class="table-head w-[10%] text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body" id="posts-tbody">
+							for _, post := range posts {
+								@PostRow(post)
+							}
+						</tbody>
+					</table>
+				</div>
+				<!-- No results message (hidden by default) -->
+				@components.NoResults("posts", "postsFilter.clear")
+			} else {
+				@components.EmptyState(components.EmptyStateProps{
+					Icon:        components.FileTextIcon(components.IconXXL),
+					Title:       "No posts yet",
+					Description: "Get started by creating your first post.",
+					CTAHref:     "/admin/posts/new",
+					CTAText:     "Create your first post",
+				})
+			}
+		</div>
+		<!-- Client-side filtering script -->
+		@postsFilterScript()
+	}
+}
+
+templ postsFilterScript() {
+	<script>
+		// Initialize table filter using the reusable TableFilter class
+		const postsFilter = new TableFilter({
+			tableBodyId: 'posts-tbody',
+			searchId: 'post-search',
+			filters: [
+				{ id: 'status-filter', match: TableFilter.draftPublishedMatcher }
+			],
+			searchFields: ['title', 'slug', 'excerpt'],
+			storageKey: 'postFilters',
+			tableCardSelector: '.card:has(#posts-table)'
+		});
+
+		// Initialize on DOM ready
+		document.addEventListener('DOMContentLoaded', () => postsFilter.init());
+	</script>
+}

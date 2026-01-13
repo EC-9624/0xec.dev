@@ -1,0 +1,92 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+templ CollectionsList(collections []models.Collection) {
+	@layouts.Admin("Collections") {
+		<div class="space-y-4">
+			<!-- Header -->
+			@components.PageHeader("Collections", strconv.Itoa(len(collections))+" collections") {
+				@components.NewButtonDrawer("/admin/htmx/collections/new-drawer", "New Collection", "New Collection")
+			}
+			<!-- Filters Bar -->
+			@components.FilterBar(components.FilterBarProps{}) {
+				@components.SearchInput(components.SearchInputProps{
+					ID:          "collection-search",
+					Placeholder: "Search collections...",
+					OnInput:     "collectionsFilter.apply()",
+				})
+				@components.FilterDropdown(components.FilterDropdownProps{
+					ID:           "status-filter",
+					DefaultLabel: "All Status",
+					Options:      components.StatusOptions(),
+					OnChange:     "collectionsFilter.apply()",
+				})
+				@components.ClearFiltersButton("collectionsFilter.clear()")
+			}
+			<!-- Table -->
+			if len(collections) > 0 {
+				<div class="card">
+					<table class="table" id="collections-table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head w-[40%]">Name</th>
+								<th class="table-head w-[20%]">Bookmarks</th>
+								<th class="table-head w-[20%]">Status</th>
+								<th class="table-head w-[20%] text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body" id="collections-tbody">
+							for _, collection := range collections {
+								@CollectionRow(collection)
+							}
+						</tbody>
+					</table>
+				</div>
+				<!-- No results message (hidden by default) -->
+				@components.NoResults("collections", "collectionsFilter.clear")
+			} else {
+				@components.EmptyState(components.EmptyStateProps{
+					Icon:        components.FolderIcon(components.IconXXL),
+					Title:       "No collections yet",
+					Description: "Create collections to organize your bookmarks.",
+					CTAHref:     "/admin/collections/new",
+					CTAText:     "Create your first collection",
+				})
+			}
+		</div>
+		<!-- Client-side filtering script -->
+		@collectionsFilterScript()
+		@collectionExpandScript()
+	}
+}
+
+templ collectionsFilterScript() {
+	<script>
+		// Initialize table filter using the reusable TableFilter class
+		const collectionsFilter = new TableFilter({
+			tableBodyId: 'collections-tbody',
+			searchId: 'collection-search',
+			filters: [
+				{ id: 'status-filter', match: TableFilter.publicPrivateMatcher }
+			],
+			searchFields: ['name', 'slug', 'description'],
+			storageKey: 'collectionFilters',
+			tableCardSelector: '.card:has(#collections-table)'
+		});
+
+		// Initialize on DOM ready
+		document.addEventListener('DOMContentLoaded', () => collectionsFilter.init());
+	</script>
+}
+
+// collectionExpandScript is deprecated - expandable-row.js now handles this
+// Kept as empty templ for backward compatibility
+templ collectionExpandScript() {
+}

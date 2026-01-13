@@ -1,0 +1,238 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// BookmarksListData contains data for the bookmarks list page
+type BookmarksListData struct {
+	Bookmarks               []models.Bookmark
+	Collections             []models.Collection
+	PreselectedCollectionID int64 // 0 means no preselection
+}
+
+templ BookmarksList(data BookmarksListData) {
+	@layouts.Admin("Bookmarks") {
+		<div class="space-y-4">
+			<!-- Header -->
+			@components.PageHeader("Bookmarks", strconv.Itoa(len(data.Bookmarks))+" bookmarks") {
+				@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
+				@components.ImportButton("/admin/import")
+				@components.NewButtonDrawer("/admin/htmx/bookmarks/new-drawer", "New Bookmark", "New Bookmark")
+			}
+			<!-- Refresh Progress Banner (hidden by default) -->
+			<div id="refresh-progress" class="hidden">
+				<div class="bg-muted border border-border p-4 space-y-2">
+					<div class="flex items-center justify-between">
+						<span id="refresh-status" class="text-sm font-medium">Preparing...</span>
+						<span id="refresh-count" class="text-sm text-muted-foreground"></span>
+					</div>
+					<div class="w-full bg-border h-2">
+						<div id="refresh-bar" class="bg-primary h-2 transition-all duration-300 w-0"></div>
+					</div>
+					<p id="refresh-current" class="text-xs text-muted-foreground truncate"></p>
+				</div>
+			</div>
+			<!-- Filters Bar -->
+			@components.FilterBar(components.FilterBarProps{}) {
+				@components.SearchInput(components.SearchInputProps{
+					ID:          "bookmark-search",
+					Placeholder: "Search bookmarks...",
+					OnInput:     "bookmarksFilter.apply()",
+				})
+				<!-- Collection Filter (custom with dynamic options) -->
+				@bookmarkCollectionFilter(data.Collections, data.PreselectedCollectionID)
+				@components.FilterDropdown(components.FilterDropdownProps{
+					ID:           "status-filter",
+					DefaultLabel: "All Status",
+					Options:      components.BookmarkStatusOptions(),
+					OnChange:     "bookmarksFilter.apply()",
+				})
+				@components.ClearFiltersButton("bookmarksFilter.clear()")
+			}
+			<!-- Table -->
+			if len(data.Bookmarks) > 0 {
+				<div class="card">
+					<table class="table" id="bookmarks-table">
+						<thead class="table-header bg-muted/50">
+							<tr class="table-row">
+								<th class="table-head w-[50%]">Title</th>
+								<th class="table-head w-[20%]">Collection</th>
+								<th class="table-head w-[15%]">Status</th>
+								<th class="table-head w-[15%] text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="table-body" id="bookmarks-tbody">
+							for _, bookmark := range data.Bookmarks {
+								@BookmarkRow(bookmark, data.Collections)
+							}
+						</tbody>
+					</table>
+				</div>
+				<!-- No results message (hidden by default) -->
+				@components.NoResults("bookmarks", "bookmarksFilter.clear")
+			} else {
+				@components.EmptyState(components.EmptyStateProps{
+					Icon:        components.BookmarkIcon(components.IconXXL),
+					Title:       "No bookmarks yet",
+					Description: "Start saving interesting links.",
+					CTAHref:     "/admin/bookmarks/new",
+					CTAText:     "Add your first bookmark",
+				})
+			}
+		</div>
+		<!-- Client-side filtering script -->
+		@bookmarksFilterScript()
+	}
+}
+
+templ bookmarksFilterScript() {
+	<script>
+		// Initialize table filter using the reusable TableFilter class
+		const bookmarksFilter = new TableFilter({
+			tableBodyId: 'bookmarks-tbody',
+			searchId: 'bookmark-search',
+			filters: [
+				{ id: 'collection-filter', match: TableFilter.collectionMatcher },
+				{ id: 'status-filter', match: TableFilter.bookmarkStatusMatcher }
+			],
+			searchFields: ['title', 'url', 'domain'],
+			storageKey: 'bookmarkFilters',
+			tableCardSelector: '.card:has(#bookmarks-table)'
+		});
+
+		// Initialize on DOM ready
+		document.addEventListener('DOMContentLoaded', () => {
+			bookmarksFilter.init();
+			// Apply preselected collection filter if set
+			const collectionFilter = document.getElementById('collection-filter');
+			if (collectionFilter && collectionFilter.value) {
+				bookmarksFilter.apply();
+			}
+		});
+
+		// Metadata refresh with SSE progress
+		function startMetadataRefresh() {
+			const btn = document.getElementById('refresh-btn');
+			const btnText = document.getElementById('refresh-btn-text');
+			const progress = document.getElementById('refresh-progress');
+			const status = document.getElementById('refresh-status');
+			const count = document.getElementById('refresh-count');
+			const bar = document.getElementById('refresh-bar');
+			const current = document.getElementById('refresh-current');
+
+			// Disable button and show progress
+			btn.disabled = true;
+			btn.classList.add('opacity-50');
+			btnText.textContent = 'Refreshing...';
+			progress.classList.remove('hidden');
+			status.textContent = 'Connecting...';
+			bar.style.width = '0%';
+
+			const eventSource = new EventSource('/admin/htmx/bookmarks/refresh-all');
+
+			eventSource.onmessage = (event) => {
+				const parts = event.data.split(':');
+				const type = parts[0];
+
+				if (type === 'start') {
+					const total = parts[1];
+					status.textContent = 'Refreshing metadata...';
+					count.textContent = `0 / ${total}`;
+				} else if (type === 'progress') {
+					const current_num = parseInt(parts[1]);
+					const total = parseInt(parts[2]);
+					const title = parts.slice(3).join(':'); // Title might contain colons
+					const pct = Math.round((current_num / total) * 100);
+					bar.style.width = pct + '%';
+					count.textContent = `${current_num} / ${total}`;
+					current.textContent = `Processing: ${title}`;
+				} else if (type === 'done') {
+					const updated = parts[1];
+					const failed = parts[2];
+					eventSource.close();
+					
+					status.textContent = 'Completed!';
+					bar.style.width = '100%';
+					current.textContent = `Updated: ${updated}, Failed: ${failed}`;
+					count.textContent = '';
+					
+					// Re-enable button
+					btn.disabled = false;
+					btn.classList.remove('opacity-50');
+					btnText.textContent = 'Refresh Metadata';
+
+					// Hide progress after 3 seconds and reload
+					setTimeout(() => {
+						progress.classList.add('hidden');
+						window.location.reload();
+					}, 2000);
+				} else if (type === 'error') {
+					eventSource.close();
+					status.textContent = 'Error: ' + parts.slice(1).join(':');
+					bar.style.width = '0%';
+					btn.disabled = false;
+					btn.classList.remove('opacity-50');
+					btnText.textContent = 'Refresh Metadata';
+				}
+			};
+
+			eventSource.onerror = () => {
+				eventSource.close();
+				status.textContent = 'Connection error';
+				btn.disabled = false;
+				btn.classList.remove('opacity-50');
+				btnText.textContent = 'Refresh Metadata';
+			};
+		}
+
+		// Listen for HX-Trigger events to update row data attributes for filtering
+		document.body.addEventListener('updateRowData', (e) => {
+			const data = e.detail;
+			if (!data || !data.id) return;
+
+			// Find the row by looking for any element with data-bookmark-id or the tr itself
+			const row = document.querySelector(`#bookmarks-tbody tr[data-title]`)?.closest('tbody')
+				?.querySelector(`tr:has([data-bookmark-id="${data.id}"])`) 
+				|| document.querySelector(`#bookmarks-tbody tr`)?.closest('tbody')
+				?.querySelector(`tr`);
+			
+			// Alternative: find by iterating through rows
+			const rows = document.querySelectorAll('#bookmarks-tbody tr');
+			let targetRow = null;
+			for (const r of rows) {
+				// Check if this row contains an element with matching bookmark id
+				const dropdown = r.querySelector(`[data-bookmark-id="${data.id}"]`);
+				const titleEdit = r.querySelector(`[hx-get*="/admin/htmx/bookmarks/${data.id}/"]`);
+				const publicBtn = r.querySelector(`[hx-post*="/admin/htmx/bookmarks/${data.id}/"]`);
+				if (dropdown || titleEdit || publicBtn) {
+					targetRow = r;
+					break;
+				}
+			}
+
+			if (!targetRow) return;
+
+			// Update the relevant data attributes
+			if ('title' in data) {
+				targetRow.dataset.title = data.title;
+			}
+			if ('collectionId' in data) {
+				targetRow.dataset.collectionId = data.collectionId;
+			}
+			if ('isPublic' in data) {
+				targetRow.dataset.isPublic = String(data.isPublic);
+			}
+			if ('isFavorite' in data) {
+				targetRow.dataset.isFavorite = String(data.isFavorite);
+			}
+
+			// Re-run filter to update visibility based on new data
+			bookmarksFilter.apply();
+		});
+	</script>
+}

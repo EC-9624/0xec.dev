@@ -1,0 +1,160 @@
+package admin
+
+import (
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// PostForm renders the full-page post form
+templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreatePostInput) {
+	@layouts.Admin(postFormTitle(post, isNew)) {
+		<div class="max-w-3xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if isNew {
+						New Post
+					} else {
+						Edit Post
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if isNew {
+						Create a new blog post.
+					} else {
+						Make changes to your post.
+					}
+				</p>
+			</div>
+			@components.FormErrorBanner(errors)
+			<form
+				if isNew {
+					action="/admin/posts"
+				} else {
+					action={ templ.URL("/admin/posts/" + post.Slug) }
+				}
+				method="POST"
+				class="space-y-6"
+				data-validate
+				novalidate
+			>
+				<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+				<div class="card">
+					<div class="card-content pt-6 space-y-6">
+						<div class="space-y-2">
+							<label for="title" class="label">Title <span class="text-destructive">*</span></label>
+							<input
+								type="text"
+								id="title"
+								name="title"
+								class={ components.InputClass(errors, "title") }
+								value={ postFormValue(post, input, "title") }
+								placeholder="Enter post title"
+								required
+								maxlength="200"
+								data-error-required="Title is required"
+								data-error-maxlength="Title cannot exceed 200 characters"
+							/>
+							@components.FieldError(errors, "title")
+						</div>
+						<div class="space-y-2">
+							<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
+							<input
+								type="text"
+								id="slug"
+								name="slug"
+								class={ components.InputClass(errors, "slug") }
+								value={ postFormValue(post, input, "slug") }
+								placeholder="post-url-slug"
+								required
+								maxlength="100"
+								pattern="[a-z0-9-]+"
+								data-error-required="Slug is required"
+								data-error-maxlength="Slug cannot exceed 100 characters"
+								data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
+							/>
+							@components.FieldError(errors, "slug")
+						</div>
+						<div class="space-y-2">
+							<label for="excerpt" class="label">Excerpt</label>
+							<textarea
+								id="excerpt"
+								name="excerpt"
+								rows="2"
+								class="textarea"
+								placeholder="Brief description of your post"
+							>{ postFormValue(post, input, "excerpt") }</textarea>
+						</div>
+						<div class="space-y-2">
+							<label for="content" class="label">Content (Markdown) <span class="text-destructive text-xs">(required when publishing)</span></label>
+							<textarea
+								id="content"
+								name="content"
+								rows="20"
+								class={ components.TextareaClass(errors, "content") + " font-mono text-sm" }
+								placeholder="Write your post content in Markdown..."
+								data-error-required="Content is required when publishing"
+							>{ postFormValue(post, input, "content") }</textarea>
+							@components.FieldError(errors, "content")
+						</div>
+						<div class="space-y-2">
+							<label for="cover_image" class="label">Cover Image URL</label>
+							<input
+								type="url"
+								id="cover_image"
+								name="cover_image"
+								class={ components.InputClass(errors, "cover_image") }
+								value={ postFormValue(post, input, "cover_image") }
+								placeholder="https://example.com/image.jpg"
+								data-error-url="Cover image must be a valid URL"
+							/>
+							@components.FieldError(errors, "cover_image")
+						</div>
+						@components.TagSelect(components.TagSelectProps{
+							AllTags:     allTags,
+							SelectedIDs: postFormTagIDs(post, tags, input),
+							FieldName:   "tag_ids",
+						})
+						<div class="flex items-center space-x-2">
+							<input
+								type="checkbox"
+								id="is_draft"
+								name="is_draft"
+								value="true"
+								if postFormIsDraft(post, input) {
+									checked
+								}
+								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+							/>
+							<label for="is_draft" class="label">
+								Save as draft
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="flex items-center gap-4">
+					<button type="submit" class="btn-default">
+						if isNew {
+							Create Post
+						} else {
+							Save Changes
+						}
+					</button>
+					<a href="/admin/posts" class="btn-outline">
+						Cancel
+					</a>
+					if !isNew {
+						<button
+							type="button"
+							hx-delete={ "/admin/posts/" + post.Slug }
+							hx-confirm="Are you sure you want to delete this post?"
+							class="btn-destructive ml-auto"
+						>
+							Delete
+						</button>
+					}
+				</div>
+			</form>
+		</div>
+	}
+}

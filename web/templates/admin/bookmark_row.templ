@@ -1,0 +1,293 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
+
+// BookmarkRow renders a single bookmark table row
+templ BookmarkRow(bookmark models.Bookmark, collections []models.Collection) {
+	<tr
+		id={ "bookmark-row-" + strconv.FormatInt(bookmark.ID, 10) }
+		class="table-row group"
+		data-title={ bookmark.Title }
+		data-url={ bookmark.URL }
+		data-domain={ bookmark.GetDomain() }
+		data-collection-id={ getCollectionID(bookmark) }
+		data-is-public={ strconv.FormatBool(bookmark.IsPublic) }
+		data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
+	>
+		<!-- Title -->
+		<td class="table-cell overflow-hidden">
+			<div class="flex items-center gap-2 min-w-0">
+				<!-- Favicon -->
+				<div class="w-6 h-6 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 overflow-hidden">
+					<img
+						src={ bookmark.GetFaviconURL() }
+						alt=""
+						class="w-4 h-4 object-contain"
+						loading="lazy"
+						onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+					/>
+					<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
+				</div>
+				<div class="min-w-0 flex-1">
+					<button
+						type="button"
+						hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+						hx-target="#drawer-content"
+						hx-swap="innerHTML"
+						onclick="window.drawerOpen('Edit Bookmark')"
+						class="font-medium text-foreground hover:underline block truncate text-left cursor-pointer"
+						title={ bookmark.Title }
+					>
+						{ bookmark.Title }
+					</button>
+					<a
+						href={ templ.URL(bookmark.URL) }
+						target="_blank"
+						class="text-[11px] text-muted-foreground hover:underline truncate block"
+						title={ bookmark.URL }
+					>
+						{ truncateURL(bookmark.URL, 50) }
+					</a>
+				</div>
+			</div>
+		</td>
+		<!-- Collection (inline dropdown) -->
+		<td class="table-cell">
+			@BookmarkCollectionDropdown(bookmark.ID, bookmark.CollectionID.Int64, bookmark.CollectionID.Valid, collections, false)
+		</td>
+		<!-- Status (inline toggles) -->
+		<td class="table-cell">
+			<div class="flex items-center gap-1">
+				@BookmarkPublicBadge(bookmark.ID, bookmark.IsPublic, false)
+				@BookmarkFavoriteStar(bookmark.ID, bookmark.IsFavorite, false)
+			</div>
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right">
+			<div class="row-actions">
+				<a
+					href={ templ.URL(bookmark.URL) }
+					class="btn-ghost btn-xs"
+					target="_blank"
+					title="Open link"
+				>
+					@components.ExternalLinkIcon(components.IconMD)
+				</a>
+				<a
+					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
+					class="btn-ghost btn-xs"
+					title="Full edit"
+				>
+					@components.EditIcon(components.IconMD)
+				</a>
+				<button
+					type="button"
+					hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+					hx-confirm="Delete this bookmark?"
+					hx-target="closest tr"
+					hx-swap="outerHTML swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+}
+
+// BookmarkRowOOB renders a bookmark row for out-of-band swap after update
+templ BookmarkRowOOB(bookmark models.Bookmark, collections []models.Collection) {
+	<tr
+		id={ "bookmark-row-" + strconv.FormatInt(bookmark.ID, 10) }
+		hx-swap-oob="true"
+		class="table-row group"
+		data-title={ bookmark.Title }
+		data-url={ bookmark.URL }
+		data-domain={ bookmark.GetDomain() }
+		data-collection-id={ getCollectionID(bookmark) }
+		data-is-public={ strconv.FormatBool(bookmark.IsPublic) }
+		data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
+	>
+		<!-- Title -->
+		<td class="table-cell overflow-hidden">
+			<div class="flex items-center gap-2 min-w-0">
+				<!-- Favicon -->
+				<div class="w-6 h-6 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 overflow-hidden">
+					<img
+						src={ bookmark.GetFaviconURL() }
+						alt=""
+						class="w-4 h-4 object-contain"
+						loading="lazy"
+						onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+					/>
+					<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
+				</div>
+				<div class="min-w-0 flex-1">
+					<button
+						type="button"
+						hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+						hx-target="#drawer-content"
+						hx-swap="innerHTML"
+						onclick="window.drawerOpen('Edit Bookmark')"
+						class="font-medium text-foreground hover:underline block truncate text-left cursor-pointer"
+						title={ bookmark.Title }
+					>
+						{ bookmark.Title }
+					</button>
+					<a
+						href={ templ.URL(bookmark.URL) }
+						target="_blank"
+						class="text-[11px] text-muted-foreground hover:underline truncate block"
+						title={ bookmark.URL }
+					>
+						{ truncateURL(bookmark.URL, 50) }
+					</a>
+				</div>
+			</div>
+		</td>
+		<!-- Collection (inline dropdown) -->
+		<td class="table-cell">
+			@BookmarkCollectionDropdown(bookmark.ID, bookmark.CollectionID.Int64, bookmark.CollectionID.Valid, collections, false)
+		</td>
+		<!-- Status (inline toggles) -->
+		<td class="table-cell">
+			<div class="flex items-center gap-1">
+				@BookmarkPublicBadge(bookmark.ID, bookmark.IsPublic, false)
+				@BookmarkFavoriteStar(bookmark.ID, bookmark.IsFavorite, false)
+			</div>
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right">
+			<div class="row-actions">
+				<a
+					href={ templ.URL(bookmark.URL) }
+					class="btn-ghost btn-xs"
+					target="_blank"
+					title="Open link"
+				>
+					@components.ExternalLinkIcon(components.IconMD)
+				</a>
+				<a
+					href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
+					class="btn-ghost btn-xs"
+					title="Full edit"
+				>
+					@components.EditIcon(components.IconMD)
+				</a>
+				<button
+					type="button"
+					hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+					hx-confirm="Delete this bookmark?"
+					hx-target="closest tr"
+					hx-swap="outerHTML swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+}
+
+// BookmarkRowOOBPrepend renders a new bookmark row for out-of-band prepend after create
+templ BookmarkRowOOBPrepend(bookmark models.Bookmark, collections []models.Collection) {
+	<tbody id="bookmarks-tbody" hx-swap-oob="afterbegin">
+		<tr
+			id={ "bookmark-row-" + strconv.FormatInt(bookmark.ID, 10) }
+			class="table-row group"
+			data-title={ bookmark.Title }
+			data-url={ bookmark.URL }
+			data-domain={ bookmark.GetDomain() }
+			data-collection-id={ getCollectionID(bookmark) }
+			data-is-public={ strconv.FormatBool(bookmark.IsPublic) }
+			data-is-favorite={ strconv.FormatBool(bookmark.IsFavorite) }
+		>
+			<!-- Title -->
+			<td class="table-cell overflow-hidden">
+				<div class="flex items-center gap-2 min-w-0">
+					<!-- Favicon -->
+					<div class="w-6 h-6 bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 overflow-hidden">
+						<img
+							src={ bookmark.GetFaviconURL() }
+							alt=""
+							class="w-4 h-4 object-contain"
+							loading="lazy"
+							onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+						/>
+						<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
+					</div>
+					<div class="min-w-0 flex-1">
+						<button
+							type="button"
+							hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+							hx-target="#drawer-content"
+							hx-swap="innerHTML"
+							onclick="window.drawerOpen('Edit Bookmark')"
+							class="font-medium text-foreground hover:underline block truncate text-left cursor-pointer"
+							title={ bookmark.Title }
+						>
+							{ bookmark.Title }
+						</button>
+						<a
+							href={ templ.URL(bookmark.URL) }
+							target="_blank"
+							class="text-[11px] text-muted-foreground hover:underline truncate block"
+							title={ bookmark.URL }
+						>
+							{ truncateURL(bookmark.URL, 50) }
+						</a>
+					</div>
+				</div>
+			</td>
+			<!-- Collection (inline dropdown) -->
+			<td class="table-cell">
+				@BookmarkCollectionDropdown(bookmark.ID, bookmark.CollectionID.Int64, bookmark.CollectionID.Valid, collections, false)
+			</td>
+			<!-- Status (inline toggles) -->
+			<td class="table-cell">
+				<div class="flex items-center gap-1">
+					@BookmarkPublicBadge(bookmark.ID, bookmark.IsPublic, false)
+					@BookmarkFavoriteStar(bookmark.ID, bookmark.IsFavorite, false)
+				</div>
+			</td>
+			<!-- Actions -->
+			<td class="table-cell text-right">
+				<div class="row-actions">
+					<a
+						href={ templ.URL(bookmark.URL) }
+						class="btn-ghost btn-xs"
+						target="_blank"
+						title="Open link"
+					>
+						@components.ExternalLinkIcon(components.IconMD)
+					</a>
+					<a
+						href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
+						class="btn-ghost btn-xs"
+						title="Full edit"
+					>
+						@components.EditIcon(components.IconMD)
+					</a>
+					<button
+						type="button"
+						hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+						hx-confirm="Delete this bookmark?"
+						hx-target="closest tr"
+						hx-swap="outerHTML swap:0.2s"
+						class="btn-ghost btn-xs text-destructive hover:text-destructive"
+						title="Delete"
+					>
+						@components.TrashIcon(components.IconMD)
+					</button>
+				</div>
+			</td>
+		</tr>
+	</tbody>
+}

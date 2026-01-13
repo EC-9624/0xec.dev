@@ -120,10 +120,13 @@
     }
 
     /**
-     * Initialize event listeners
+     * Initialize event listeners and ARIA attributes
      * @private
      */
     _init() {
+      // Set up ARIA attributes for accessibility
+      this._initAria();
+
       // Toggle on trigger click
       this._handlers.triggerClick = (e) => {
         e.preventDefault();
@@ -163,6 +166,42 @@
         }
       };
       document.addEventListener('click', this._handlers.clickOutside);
+    }
+
+    /**
+     * Initialize ARIA attributes for accessibility
+     * @private
+     */
+    _initAria() {
+      // Generate unique IDs for ARIA references
+      const baseId = this.input?.id || `dropdown-${Date.now()}`;
+      const menuId = `${baseId}-listbox`;
+
+      // Set up trigger as a combobox/listbox opener
+      this.trigger.setAttribute('aria-haspopup', 'listbox');
+      this.trigger.setAttribute('aria-controls', menuId);
+      
+      // Set up menu as listbox
+      this.menu.setAttribute('role', 'listbox');
+      this.menu.setAttribute('id', menuId);
+      this.menu.setAttribute('tabindex', '-1');
+
+      // Set up each option
+      this.options.forEach((opt, index) => {
+        const optionId = `${baseId}-option-${index}`;
+        opt.setAttribute('role', 'option');
+        opt.setAttribute('id', optionId);
+        
+        // Set aria-selected based on data-selected attribute
+        const isSelected = opt.getAttribute('data-selected') === 'true';
+        opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+      });
+
+      // Set initial aria-activedescendant on trigger
+      const selectedOption = [...this.options].find(o => o.getAttribute('data-selected') === 'true');
+      if (selectedOption) {
+        this.trigger.setAttribute('aria-activedescendant', selectedOption.id);
+      }
     }
 
     /**
@@ -269,9 +308,16 @@
         this.input.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      // Update selected state
-      this.options.forEach(o => o.removeAttribute('data-selected'));
+      // Update selected state and ARIA
+      this.options.forEach(o => {
+        o.removeAttribute('data-selected');
+        o.setAttribute('aria-selected', 'false');
+      });
       opt.setAttribute('data-selected', 'true');
+      opt.setAttribute('aria-selected', 'true');
+      
+      // Update aria-activedescendant on trigger
+      this.trigger.setAttribute('aria-activedescendant', opt.id);
 
       this.close();
     }
@@ -286,8 +332,14 @@
         if (this.labelEl) {
           this.labelEl.textContent = opt.textContent.trim();
         }
-        this.options.forEach(o => o.removeAttribute('data-selected'));
+        // Update selected state and ARIA
+        this.options.forEach(o => {
+          o.removeAttribute('data-selected');
+          o.setAttribute('aria-selected', 'false');
+        });
         opt.setAttribute('data-selected', 'true');
+        opt.setAttribute('aria-selected', 'true');
+        this.trigger.setAttribute('aria-activedescendant', opt.id);
         if (this.input) {
           this.input.value = value;
         }
@@ -346,7 +398,12 @@
         nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
       }
       
-      items[nextIndex]?.focus();
+      const nextItem = items[nextIndex];
+      if (nextItem) {
+        nextItem.focus();
+        // Update aria-activedescendant on trigger for screen readers
+        this.trigger.setAttribute('aria-activedescendant', nextItem.id);
+      }
     }
 
     /**

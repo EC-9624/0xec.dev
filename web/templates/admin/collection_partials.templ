@@ -1,0 +1,129 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/service"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
+
+// ============================================
+// INLINE EDIT PARTIALS (for HTMX responses)
+// ============================================
+
+// CollectionPublicBadge renders the public/private toggle badge
+templ CollectionPublicBadge(id int64, isPublic bool, success bool) {
+	if isPublic {
+		<button
+			type="button"
+			hx-post={ "/admin/htmx/collections/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-swap="outerHTML"
+			class={ "badge-success cursor-pointer hover:bg-green-100", templ.KV("save-success", success) }
+			title="Click to make private"
+		>
+			@components.GlobeIcon(components.IconXS)
+			Public
+		</button>
+	} else {
+		<button
+			type="button"
+			hx-post={ "/admin/htmx/collections/" + strconv.FormatInt(id, 10) + "/toggle-public" }
+			hx-swap="outerHTML"
+			class={ "badge-muted cursor-pointer hover:bg-muted/80", templ.KV("save-success", success) }
+			title="Click to make public"
+		>
+			@components.LockIcon(components.IconXS)
+			Private
+		</button>
+	}
+}
+
+// ============================================
+// EXPANDED BOOKMARKS VIEW
+// ============================================
+
+// CollectionBookmarksExpanded renders the expanded bookmarks list for a collection
+templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.CollectionBookmark, totalCount int) {
+	<div>
+		for i, bookmark := range bookmarks {
+			if i < 5 {
+				<div class="flex items-center gap-4 px-8 py-2.5 hover:bg-muted/30">
+					<!-- Tree line indicator -->
+					<span class="text-muted-foreground/50 text-sm w-4 text-center shrink-0">
+						if i == len(bookmarks) - 1 && totalCount <= 5 {
+							
+						} else {
+							
+						}
+					</span>
+					<!-- Bookmark title -->
+					<div class="flex-1 min-w-0">
+						<a
+							href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
+							class="text-sm text-foreground hover:underline truncate block"
+						>
+							{ bookmark.Title }
+						</a>
+					</div>
+					<!-- Domain (external link) -->
+					<a
+						href={ templ.URL(bookmark.URL) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-32 shrink-0 overflow-hidden"
+						title={ bookmark.URL }
+					>
+						<span class="truncate">{ bookmark.Domain }</span>
+						@components.ExternalLinkIcon(components.IconXS)
+					</a>
+					<!-- Favorite -->
+					<div class="shrink-0 w-6 text-center">
+						if bookmark.IsFavorite {
+							<span class="text-amber-500" title="Favorite">
+								@components.StarFilledIcon(components.IconSM)
+							</span>
+						}
+					</div>
+					<!-- Actions -->
+					<div class="flex items-center gap-1 shrink-0">
+						<a
+							href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
+							class="btn-ghost btn-xs"
+							title="Edit"
+						>
+							@components.EditIcon(components.IconSM)
+						</a>
+						<button
+							type="button"
+							hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+							hx-confirm="Delete this bookmark?"
+							hx-target="closest div"
+							hx-swap="outerHTML swap:0.2s"
+							class="btn-ghost btn-xs text-destructive hover:text-destructive"
+							title="Delete"
+						>
+							@components.TrashIcon(components.IconSM)
+						</button>
+					</div>
+				</div>
+			}
+		}
+		if totalCount > 5 {
+			<div class="flex items-center gap-4 px-8 py-2.5 text-sm">
+				<span class="text-muted-foreground/50 w-4 text-center shrink-0"></span>
+				<span class="text-muted-foreground">+ { strconv.Itoa(totalCount - 5) } more</span>
+				<a
+					href={ templ.URL("/admin/bookmarks?collection=" + strconv.FormatInt(collectionID, 10)) }
+					class="text-primary hover:underline ml-auto"
+				>
+					View all in Bookmarks
+				</a>
+			</div>
+		}
+		if len(bookmarks) == 0 {
+			<div class="px-8 py-4 text-sm text-muted-foreground">
+				No bookmarks in this collection.
+			</div>
+		}
+	</div>
+}

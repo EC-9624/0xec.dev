@@ -1,0 +1,59 @@
+package admin
+
+import (
+	"database/sql"
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
+
+// ============================================
+// INLINE EDIT PARTIALS (for HTMX responses)
+// ============================================
+
+// PostDraftBadge renders the draft/published toggle badge
+templ PostDraftBadge(id int64, isDraft bool, success bool) {
+	if isDraft {
+		<button
+			type="button"
+			hx-post={ "/admin/htmx/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
+			hx-swap="outerHTML"
+			class={ "badge-warning cursor-pointer hover:bg-amber-100", templ.KV("save-success", success) }
+			title="Click to publish"
+		>
+			@components.FileTextIcon(components.IconXS)
+			Draft
+		</button>
+	} else {
+		<button
+			type="button"
+			hx-post={ "/admin/htmx/posts/" + strconv.FormatInt(id, 10) + "/toggle-draft" }
+			hx-swap="outerHTML"
+			class="badge-success cursor-pointer hover:bg-green-100"
+			title="Click to unpublish"
+		>
+			@components.CheckIcon(components.IconXS)
+			Published
+		</button>
+	}
+}
+
+// PostPublishedDate renders the published date (or dash if not published)
+templ PostPublishedDate(publishedAt sql.NullTime) {
+	if publishedAt.Valid {
+		<span class="text-muted-foreground">{ publishedAt.Time.Format("Jan 2, 2006") }</span>
+	} else {
+		<span class="text-muted-foreground/50">—</span>
+	}
+}
+
+// PostDraftToggleResponse renders both the badge and OOB published date update
+templ PostDraftToggleResponse(id int64, isDraft bool, publishedAt sql.NullTime) {
+	@PostDraftBadge(id, isDraft, true)
+	<span
+		id={ "post-published-" + strconv.FormatInt(id, 10) }
+		hx-swap-oob={ "outerHTML:#post-published-" + strconv.FormatInt(id, 10) }
+	>
+		@PostPublishedDate(publishedAt)
+	</span>
+}

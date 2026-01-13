@@ -7,11 +7,18 @@
 
   let isOpen = false;
   let initialFormData = null;
+  let previouslyFocusedElement = null;
+  let focusTrapHandler = null;
 
   const backdrop = () => document.getElementById("drawer-backdrop");
   const panel = () => document.getElementById("drawer-panel");
   const title = () => document.getElementById("drawer-title");
   const content = () => document.getElementById("drawer-content");
+  
+  // Selector for focusable elements within the drawer
+  const FOCUSABLE_SELECTOR = 
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+    'textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
 
   /**
    * Open the drawer and optionally load content via HTMX
@@ -48,11 +55,59 @@
     // Prevent body scroll
     document.body.style.overflow = "hidden";
 
-    // Focus the panel for accessibility
+    // Store the element that triggered the drawer for focus restoration
+    previouslyFocusedElement = document.activeElement;
+
+    // Set up focus trap
+    setupFocusTrap(panelEl);
+
+    // Focus the panel for accessibility (first focusable will be focused after content loads)
     panelEl.focus();
 
     // Add escape key listener
     document.addEventListener("keydown", handleEscape);
+  }
+
+  /**
+   * Set up focus trap within the drawer panel
+   * @param {HTMLElement} panelEl - The drawer panel element
+   */
+  function setupFocusTrap(panelEl) {
+    focusTrapHandler = (e) => {
+      if (e.key !== 'Tab' || !isOpen) return;
+
+      const focusableElements = panelEl.querySelectorAll(FOCUSABLE_SELECTOR);
+      if (focusableElements.length === 0) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        // Shift+Tab: If on first element, wrap to last
+        if (document.activeElement === firstFocusable || document.activeElement === panelEl) {
+          e.preventDefault();
+          lastFocusable.focus();
+        }
+      } else {
+        // Tab: If on last element, wrap to first
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', focusTrapHandler);
+  }
+
+  /**
+   * Remove focus trap handler
+   */
+  function removeFocusTrap() {
+    if (focusTrapHandler) {
+      document.removeEventListener('keydown', focusTrapHandler);
+      focusTrapHandler = null;
+    }
   }
 
   /**
@@ -84,6 +139,15 @@
 
     // Re-enable body scroll
     document.body.style.overflow = "";
+
+    // Remove focus trap
+    removeFocusTrap();
+
+    // Restore focus to the element that opened the drawer
+    if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+      previouslyFocusedElement.focus();
+    }
+    previouslyFocusedElement = null;
 
     // Clear content after animation
     setTimeout(() => {
@@ -167,11 +231,24 @@
   window.drawerIsDirty = isDirty;
   window.drawerIsOpen = isDrawerOpen;
 
-  // Listen for HTMX content swap to capture initial form state
+  // Listen for HTMX content swap to capture initial form state and focus first element
   document.addEventListener("htmx:afterSwap", function (e) {
     if (e.detail.target.id === "drawer-content") {
       // Small delay to ensure form is fully rendered
-      setTimeout(captureFormState, 50);
+      setTimeout(() => {
+        captureFormState();
+        
+        // Focus the first focusable element in the new content
+        if (isOpen) {
+          const panelEl = panel();
+          if (panelEl) {
+            const firstFocusable = panelEl.querySelector(FOCUSABLE_SELECTOR);
+            if (firstFocusable) {
+              firstFocusable.focus();
+            }
+          }
+        }
+      }, 50);
     }
   });
 

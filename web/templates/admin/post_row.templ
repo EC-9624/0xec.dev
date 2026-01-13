@@ -1,0 +1,96 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
+
+// PostRow renders a single post table row
+templ PostRow(post models.Post) {
+	<tr
+		class="table-row group"
+		data-title={ post.Title }
+		data-slug={ post.Slug }
+		data-excerpt={ post.GetExcerpt() }
+		data-is-draft={ strconv.FormatBool(post.IsDraft) }
+	>
+		<!-- Title -->
+		<td class="table-cell">
+			<div class="min-w-0">
+				<a
+					href={ templ.URL("/admin/posts/" + post.Slug + "/edit") }
+					class="font-medium text-foreground hover:underline block truncate"
+					title={ post.Title }
+				>
+					{ post.Title }
+				</a>
+				if post.GetExcerpt() != "" {
+					<p class="text-xs text-muted-foreground truncate mt-0.5">
+						{ truncateText(post.GetExcerpt(), 80) }
+					</p>
+				}
+			</div>
+		</td>
+		<!-- Tags -->
+		<td class="table-cell">
+			if len(post.Tags) > 0 {
+				<div class="flex flex-wrap gap-1">
+					for _, tag := range post.Tags {
+						<span class="badge-muted text-xs">{ tag.Name }</span>
+					}
+				</div>
+			} else {
+				<span class="text-muted-foreground/50">—</span>
+			}
+		</td>
+		<!-- Status -->
+		<td class="table-cell">
+			@PostDraftBadge(post.ID, post.IsDraft, false)
+		</td>
+		<!-- Published -->
+		<td class="table-cell text-xs">
+			<span id={ "post-published-" + strconv.FormatInt(post.ID, 10) }>
+				@PostPublishedDate(post.PublishedAt)
+			</span>
+		</td>
+		<!-- Created -->
+		<td class="table-cell text-xs text-muted-foreground">
+			{ post.CreatedAt.Format("Jan 2, 2006") }
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right">
+			<div class="row-actions">
+				if !post.IsDraft {
+					<a
+						href={ templ.URL("/posts/" + post.Slug) }
+						class="btn-ghost btn-xs"
+						target="_blank"
+						title="View post"
+					>
+						@components.ExternalLinkIcon(components.IconMD)
+					</a>
+				}
+				<a
+					href={ templ.URL("/admin/posts/" + post.Slug + "/edit") }
+					class="btn-ghost btn-xs"
+					title="Edit"
+				>
+					@components.EditIcon(components.IconMD)
+				</a>
+				<button
+					type="button"
+					hx-delete={ "/admin/posts/" + post.Slug }
+					hx-confirm="Delete this post?"
+					hx-target="closest tr"
+					hx-swap="outerHTML swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+}

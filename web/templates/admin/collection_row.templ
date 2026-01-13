@@ -1,0 +1,352 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
+
+// CollectionRow renders a single collection table row
+templ CollectionRow(collection models.Collection) {
+	<tr
+		if collection.BookmarkCount > 0 {
+			class="table-row group cursor-pointer hover:bg-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+			tabindex="0"
+			role="button"
+			aria-expanded="false"
+			onclick={ toggleCollectionExpand(collection.ID) }
+			onkeydown={ handleCollectionRowKeydown(collection.ID) }
+			data-expandable-id={ strconv.FormatInt(collection.ID, 10) }
+			data-expandable-type="collection"
+		} else {
+			class="table-row group"
+		}
+		id={ "collection-row-" + strconv.FormatInt(collection.ID, 10) }
+		data-expanded="false"
+		data-name={ collection.Name }
+		data-slug={ collection.Slug }
+		data-description={ collection.GetDescription() }
+		data-is-public={ strconv.FormatBool(collection.IsPublic) }
+	>
+		<!-- Name with expand chevron -->
+		<td class="table-cell">
+			<div class="min-w-0">
+				<div class="flex items-center gap-1.5">
+					if collection.BookmarkCount > 0 {
+						<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+							@components.ChevronRightIcon(components.IconSM)
+						</span>
+					} else {
+						<span class="w-5"></span>
+					}
+					if collection.GetColor() != "" {
+						<span
+							class="w-2 h-2 rounded-full shrink-0"
+							style={ "background-color: " + collection.GetColor() }
+							title={ "Color: " + collection.GetColor() }
+						></span>
+					}
+					<span class="font-medium text-foreground">{ collection.Name }</span>
+				</div>
+				if collection.GetDescription() != "" {
+					<p class="text-xs text-muted-foreground truncate mt-0.5 ml-6">
+						{ truncateCollectionText(collection.GetDescription(), 60) }
+					</p>
+				}
+			</div>
+		</td>
+		<!-- Bookmarks Count -->
+		<td class="table-cell text-muted-foreground">
+			{ strconv.Itoa(collection.BookmarkCount) }
+		</td>
+		<!-- Status (inline toggle) -->
+		<td class="table-cell" onclick="event.stopPropagation()">
+			@CollectionPublicBadge(collection.ID, collection.IsPublic, false)
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right" onclick="event.stopPropagation()">
+			<div class="row-actions">
+				if collection.IsPublic {
+					<a
+						href={ templ.URL("/bookmarks/" + collection.Slug) }
+						class="btn-ghost btn-xs"
+						target="_blank"
+						title="View collection"
+					>
+						@components.ExternalLinkIcon(components.IconMD)
+					</a>
+				}
+				<button
+					type="button"
+					hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit-drawer" }
+					hx-target="#drawer-content"
+					hx-swap="innerHTML"
+					onclick="window.drawerOpen('Edit Collection')"
+					class="btn-ghost btn-xs cursor-pointer"
+					title="Edit"
+				>
+					@components.EditIcon(components.IconMD)
+				</button>
+				<button
+					type="button"
+					hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+					hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+					hx-target={ "#collection-row-" + strconv.FormatInt(collection.ID, 10) }
+					hx-swap="delete swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+	<!-- Expandable bookmarks container (inserted after row) -->
+	<tr
+		id={ "collection-details-" + strconv.FormatInt(collection.ID, 10) }
+		class="hidden"
+	>
+		<td colspan="4" class="p-0 border-t-0">
+			<div
+				id={ "collection-content-" + strconv.FormatInt(collection.ID, 10) }
+				class="bg-muted/20"
+				hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
+				hx-trigger="fetchContent"
+				hx-swap="innerHTML"
+				hx-target-error="this"
+			>
+				<div class="px-8 py-4 flex justify-center text-muted-foreground">
+					@components.SpinnerIcon(components.IconSM)
+				</div>
+			</div>
+		</td>
+	</tr>
+}
+
+// handleCollectionRowKeydown handles keyboard events for expandable rows
+script handleCollectionRowKeydown(collectionID int64) {
+	ExpandableRow.handleKeydown(event, 'collection', collectionID.toString());
+}
+
+// toggleCollectionExpand generates the onclick handler for expanding/collapsing collection bookmarks
+script toggleCollectionExpand(collectionID int64) {
+	ExpandableRow.toggle('collection', collectionID.toString());
+}
+
+// CollectionRowOOB renders a collection row for out-of-band swap after update
+templ CollectionRowOOB(collection models.Collection) {
+	<tr
+		if collection.BookmarkCount > 0 {
+			class="table-row group cursor-pointer hover:bg-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+			tabindex="0"
+			role="button"
+			aria-expanded="false"
+			onclick={ toggleCollectionExpand(collection.ID) }
+			onkeydown={ handleCollectionRowKeydown(collection.ID) }
+			data-expandable-id={ strconv.FormatInt(collection.ID, 10) }
+			data-expandable-type="collection"
+		} else {
+			class="table-row group"
+		}
+		id={ "collection-row-" + strconv.FormatInt(collection.ID, 10) }
+		hx-swap-oob="true"
+		data-expanded="false"
+		data-name={ collection.Name }
+		data-slug={ collection.Slug }
+		data-description={ collection.GetDescription() }
+		data-is-public={ strconv.FormatBool(collection.IsPublic) }
+	>
+		<!-- Name with expand chevron -->
+		<td class="table-cell">
+			<div class="min-w-0">
+				<div class="flex items-center gap-1.5">
+					if collection.BookmarkCount > 0 {
+						<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+							@components.ChevronRightIcon(components.IconSM)
+						</span>
+					} else {
+						<span class="w-5"></span>
+					}
+					if collection.GetColor() != "" {
+						<span
+							class="w-2 h-2 rounded-full shrink-0"
+							style={ "background-color: " + collection.GetColor() }
+							title={ "Color: " + collection.GetColor() }
+						></span>
+					}
+					<span class="font-medium text-foreground">{ collection.Name }</span>
+				</div>
+				if collection.GetDescription() != "" {
+					<p class="text-xs text-muted-foreground truncate mt-0.5 ml-6">
+						{ truncateCollectionText(collection.GetDescription(), 60) }
+					</p>
+				}
+			</div>
+		</td>
+		<!-- Bookmarks Count -->
+		<td class="table-cell text-muted-foreground">
+			{ strconv.Itoa(collection.BookmarkCount) }
+		</td>
+		<!-- Status (inline toggle) -->
+		<td class="table-cell" onclick="event.stopPropagation()">
+			@CollectionPublicBadge(collection.ID, collection.IsPublic, false)
+		</td>
+		<!-- Actions -->
+		<td class="table-cell text-right" onclick="event.stopPropagation()">
+			<div class="row-actions">
+				if collection.IsPublic {
+					<a
+						href={ templ.URL("/bookmarks/" + collection.Slug) }
+						class="btn-ghost btn-xs"
+						target="_blank"
+						title="View collection"
+					>
+						@components.ExternalLinkIcon(components.IconMD)
+					</a>
+				}
+				<button
+					type="button"
+					hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit-drawer" }
+					hx-target="#drawer-content"
+					hx-swap="innerHTML"
+					onclick="window.drawerOpen('Edit Collection')"
+					class="btn-ghost btn-xs cursor-pointer"
+					title="Edit"
+				>
+					@components.EditIcon(components.IconMD)
+				</button>
+				<button
+					type="button"
+					hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+					hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+					hx-target={ "#collection-row-" + strconv.FormatInt(collection.ID, 10) }
+					hx-swap="delete swap:0.2s"
+					class="btn-ghost btn-xs text-destructive hover:text-destructive"
+					title="Delete"
+				>
+					@components.TrashIcon(components.IconMD)
+				</button>
+			</div>
+		</td>
+	</tr>
+}
+
+// CollectionRowOOBPrepend renders a new collection row for out-of-band prepend after create
+templ CollectionRowOOBPrepend(collection models.Collection) {
+	<tbody id="collections-tbody" hx-swap-oob="afterbegin">
+		<tr
+			if collection.BookmarkCount > 0 {
+				class="table-row group cursor-pointer hover:bg-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+				tabindex="0"
+				role="button"
+				aria-expanded="false"
+				onclick={ toggleCollectionExpand(collection.ID) }
+				onkeydown={ handleCollectionRowKeydown(collection.ID) }
+				data-expandable-id={ strconv.FormatInt(collection.ID, 10) }
+				data-expandable-type="collection"
+			} else {
+				class="table-row group"
+			}
+			id={ "collection-row-" + strconv.FormatInt(collection.ID, 10) }
+			data-expanded="false"
+			data-name={ collection.Name }
+			data-slug={ collection.Slug }
+			data-description={ collection.GetDescription() }
+			data-is-public={ strconv.FormatBool(collection.IsPublic) }
+		>
+			<!-- Name with expand chevron -->
+			<td class="table-cell">
+				<div class="min-w-0">
+					<div class="flex items-center gap-1.5">
+						if collection.BookmarkCount > 0 {
+							<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+								@components.ChevronRightIcon(components.IconSM)
+							</span>
+						} else {
+							<span class="w-5"></span>
+						}
+						if collection.GetColor() != "" {
+							<span
+								class="w-2 h-2 rounded-full shrink-0"
+								style={ "background-color: " + collection.GetColor() }
+								title={ "Color: " + collection.GetColor() }
+							></span>
+						}
+						<span class="font-medium text-foreground">{ collection.Name }</span>
+					</div>
+					if collection.GetDescription() != "" {
+						<p class="text-xs text-muted-foreground truncate mt-0.5 ml-6">
+							{ truncateCollectionText(collection.GetDescription(), 60) }
+						</p>
+					}
+				</div>
+			</td>
+			<!-- Bookmarks Count -->
+			<td class="table-cell text-muted-foreground">
+				{ strconv.Itoa(collection.BookmarkCount) }
+			</td>
+			<!-- Status (inline toggle) -->
+			<td class="table-cell" onclick="event.stopPropagation()">
+				@CollectionPublicBadge(collection.ID, collection.IsPublic, false)
+			</td>
+			<!-- Actions -->
+			<td class="table-cell text-right" onclick="event.stopPropagation()">
+				<div class="row-actions">
+					if collection.IsPublic {
+						<a
+							href={ templ.URL("/bookmarks/" + collection.Slug) }
+							class="btn-ghost btn-xs"
+							target="_blank"
+							title="View collection"
+						>
+							@components.ExternalLinkIcon(components.IconMD)
+						</a>
+					}
+					<button
+						type="button"
+						hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/edit-drawer" }
+						hx-target="#drawer-content"
+						hx-swap="innerHTML"
+						onclick="window.drawerOpen('Edit Collection')"
+						class="btn-ghost btn-xs cursor-pointer"
+						title="Edit"
+					>
+						@components.EditIcon(components.IconMD)
+					</button>
+					<button
+						type="button"
+						hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+						hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+						hx-target={ "#collection-row-" + strconv.FormatInt(collection.ID, 10) }
+						hx-swap="delete swap:0.2s"
+						class="btn-ghost btn-xs text-destructive hover:text-destructive"
+						title="Delete"
+					>
+						@components.TrashIcon(components.IconMD)
+					</button>
+				</div>
+			</td>
+		</tr>
+		<!-- Expandable bookmarks container (inserted after row) -->
+		<tr
+			id={ "collection-details-" + strconv.FormatInt(collection.ID, 10) }
+			class="hidden"
+		>
+			<td colspan="4" class="p-0 border-t-0">
+				<div
+					id={ "collection-content-" + strconv.FormatInt(collection.ID, 10) }
+					class="bg-muted/20"
+					hx-get={ "/admin/htmx/collections/" + strconv.FormatInt(collection.ID, 10) + "/bookmarks" }
+					hx-trigger="fetchContent"
+					hx-swap="innerHTML"
+					hx-target-error="this"
+				>
+					<div class="px-8 py-4 flex justify-center text-muted-foreground">
+						@components.SpinnerIcon(components.IconSM)
+					</div>
+				</div>
+			</td>
+		</tr>
+	</tbody>
+}

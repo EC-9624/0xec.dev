@@ -6,17 +6,38 @@ import "github.com/EC-9624/0xec.dev/internal/models"
 // Only shows when there's a general error message (not for field-level errors)
 templ FormErrorBanner(errors *models.FormErrors) {
 	if errors != nil && errors.General != "" {
-		<div class="form-error">
+		<div class="form-error" role="alert" aria-live="polite">
 			{ errors.General }
 		</div>
 	}
 }
 
 // FieldError displays the error message for a specific field
+// The id attribute links to the input via aria-describedby
 templ FieldError(errors *models.FormErrors, field string) {
 	if errors != nil && errors.HasField(field) {
-		<p class="field-error">{ errors.GetField(field) }</p>
+		<p id={ field + "-error" } class="field-error" role="alert">
+			{ errors.GetField(field) }
+		</p>
 	}
+}
+
+// FieldErrorID returns the error element ID for a field (for aria-describedby)
+func FieldErrorID(field string) string {
+	return field + "-error"
+}
+
+// InputAriaDescribedBy returns aria-describedby value if field has error
+func InputAriaDescribedBy(errors *models.FormErrors, field string) string {
+	if errors != nil && errors.HasField(field) {
+		return field + "-error"
+	}
+	return ""
+}
+
+// HasFieldError returns true if the field has an error
+func HasFieldError(errors *models.FormErrors, field string) bool {
+	return errors != nil && errors.HasField(field)
 }
 
 // InputClass returns the appropriate CSS class for an input based on error state

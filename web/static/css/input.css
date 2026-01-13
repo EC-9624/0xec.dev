@@ -29,7 +29,7 @@
   src: url('/static/fonts/jetbrains-mono-600.woff2') format('woff2');
 }
 
-/* Boxy, monospace theme */
+/* Boxy, monospace theme - Light Mode */
 @theme {
   /* Monospace font stack */
   --font-sans: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Monaco,
@@ -37,7 +37,7 @@
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Monaco,
     Consolas, monospace;
 
-  /* Neutral color palette - sharper contrast */
+  /* Neutral color palette - sharper contrast (Light) */
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(0 0% 9%);
   --color-card: hsl(0 0% 100%);
@@ -64,6 +64,59 @@
   --radius-md: 0;
   --radius-lg: 0;
   --radius-xl: 0;
+}
+
+/* Dark Mode - class-based with system preference fallback */
+/* Applied when .dark class is on <html> OR when system prefers dark and no explicit preference set */
+.dark,
+html:not(.light):not(.dark) {
+  @media (prefers-color-scheme: dark) {
+    /* Inverted neutral palette for dark mode */
+    --color-background: hsl(0 0% 7%);
+    --color-foreground: hsl(0 0% 95%);
+    --color-card: hsl(0 0% 10%);
+    --color-card-foreground: hsl(0 0% 95%);
+    --color-popover: hsl(0 0% 10%);
+    --color-popover-foreground: hsl(0 0% 95%);
+    --color-primary: hsl(0 0% 95%);
+    --color-primary-foreground: hsl(0 0% 9%);
+    --color-secondary: hsl(0 0% 15%);
+    --color-secondary-foreground: hsl(0 0% 95%);
+    --color-muted: hsl(0 0% 15%);
+    --color-muted-foreground: hsl(0 0% 60%);
+    --color-accent: hsl(0 0% 15%);
+    --color-accent-foreground: hsl(0 0% 95%);
+    --color-destructive: hsl(0 72% 51%);
+    --color-destructive-foreground: hsl(0 0% 98%);
+    --color-border: hsl(0 0% 20%);
+    --color-input: hsl(0 0% 20%);
+    --color-ring: hsl(0 0% 80%);
+    --color-sidebar: hsl(0 0% 9%);
+  }
+}
+
+/* Explicit dark mode override (when user manually selects dark) */
+.dark {
+  --color-background: hsl(0 0% 7%);
+  --color-foreground: hsl(0 0% 95%);
+  --color-card: hsl(0 0% 10%);
+  --color-card-foreground: hsl(0 0% 95%);
+  --color-popover: hsl(0 0% 10%);
+  --color-popover-foreground: hsl(0 0% 95%);
+  --color-primary: hsl(0 0% 95%);
+  --color-primary-foreground: hsl(0 0% 9%);
+  --color-secondary: hsl(0 0% 15%);
+  --color-secondary-foreground: hsl(0 0% 95%);
+  --color-muted: hsl(0 0% 15%);
+  --color-muted-foreground: hsl(0 0% 60%);
+  --color-accent: hsl(0 0% 15%);
+  --color-accent-foreground: hsl(0 0% 95%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(0 0% 20%);
+  --color-input: hsl(0 0% 20%);
+  --color-ring: hsl(0 0% 80%);
+  --color-sidebar: hsl(0 0% 9%);
 }
 
 @layer base {
@@ -132,7 +185,7 @@
     @apply flex-1;
     background-image: radial-gradient(
       circle,
-      hsl(0 0% 90%) 1px,
+      var(--color-border) 1px,
       transparent 1px
     );
     background-size: 24px 24px;
@@ -203,6 +256,11 @@
 
   .social-link-inner {
     @apply flex items-center gap-2;
+  }
+
+  /* ===== THEME TOGGLE ===== */
+  .theme-toggle {
+    @apply flex items-center gap-2 p-2 text-sm font-medium text-foreground transition-colors hover:bg-muted w-full cursor-pointer;
   }
 
   /* ===== LIST ITEM (Middle Column) ===== */
@@ -836,7 +894,7 @@
   .scrollable-area {
     @apply overflow-y-auto;
     scrollbar-width: thin;
-    scrollbar-color: hsl(0 0% 90%) transparent;
+    scrollbar-color: var(--color-border) transparent;
   }
 
   .scrollable-area::-webkit-scrollbar {
@@ -848,7 +906,7 @@
   }
 
   .scrollable-area::-webkit-scrollbar-thumb {
-    background-color: hsl(0 0% 90%);
+    background-color: var(--color-border);
   }
 
   /* ===== INLINE EDIT FEEDBACK ===== */

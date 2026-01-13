@@ -9,6 +9,7 @@ templ Base(title string) {
 			<meta name="htmx-config" content='{"scrollBehavior":"smooth","responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'/>
 			<title>{ title }</title>
 			<link rel="stylesheet" href="/static/css/output.css"/>
+			<script src="/static/js/theme.js"></script>
 			<script src="/static/js/htmx.min.js"></script>
 			<script src="/static/js/masonry.js"></script>
 			<script src="/static/js/dropdown.js"></script>
@@ -123,6 +124,22 @@ templ leftSidebar(currentPath string) {
 					</a>
 				</div>
 			</div>
+			<div class="separator-horizontal"></div>
+			<!-- Theme Toggle -->
+			<button
+				type="button"
+				onclick="toggleTheme()"
+				class="theme-toggle"
+				aria-label="Toggle dark mode"
+			>
+				<span id="theme-icon-sun" class="hidden">
+					@iconSun()
+				</span>
+				<span id="theme-icon-moon">
+					@iconMoon()
+				</span>
+				<span>Toggle theme</span>
+			</button>
 		</div>
 	</aside>
 }
@@ -200,11 +217,31 @@ templ iconArrowUpRight() {
 }
 
 templ iconRadio() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 		<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
 		<path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
 		<circle cx="12" cy="12" r="2"></circle>
 		<path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
 		<path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path>
+	</svg>
+}
+
+templ iconSun() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<circle cx="12" cy="12" r="4"></circle>
+		<path d="M12 2v2"></path>
+		<path d="M12 20v2"></path>
+		<path d="m4.93 4.93 1.41 1.41"></path>
+		<path d="m17.66 17.66 1.41 1.41"></path>
+		<path d="M2 12h2"></path>
+		<path d="M20 12h2"></path>
+		<path d="m6.34 17.66-1.41 1.41"></path>
+		<path d="m19.07 4.93-1.41 1.41"></path>
+	</svg>
+}
+
+templ iconMoon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
 	</svg>
 }

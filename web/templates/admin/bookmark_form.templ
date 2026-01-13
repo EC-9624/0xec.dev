@@ -1,0 +1,319 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// BookmarkForm renders the full-page bookmark form
+templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateBookmarkInput) {
+	@layouts.Admin(bookmarkFormTitle(bookmark, isNew)) {
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if isNew {
+						New Bookmark
+					} else {
+						Edit Bookmark
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if isNew {
+						Save a new link to your collection.
+					} else {
+						Update bookmark details.
+					}
+				</p>
+			</div>
+			@components.FormErrorBanner(errors)
+			<form
+				if isNew {
+					action="/admin/bookmarks"
+				} else {
+					action={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10)) }
+				}
+				method="POST"
+				class="space-y-6"
+				data-validate
+				novalidate
+			>
+				<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+				<div class="card">
+					<div class="card-content pt-6 space-y-6">
+						<div class="space-y-2">
+							<label for="url" class="label">URL <span class="text-destructive">*</span></label>
+							<input
+								type="url"
+								id="url"
+								name="url"
+								class={ components.InputClass(errors, "url") }
+								value={ bookmarkFormValue(bookmark, input, "url") }
+								placeholder="https://example.com"
+								required
+								data-error-required="URL is required"
+								data-error-url="URL must be a valid HTTP or HTTPS URL"
+								if isNew {
+									hx-post="/admin/htmx/bookmarks/fetch-metadata"
+									hx-trigger="blur"
+									hx-include="this"
+									hx-target="#metadata-fields"
+									hx-swap="innerHTML"
+									hx-indicator="#metadata-loading"
+								}
+							/>
+							@components.FieldError(errors, "url")
+						</div>
+						<div id="metadata-loading" class="htmx-indicator text-muted-foreground py-2">
+							@components.SpinnerIcon(components.IconSM)
+						</div>
+						<div id="metadata-fields">
+							@BookmarkMetadataFieldsWithErrors(bookmark, errors, input)
+						</div>
+						<div class="space-y-2">
+							<label class="label">Collection</label>
+							@components.FormSelect(components.FormSelectProps{
+								ID:          "collection_id",
+								Options:     collectionsToFormOptions(collections),
+								Selected:    getSelectedCollectionValue(bookmark, input),
+								Placeholder: "No collection",
+							})
+						</div>
+						<div class="flex items-center gap-6">
+							<div class="flex items-center space-x-2">
+								<input
+									type="checkbox"
+									id="is_public"
+									name="is_public"
+									value="true"
+									if bookmarkFormIsPublic(bookmark, input) {
+										checked
+									}
+									class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+								/>
+								<label for="is_public" class="label">
+									Public
+								</label>
+							</div>
+							<div class="flex items-center space-x-2">
+								<input
+									type="checkbox"
+									id="is_favorite"
+									name="is_favorite"
+									value="true"
+									if bookmarkFormIsFavorite(bookmark, input) {
+										checked
+									}
+									class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+								/>
+								<label for="is_favorite" class="label">
+									Favorite
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="flex items-center gap-4">
+					<button type="submit" class="btn-default">
+						if isNew {
+							Add Bookmark
+						} else {
+							Save Changes
+						}
+					</button>
+					<a href="/admin/bookmarks" class="btn-outline">
+						Cancel
+					</a>
+					if !isNew {
+						<button
+							type="button"
+							hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+							hx-confirm="Are you sure you want to delete this bookmark?"
+							class="btn-destructive ml-auto"
+						>
+							Delete
+						</button>
+					}
+				</div>
+			</form>
+		</div>
+	}
+}
+
+// BookmarkMetadataFields renders the metadata fields without error handling
+templ BookmarkMetadataFields(bookmark *models.Bookmark) {
+	@BookmarkMetadataFieldsWithErrors(bookmark, nil, nil)
+}
+
+// BookmarkMetadataFieldsWithErrors renders the metadata fields with error handling
+templ BookmarkMetadataFieldsWithErrors(bookmark *models.Bookmark, errors *models.FormErrors, input *models.CreateBookmarkInput) {
+	<div class="space-y-6">
+		<div class="space-y-2">
+			<label for="title" class="label">Title <span class="text-destructive">*</span></label>
+			<input
+				type="text"
+				id="title"
+				name="title"
+				class={ components.InputClass(errors, "title") }
+				value={ bookmarkFormValue(bookmark, input, "title") }
+				placeholder="Page title"
+				required
+				maxlength="200"
+				data-error-required="Title is required"
+				data-error-maxlength="Title cannot exceed 200 characters"
+			/>
+			@components.FieldError(errors, "title")
+		</div>
+		<div class="space-y-2">
+			<label for="description" class="label">Description</label>
+			<textarea
+				id="description"
+				name="description"
+				rows="3"
+				class={ components.TextareaClass(errors, "description") }
+				placeholder="Brief description"
+				maxlength="500"
+				data-error-maxlength="Description cannot exceed 500 characters"
+			>{ bookmarkFormValue(bookmark, input, "description") }</textarea>
+			@components.FieldError(errors, "description")
+		</div>
+		<div class="space-y-2">
+			<label for="cover_image" class="label">Cover Image URL</label>
+			<input
+				type="url"
+				id="cover_image"
+				name="cover_image"
+				class={ components.InputClass(errors, "cover_image") }
+				value={ bookmarkFormValue(bookmark, input, "cover_image") }
+				placeholder="https://example.com/image.jpg"
+				data-error-url="Cover image must be a valid URL"
+			/>
+			@components.FieldError(errors, "cover_image")
+		</div>
+	</div>
+}
+
+// BookmarkFormDrawer renders the bookmark form for use in a drawer
+// It doesn't include the layout wrapper, just the form content
+templ BookmarkFormDrawer(bookmark *models.Bookmark, collections []models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateBookmarkInput) {
+	<form
+		if isNew {
+			hx-post="/admin/bookmarks"
+		} else {
+			hx-post={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+		}
+		hx-target="#drawer-content"
+		hx-swap="innerHTML"
+		class="flex flex-col h-full"
+		data-validate
+		novalidate
+	>
+		<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+		<input type="hidden" name="_drawer" value="true"/>
+		<!-- Scrollable form content -->
+		<div class="drawer-form flex-1 overflow-y-auto">
+			<p class="text-sm text-muted-foreground mb-6">
+				if isNew {
+					Save a new link to your collection.
+				} else {
+					Update bookmark details.
+				}
+			</p>
+			@components.FormErrorBanner(errors)
+			<!-- URL Field -->
+			<div class="space-y-2 mb-6">
+				<label for="url" class="label">URL <span class="text-destructive">*</span></label>
+				<input
+					type="url"
+					id="url"
+					name="url"
+					class={ components.InputClass(errors, "url") }
+					value={ bookmarkFormValue(bookmark, input, "url") }
+					placeholder="https://example.com"
+					required
+					data-error-required="URL is required"
+					data-error-url="URL must be a valid HTTP or HTTPS URL"
+					if isNew {
+						hx-post="/admin/htmx/bookmarks/fetch-metadata"
+						hx-trigger="blur"
+						hx-include="this"
+						hx-target="#metadata-fields"
+						hx-swap="innerHTML"
+						hx-indicator="#metadata-loading"
+					}
+				/>
+				@components.FieldError(errors, "url")
+			</div>
+			<div id="metadata-loading" class="htmx-indicator text-muted-foreground py-2">
+				@components.SpinnerIcon(components.IconSM)
+			</div>
+			<div id="metadata-fields">
+				@BookmarkMetadataFieldsWithErrors(bookmark, errors, input)
+			</div>
+			<!-- Collection -->
+			<div class="space-y-2 mb-6">
+				<label class="label">Collection</label>
+				@components.FormSelect(components.FormSelectProps{
+					ID:          "collection_id",
+					Options:     collectionsToFormOptions(collections),
+					Selected:    getSelectedCollectionValue(bookmark, input),
+					Placeholder: "No collection",
+				})
+			</div>
+			<!-- Checkboxes -->
+			<div class="flex items-center gap-6">
+				<div class="flex items-center space-x-2">
+					<input
+						type="checkbox"
+						id="is_public"
+						name="is_public"
+						value="true"
+						if bookmarkFormIsPublic(bookmark, input) {
+							checked
+						}
+						class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+					/>
+					<label for="is_public" class="label">Public</label>
+				</div>
+				<div class="flex items-center space-x-2">
+					<input
+						type="checkbox"
+						id="is_favorite"
+						name="is_favorite"
+						value="true"
+						if bookmarkFormIsFavorite(bookmark, input) {
+							checked
+						}
+						class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+					/>
+					<label for="is_favorite" class="label">Favorite</label>
+				</div>
+			</div>
+		</div>
+		<!-- Sticky footer actions -->
+		<div class="drawer-form-actions">
+			<button type="submit" class="btn-default">
+				if isNew {
+					Add Bookmark
+				} else {
+					Save Changes
+				}
+			</button>
+			<button type="button" onclick="window.drawerClose()" class="btn-outline">
+				Cancel
+			</button>
+			if !isNew {
+				<button
+					type="button"
+					hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+					hx-confirm="Delete this bookmark?"
+					class="btn-destructive ml-auto"
+				>
+					Delete
+				</button>
+			}
+		</div>
+	</form>
+}

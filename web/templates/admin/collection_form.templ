@@ -1,0 +1,327 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// CollectionForm renders the full-page collection form
+templ CollectionForm(collection *models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateCollectionInput) {
+	@layouts.Admin(collectionFormTitle(collection, isNew)) {
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if isNew {
+						New Collection
+					} else {
+						Edit Collection
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if isNew {
+						Create a new collection for your bookmarks.
+					} else {
+						Update collection details.
+					}
+				</p>
+			</div>
+			@components.FormErrorBanner(errors)
+			<form
+				if isNew {
+					action="/admin/collections"
+				} else {
+					action={ templ.URL("/admin/collections/" + strconv.FormatInt(collection.ID, 10)) }
+				}
+				method="POST"
+				class="space-y-6"
+				data-validate
+				novalidate
+			>
+				<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+				<div class="card">
+					<div class="card-content pt-6 space-y-6">
+						<div class="space-y-2">
+							<label for="name" class="label">Name <span class="text-destructive">*</span></label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								class={ components.InputClass(errors, "name") }
+								value={ collectionFormValue(collection, input, "name") }
+								placeholder="Collection name"
+								required
+								maxlength="100"
+								data-error-required="Name is required"
+								data-error-maxlength="Name cannot exceed 100 characters"
+							/>
+							@components.FieldError(errors, "name")
+						</div>
+						<div class="space-y-2">
+							<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
+							<input
+								type="text"
+								id="slug"
+								name="slug"
+								class={ components.InputClass(errors, "slug") }
+								value={ collectionFormValue(collection, input, "slug") }
+								placeholder="collection-url-slug"
+								required
+								maxlength="100"
+								pattern="[a-z0-9-]+"
+								data-error-required="Slug is required"
+								data-error-maxlength="Slug cannot exceed 100 characters"
+								data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
+							/>
+							@components.FieldError(errors, "slug")
+						</div>
+						<div class="space-y-2">
+							<label for="description" class="label">Description</label>
+							<textarea
+								id="description"
+								name="description"
+								rows="3"
+								class={ components.TextareaClass(errors, "description") }
+								placeholder="What is this collection about?"
+								maxlength="500"
+								data-error-maxlength="Description cannot exceed 500 characters"
+							>{ collectionFormValue(collection, input, "description") }</textarea>
+							@components.FieldError(errors, "description")
+						</div>
+						<div class="space-y-2">
+							<label for="color" class="label">Color</label>
+							<div class="flex items-center gap-3">
+								<input
+									type="color"
+									id="color"
+									name="color"
+									value={ collectionFormColorValue(collection, input) }
+									class="h-10 w-14 cursor-pointer rounded border border-input bg-background p-1"
+								/>
+								<input
+									type="text"
+									id="color-hex"
+									value={ collectionFormColorValue(collection, input) }
+									placeholder="#3b82f6"
+									class={ components.InputClass(errors, "color") + " w-28 font-mono text-sm" }
+									oninput="document.getElementById('color').value = this.value"
+									pattern="#[0-9a-fA-F]{6}"
+									data-error-pattern="Color must be a valid hex color (e.g., #3b82f6)"
+								/>
+								<button
+									type="button"
+									class="btn-ghost btn-sm text-muted-foreground"
+									onclick="document.getElementById('color').value = ''; document.getElementById('color-hex').value = ''"
+								>
+									Clear
+								</button>
+							</div>
+							@components.FieldError(errors, "color")
+							<p class="text-xs text-muted-foreground">Used for the bar chart on the dashboard</p>
+						</div>
+						<div class="flex items-center space-x-2">
+							<input
+								type="checkbox"
+								id="is_public"
+								name="is_public"
+								value="true"
+								if collectionFormIsPublic(collection, input) {
+									checked
+								}
+								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+							/>
+							<label for="is_public" class="label">
+								Public
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="flex items-center gap-4">
+					<button type="submit" class="btn-default">
+						if isNew {
+							Create Collection
+						} else {
+							Save Changes
+						}
+					</button>
+					<a href="/admin/collections" class="btn-outline">
+						Cancel
+					</a>
+					if !isNew {
+						<button
+							type="button"
+							hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+							hx-confirm="Are you sure you want to delete this collection?"
+							class="btn-destructive ml-auto"
+						>
+							Delete
+						</button>
+					}
+				</div>
+			</form>
+			<script>
+				// Sync color picker with hex input
+				document.getElementById('color').addEventListener('input', function() {
+					document.getElementById('color-hex').value = this.value;
+				});
+			</script>
+		</div>
+	}
+}
+
+// CollectionFormDrawer renders the collection form for use in a drawer
+templ CollectionFormDrawer(collection *models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateCollectionInput) {
+	<form
+		if isNew {
+			hx-post="/admin/collections"
+		} else {
+			hx-post={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+		}
+		hx-target="#drawer-content"
+		hx-swap="innerHTML"
+		class="flex flex-col h-full"
+		data-validate
+		novalidate
+	>
+		<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+		<input type="hidden" name="_drawer" value="true"/>
+		<!-- Scrollable form content -->
+		<div class="drawer-form flex-1 overflow-y-auto">
+			<p class="text-sm text-muted-foreground mb-6">
+				if isNew {
+					Create a new collection to organize your bookmarks.
+				} else {
+					Update collection details.
+				}
+			</p>
+			@components.FormErrorBanner(errors)
+			<!-- Name Field -->
+			<div class="space-y-2 mb-6">
+				<label for="name" class="label">Name <span class="text-destructive">*</span></label>
+				<input
+					type="text"
+					id="name"
+					name="name"
+					class={ components.InputClass(errors, "name") }
+					value={ collectionFormValue(collection, input, "name") }
+					placeholder="Collection name"
+					required
+					maxlength="100"
+					data-error-required="Name is required"
+					data-error-maxlength="Name cannot exceed 100 characters"
+				/>
+				@components.FieldError(errors, "name")
+			</div>
+			<!-- Slug Field -->
+			<div class="space-y-2 mb-6">
+				<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
+				<input
+					type="text"
+					id="slug"
+					name="slug"
+					class={ components.InputClass(errors, "slug") }
+					value={ collectionFormValue(collection, input, "slug") }
+					placeholder="collection-url-slug"
+					required
+					maxlength="100"
+					pattern="[a-z0-9-]+"
+					data-error-required="Slug is required"
+					data-error-maxlength="Slug cannot exceed 100 characters"
+					data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
+				/>
+				@components.FieldError(errors, "slug")
+			</div>
+			<!-- Description Field -->
+			<div class="space-y-2 mb-6">
+				<label for="description" class="label">Description</label>
+				<textarea
+					id="description"
+					name="description"
+					rows="3"
+					class={ components.TextareaClass(errors, "description") }
+					placeholder="What is this collection about?"
+					maxlength="500"
+					data-error-maxlength="Description cannot exceed 500 characters"
+				>{ collectionFormValue(collection, input, "description") }</textarea>
+				@components.FieldError(errors, "description")
+			</div>
+			<!-- Color Field -->
+			<div class="space-y-2 mb-6">
+				<label for="color" class="label">Color</label>
+				<div class="flex items-center gap-3">
+					<input
+						type="color"
+						id="drawer-color"
+						name="color"
+						value={ collectionFormColorValue(collection, input) }
+						class="h-10 w-14 cursor-pointer rounded border border-input bg-background p-1"
+					/>
+					<input
+						type="text"
+						id="drawer-color-hex"
+						value={ collectionFormColorValue(collection, input) }
+						placeholder="#3b82f6"
+						class={ components.InputClass(errors, "color") + " w-28 font-mono text-sm" }
+						oninput="document.getElementById('drawer-color').value = this.value"
+						pattern="#[0-9a-fA-F]{6}"
+						data-error-pattern="Color must be a valid hex color (e.g., #3b82f6)"
+					/>
+					<button
+						type="button"
+						class="btn-ghost btn-sm text-muted-foreground"
+						onclick="document.getElementById('drawer-color').value = ''; document.getElementById('drawer-color-hex').value = ''"
+					>
+						Clear
+					</button>
+				</div>
+				@components.FieldError(errors, "color")
+				<p class="text-xs text-muted-foreground">Used for the bar chart on the dashboard</p>
+			</div>
+			<!-- Public Checkbox -->
+			<div class="flex items-center space-x-2">
+				<input
+					type="checkbox"
+					id="is_public"
+					name="is_public"
+					value="true"
+					if collectionFormIsPublic(collection, input) {
+						checked
+					}
+					class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+				/>
+				<label for="is_public" class="label">Public</label>
+			</div>
+		</div>
+		<!-- Sticky footer actions -->
+		<div class="drawer-form-actions">
+			<button type="submit" class="btn-default">
+				if isNew {
+					Create Collection
+				} else {
+					Save Changes
+				}
+			</button>
+			<button type="button" onclick="window.drawerClose()" class="btn-outline">
+				Cancel
+			</button>
+			if !isNew {
+				<button
+					type="button"
+					hx-delete={ "/admin/collections/" + strconv.FormatInt(collection.ID, 10) }
+					hx-confirm="Delete this collection? Bookmarks will be moved to unsorted."
+					class="btn-destructive ml-auto"
+				>
+					Delete
+				</button>
+			}
+		</div>
+	</form>
+	<script>
+		// Sync color picker with hex input
+		document.getElementById('drawer-color').addEventListener('input', function() {
+			document.getElementById('drawer-color-hex').value = this.value;
+		});
+	</script>
+}
