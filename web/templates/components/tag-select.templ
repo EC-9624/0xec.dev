@@ -8,9 +8,9 @@ import (
 
 // TagSelectProps contains properties for the tag multi-select component
 type TagSelectProps struct {
-	AllTags      []models.Tag // All available tags
-	SelectedIDs  []int64      // Currently selected tag IDs
-	FieldName    string       // Form field name (default: "tag_ids")
+	AllTags     []models.Tag // All available tags
+	SelectedIDs []int64      // Currently selected tag IDs
+	FieldName   string       // Form field name (default: "tag_ids")
 }
 
 // isTagSelected checks if a tag ID is in the selected list
@@ -33,8 +33,8 @@ templ TagSelect(props TagSelectProps) {
 	}}
 	<div class="space-y-2">
 		<label class="label">Tags</label>
-		<div 
-			class="tag-select" 
+		<div
+			class="tag-select"
 			data-tag-select
 			data-field-name={ fieldName }
 		>
@@ -63,9 +63,9 @@ templ TagSelect(props TagSelectProps) {
 			<div class="tag-select-dropdown hidden" data-tag-dropdown>
 				<!-- Filter input -->
 				<div class="tag-select-search">
-					<input 
-						type="text" 
-						placeholder="Filter or create tag..." 
+					<input
+						type="text"
+						placeholder="Filter or create tag..."
 						class="tag-select-input"
 						data-tag-filter
 						autocomplete="off"
@@ -75,8 +75,8 @@ templ TagSelect(props TagSelectProps) {
 				<div class="tag-select-options" data-tag-options>
 					for _, tag := range props.AllTags {
 						<label class="tag-select-option" data-tag-option data-tag-name={ tag.Name }>
-							<input 
-								type="checkbox" 
+							<input
+								type="checkbox"
 								name={ fieldName }
 								value={ strconv.FormatInt(tag.ID, 10) }
 								if isTagSelected(tag.ID, props.SelectedIDs) {
@@ -91,8 +91,8 @@ templ TagSelect(props TagSelectProps) {
 				</div>
 				<!-- Create new tag option -->
 				<div class="tag-select-create hidden" data-tag-create>
-					<button 
-						type="button" 
+					<button
+						type="button"
 						class="tag-select-create-btn"
 						data-create-tag-btn
 					>
@@ -104,5 +104,3 @@ templ TagSelect(props TagSelectProps) {
 		</div>
 	</div>
 }
-
-

@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
@@ -100,9 +100,10 @@ func (h *Handlers) AdminPostsList(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostNew handles the new post form
 func (h *Handlers) AdminPostNew(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.service.ListTags(r.Context())
+	ctx := r.Context()
+	tags, err := h.service.ListTags(ctx)
 	if err != nil {
-		log.Printf("Failed to load tags for new post form: %v", err)
+		logger.Error(ctx, "failed to load tags for new post form", "error", err)
 	}
 	render(w, r, admin.PostForm(nil, nil, tags, true, nil, nil))
 }
@@ -125,6 +126,8 @@ func parseTagIDs(r *http.Request) []int64 {
 
 // AdminPostCreate handles creating a new post
 func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
@@ -145,7 +148,7 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 
 	// Check slug uniqueness (only if slug is valid so far)
 	if errors == nil || !errors.HasField("slug") {
-		existing, _ := h.service.GetPostBySlug(r.Context(), input.Slug)
+		existing, _ := h.service.GetPostBySlug(ctx, input.Slug)
 		if existing != nil {
 			if errors == nil {
 				errors = models.NewFormErrors()
@@ -156,18 +159,18 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 
 	// Re-render form with errors if validation failed
 	if errors != nil && errors.HasErrors() {
-		tags, _ := h.service.ListTags(r.Context())
+		tags, _ := h.service.ListTags(ctx)
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		render(w, r, admin.PostForm(nil, nil, tags, true, errors, &input))
 		return
 	}
 
-	_, err := h.service.CreatePost(r.Context(), input)
+	_, err := h.service.CreatePost(ctx, input)
 	if err != nil {
-		log.Printf("Failed to create post: %v", err)
+		logger.Error(ctx, "failed to create post", "error", err, "title", input.Title)
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to create post. Please try again."
-		tags, _ := h.service.ListTags(r.Context())
+		tags, _ := h.service.ListTags(ctx)
 		w.WriteHeader(http.StatusInternalServerError)
 		render(w, r, admin.PostForm(nil, nil, tags, true, formErrors, &input))
 		return
@@ -178,34 +181,36 @@ func (h *Handlers) AdminPostCreate(w http.ResponseWriter, r *http.Request) {
 
 // AdminPostEdit handles the edit post form
 func (h *Handlers) AdminPostEdit(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
 	}
 
-	post, err := h.service.GetPostBySlug(r.Context(), slug)
+	post, err := h.service.GetPostBySlug(ctx, slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	tags, err := h.service.ListTags(r.Context())
+	tags, err := h.service.ListTags(ctx)
 	if err != nil {
-		log.Printf("Failed to load tags for post edit form: %v", err)
+		logger.Error(ctx, "failed to load tags for post edit form", "error", err)
 	}
 	render(w, r, admin.PostForm(post, post.Tags, tags, false, nil, nil))
 }
 
 // AdminPostUpdate handles updating a post
 func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	slug := r.PathValue("slug")
 	if slug == "" {
 		http.NotFound(w, r)
 		return
 	}
 
-	post, err := h.service.GetPostBySlug(r.Context(), slug)
+	post, err := h.service.GetPostBySlug(ctx, slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -231,7 +236,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Check slug uniqueness (only if slug changed and is valid so far)
 	if (errors == nil || !errors.HasField("slug")) && input.Slug != post.Slug {
-		existing, _ := h.service.GetPostBySlug(r.Context(), input.Slug)
+		existing, _ := h.service.GetPostBySlug(ctx, input.Slug)
 		if existing != nil {
 			if errors == nil {
 				errors = models.NewFormErrors()
@@ -242,7 +247,7 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Re-render form with errors if validation failed
 	if errors != nil && errors.HasErrors() {
-		tags, _ := h.service.ListTags(r.Context())
+		tags, _ := h.service.ListTags(ctx)
 		// Convert UpdatePostInput to CreatePostInput for re-rendering
 		formInput := &models.CreatePostInput{
 			Title:      input.Title,
@@ -258,12 +263,12 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.service.UpdatePost(r.Context(), post.ID, input)
+	_, err = h.service.UpdatePost(ctx, post.ID, input)
 	if err != nil {
-		log.Printf("Failed to update post: %v", err)
+		logger.Error(ctx, "failed to update post", "error", err, "id", post.ID)
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to update post. Please try again."
-		tags, _ := h.service.ListTags(r.Context())
+		tags, _ := h.service.ListTags(ctx)
 		formInput := &models.CreatePostInput{
 			Title:      input.Title,
 			Slug:       input.Slug,

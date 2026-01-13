@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"strings"
 	"time"
 )
 
@@ -70,35 +69,7 @@ type UpdatePostInput struct {
 // Validate validates the CreatePostInput and returns field-level errors
 func (input CreatePostInput) Validate() *FormErrors {
 	errors := NewFormErrors()
-
-	// Title validation
-	title := strings.TrimSpace(input.Title)
-	if title == "" {
-		errors.AddField("title", "Title is required")
-	} else if len(title) > 200 {
-		errors.AddField("title", "Title cannot exceed 200 characters")
-	}
-
-	// Slug validation
-	slug := strings.TrimSpace(input.Slug)
-	if slug == "" {
-		errors.AddField("slug", "Slug is required")
-	} else if len(slug) > 100 {
-		errors.AddField("slug", "Slug cannot exceed 100 characters")
-	} else if !IsValidSlug(slug) {
-		errors.AddField("slug", "Slug can only contain lowercase letters, numbers, and hyphens")
-	}
-
-	// Content validation - required only if publishing
-	if !input.IsDraft && strings.TrimSpace(input.Content) == "" {
-		errors.AddField("content", "Content is required when publishing")
-	}
-
-	// Cover image URL validation
-	if input.CoverImage != "" && !IsValidURL(input.CoverImage) {
-		errors.AddField("cover_image", "Cover image must be a valid URL")
-	}
-
+	validatePostFields(input.Title, input.Slug, input.Content, input.CoverImage, input.IsDraft, errors)
 	if errors.HasErrors() {
 		return errors
 	}
@@ -108,35 +79,7 @@ func (input CreatePostInput) Validate() *FormErrors {
 // Validate validates the UpdatePostInput and returns field-level errors
 func (input UpdatePostInput) Validate() *FormErrors {
 	errors := NewFormErrors()
-
-	// Title validation
-	title := strings.TrimSpace(input.Title)
-	if title == "" {
-		errors.AddField("title", "Title is required")
-	} else if len(title) > 200 {
-		errors.AddField("title", "Title cannot exceed 200 characters")
-	}
-
-	// Slug validation
-	slug := strings.TrimSpace(input.Slug)
-	if slug == "" {
-		errors.AddField("slug", "Slug is required")
-	} else if len(slug) > 100 {
-		errors.AddField("slug", "Slug cannot exceed 100 characters")
-	} else if !IsValidSlug(slug) {
-		errors.AddField("slug", "Slug can only contain lowercase letters, numbers, and hyphens")
-	}
-
-	// Content validation - required only if publishing
-	if !input.IsDraft && strings.TrimSpace(input.Content) == "" {
-		errors.AddField("content", "Content is required when publishing")
-	}
-
-	// Cover image URL validation
-	if input.CoverImage != "" && !IsValidURL(input.CoverImage) {
-		errors.AddField("cover_image", "Cover image must be a valid URL")
-	}
-
+	validatePostFields(input.Title, input.Slug, input.Content, input.CoverImage, input.IsDraft, errors)
 	if errors.HasErrors() {
 		return errors
 	}

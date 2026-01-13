@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"strings"
 	"time"
 )
 
@@ -98,33 +97,7 @@ type UpdateBookmarkInput struct {
 // Validate validates the CreateBookmarkInput and returns field-level errors
 func (input CreateBookmarkInput) Validate() *FormErrors {
 	errors := NewFormErrors()
-
-	// URL validation
-	url := strings.TrimSpace(input.URL)
-	if url == "" {
-		errors.AddField("url", "URL is required")
-	} else if !IsValidURL(url) {
-		errors.AddField("url", "URL must be a valid HTTP or HTTPS URL")
-	}
-
-	// Title validation
-	title := strings.TrimSpace(input.Title)
-	if title == "" {
-		errors.AddField("title", "Title is required")
-	} else if len(title) > 200 {
-		errors.AddField("title", "Title cannot exceed 200 characters")
-	}
-
-	// Description validation (optional, max 500)
-	if len(input.Description) > 500 {
-		errors.AddField("description", "Description cannot exceed 500 characters")
-	}
-
-	// Cover image URL validation (optional, must be valid URL if provided)
-	if input.CoverImage != "" && !IsValidURL(input.CoverImage) {
-		errors.AddField("cover_image", "Cover image must be a valid URL")
-	}
-
+	validateBookmarkFields(input.URL, input.Title, input.Description, input.CoverImage, errors)
 	if errors.HasErrors() {
 		return errors
 	}
@@ -134,33 +107,7 @@ func (input CreateBookmarkInput) Validate() *FormErrors {
 // Validate validates the UpdateBookmarkInput and returns field-level errors
 func (input UpdateBookmarkInput) Validate() *FormErrors {
 	errors := NewFormErrors()
-
-	// URL validation
-	url := strings.TrimSpace(input.URL)
-	if url == "" {
-		errors.AddField("url", "URL is required")
-	} else if !IsValidURL(url) {
-		errors.AddField("url", "URL must be a valid HTTP or HTTPS URL")
-	}
-
-	// Title validation
-	title := strings.TrimSpace(input.Title)
-	if title == "" {
-		errors.AddField("title", "Title is required")
-	} else if len(title) > 200 {
-		errors.AddField("title", "Title cannot exceed 200 characters")
-	}
-
-	// Description validation (optional, max 500)
-	if len(input.Description) > 500 {
-		errors.AddField("description", "Description cannot exceed 500 characters")
-	}
-
-	// Cover image URL validation (optional, must be valid URL if provided)
-	if input.CoverImage != "" && !IsValidURL(input.CoverImage) {
-		errors.AddField("cover_image", "Cover image must be a valid URL")
-	}
-
+	validateBookmarkFields(input.URL, input.Title, input.Description, input.CoverImage, errors)
 	if errors.HasErrors() {
 		return errors
 	}

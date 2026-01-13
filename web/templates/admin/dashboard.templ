@@ -76,9 +76,9 @@ templ Dashboard(data DashboardData) {
 							</div>
 							<div class="card-content">
 								<div class="space-y-2">
-								for _, c := range data.Stats.BookmarksByCollection {
-									@barChartItem(c.Name, c.Color, c.Count, maxCount(data.Stats.BookmarksByCollection))
-								}
+									for _, c := range data.Stats.BookmarksByCollection {
+										@barChartItem(c.Name, c.Color, c.Count, maxCount(data.Stats.BookmarksByCollection))
+									}
 								</div>
 							</div>
 						</div>
@@ -156,7 +156,7 @@ templ activityItem(activity service.Activity) {
 			<p class="text-xs text-foreground truncate">
 				<span class="font-medium">{ service.GetActivityVerb(activity.Action) }</span>
 				if activity.Title != "" {
-					<span class="text-muted-foreground"> · </span>
+					<span class="text-muted-foreground">· </span>
 					<span class="text-muted-foreground">{ activity.Title }</span>
 				}
 			</p>
@@ -232,16 +232,16 @@ func getActivityBgClass(action string) string {
 // Helper: Get activity SVG icon
 templ getActivityIconSVG(action string) {
 	switch action {
-	case service.ActionBookmarkCreated, service.ActionPostCreated, service.ActionCollectionCreated:
-		@components.PlusIcon(components.IconSM)
-	case service.ActionBookmarkUpdated, service.ActionPostUpdated, service.ActionCollectionUpdated:
-		@components.EditIcon(components.IconSM)
-	case service.ActionBookmarkDeleted, service.ActionPostDeleted, service.ActionCollectionDeleted:
-		@components.TrashIcon(components.IconSM)
-	case service.ActionPostPublished:
-		@components.CheckCircleIcon(components.IconSM)
-	default:
-		@components.CircleIcon(components.IconSM)
+		case service.ActionBookmarkCreated, service.ActionPostCreated, service.ActionCollectionCreated:
+			@components.PlusIcon(components.IconSM)
+		case service.ActionBookmarkUpdated, service.ActionPostUpdated, service.ActionCollectionUpdated:
+			@components.EditIcon(components.IconSM)
+		case service.ActionBookmarkDeleted, service.ActionPostDeleted, service.ActionCollectionDeleted:
+			@components.TrashIcon(components.IconSM)
+		case service.ActionPostPublished:
+			@components.CheckCircleIcon(components.IconSM)
+		default:
+			@components.CircleIcon(components.IconSM)
 	}
 }
 
@@ -275,5 +275,3 @@ func formatTimeAgo(t time.Time) string {
 		return t.Format("Jan 2")
 	}
 }
-
-

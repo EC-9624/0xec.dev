@@ -1,29 +1,52 @@
 package middleware
 
 import (
-	"log"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"time"
+
+	"github.com/EC-9624/0xec.dev/internal/logger"
 )
 
-// Logger logs HTTP requests
+// Logger logs HTTP requests with structured logging
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+
+		// Generate request ID (8 hex chars = 4 bytes)
+		requestID := generateRequestID()
+
+		// Add request ID to context
+		ctx := logger.WithRequestID(r.Context(), requestID)
+		r = r.WithContext(ctx)
+
+		// Set request ID header for client debugging
+		w.Header().Set("X-Request-ID", requestID)
 
 		// Wrap response writer to capture status code
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		next.ServeHTTP(wrapped, r)
 
-		log.Printf(
-			"%s %s %d %s",
-			r.Method,
-			r.URL.Path,
-			wrapped.statusCode,
-			time.Since(start),
+		// Log the request
+		logger.Info(ctx, "http request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", wrapped.statusCode,
+			"duration_ms", time.Since(start).Milliseconds(),
+			"user_agent", r.UserAgent(),
 		)
 	})
+}
+
+// generateRequestID creates a short unique request ID (8 hex characters)
+func generateRequestID() string {
+	b := make([]byte, 4)
+	if _, err := rand.Read(b); err != nil {
+		return "00000000"
+	}
+	return hex.EncodeToString(b)
 }
 
 type responseWriter struct {
@@ -48,7 +71,10 @@ func Recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("panic: %v", err)
+				logger.Error(r.Context(), "panic recovered",
+					"error", err,
+					"path", r.URL.Path,
+				)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 		}()

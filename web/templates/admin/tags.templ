@@ -65,11 +65,11 @@ templ tagRow(tag service.TagWithCount) {
 		<!-- Name with expand chevron -->
 		<td class="table-cell">
 			<div class="flex items-center gap-2">
-			if tag.Count > 0 {
-				<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
-					@components.ChevronRightIcon(components.IconSM)
-				</span>
-			} else {
+				if tag.Count > 0 {
+					<span class="expand-btn p-0.5 -ml-1 transition-transform duration-200">
+						@components.ChevronRightIcon(components.IconSM)
+					</span>
+				} else {
 					<span class="w-5"></span>
 				}
 				<span class="font-medium text-foreground">{ tag.Name }</span>
@@ -124,11 +124,13 @@ templ tagRow(tag service.TagWithCount) {
 }
 
 // handleTagRowKeydown handles keyboard events for expandable rows
+
 script handleTagRowKeydown(tagID int64) {
 	ExpandableRow.handleKeydown(event, 'tag', tagID.toString());
 }
 
 // toggleTagExpand generates the onclick handler for expanding/collapsing tag posts
+
 script toggleTagExpand(tagID int64) {
 	ExpandableRow.toggle('tag', tagID.toString());
 }

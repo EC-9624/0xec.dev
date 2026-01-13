@@ -12,7 +12,6 @@ templ ErrorTestPage() {
 	@layouts.Admin("Error Handling Tests") {
 		<div class="space-y-8">
 			@components.PageHeaderSimple("Error Handling Tests", "Test various error scenarios for HTMX inline content loading")
-
 			<div class="grid gap-6">
 				// Test 1: Server Error (500)
 				<div class="card">
@@ -40,7 +39,6 @@ templ ErrorTestPage() {
 						</div>
 					</div>
 				</div>
-
 				// Test 2: Slow Response (Timeout)
 				<div class="card">
 					<div class="card-header">
@@ -67,7 +65,6 @@ templ ErrorTestPage() {
 						</div>
 					</div>
 				</div>
-
 				// Test 3: Success Response
 				<div class="card">
 					<div class="card-header">
@@ -94,7 +91,6 @@ templ ErrorTestPage() {
 						</div>
 					</div>
 				</div>
-
 				// Test 4: Network Error
 				<div class="card">
 					<div class="card-header">
@@ -121,7 +117,6 @@ templ ErrorTestPage() {
 						</div>
 					</div>
 				</div>
-
 				// Test 5: Retry After Error
 				<div class="card">
 					<div class="card-header">

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -104,7 +104,7 @@ func runMigrations(db *sql.DB) error {
 			continue
 		}
 
-		log.Printf("Running migration: %s", m.name)
+		slog.Info("running migration", "name", m.name)
 
 		_, err = db.Exec(m.sql)
 		if err != nil {
@@ -115,7 +115,7 @@ func runMigrations(db *sql.DB) error {
 			return fmt.Errorf("failed to record migration %s: %w", m.name, err)
 		}
 
-		log.Printf("Migration %s applied successfully", m.name)
+		slog.Info("migration applied successfully", "name", m.name)
 	}
 
 	return nil

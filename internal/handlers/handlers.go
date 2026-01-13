@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 
 	"github.com/EC-9624/0xec.dev/internal/config"
+	"github.com/EC-9624/0xec.dev/internal/middleware"
 	"github.com/EC-9624/0xec.dev/internal/service"
 
 	"github.com/a-h/templ"
@@ -31,14 +33,16 @@ func NewWithDB(cfg *config.Config, db *sql.DB) *Handlers {
 	return New(cfg, service.New(db))
 }
 
-// Service returns the service for middleware use.
-// Note: Returns the concrete *service.Service for compatibility with middleware.
-func (h *Handlers) Service() *service.Service {
-	// Type assertion - this will work in production where we use NewWithDB
-	if svc, ok := h.service.(*service.Service); ok {
-		return svc
-	}
-	return nil
+// AuthService returns an interface for authentication middleware.
+// This properly abstracts the service dependency.
+func (h *Handlers) AuthService() middleware.AuthService {
+	return h.service
+}
+
+// EnsureAdminExists ensures the admin user exists at startup.
+// This is a convenience method for initialization.
+func (h *Handlers) EnsureAdminExists(ctx context.Context, username, password string) error {
+	return h.service.EnsureAdminExists(ctx, username, password)
 }
 
 // render is a helper to render templ components

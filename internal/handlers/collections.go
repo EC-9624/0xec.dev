@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
 	"github.com/EC-9624/0xec.dev/web/templates/components"
@@ -29,6 +29,8 @@ func (h *Handlers) AdminCollectionNew(w http.ResponseWriter, r *http.Request) {
 
 // AdminCollectionCreate handles creating a new collection
 func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
@@ -49,7 +51,7 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 
 	// Check slug uniqueness (only if slug is valid so far)
 	if errors == nil || !errors.HasField("slug") {
-		existing, _ := h.service.GetCollectionBySlug(r.Context(), input.Slug)
+		existing, _ := h.service.GetCollectionBySlug(ctx, input.Slug)
 		if existing != nil {
 			if errors == nil {
 				errors = models.NewFormErrors()
@@ -69,9 +71,9 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	collection, err := h.service.CreateCollection(r.Context(), input)
+	collection, err := h.service.CreateCollection(ctx, input)
 	if err != nil {
-		log.Printf("Failed to create collection: %v", err)
+		logger.Error(ctx, "failed to create collection", "error", err, "name", input.Name)
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to create collection. Please try again."
 		w.WriteHeader(http.StatusInternalServerError)
@@ -113,13 +115,15 @@ func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
 
 // AdminCollectionUpdate handles updating a collection
 func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	collection, err := h.service.GetCollectionByID(r.Context(), id)
+	collection, err := h.service.GetCollectionByID(ctx, id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -145,7 +149,7 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 
 	// Check slug uniqueness (only if slug changed and is valid so far)
 	if (errors == nil || !errors.HasField("slug")) && input.Slug != collection.Slug {
-		existing, _ := h.service.GetCollectionBySlug(r.Context(), input.Slug)
+		existing, _ := h.service.GetCollectionBySlug(ctx, input.Slug)
 		if existing != nil {
 			if errors == nil {
 				errors = models.NewFormErrors()
@@ -173,9 +177,9 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	updatedCollection, err := h.service.UpdateCollection(r.Context(), id, input)
+	updatedCollection, err := h.service.UpdateCollection(ctx, id, input)
 	if err != nil {
-		log.Printf("Failed to update collection: %v", err)
+		logger.Error(ctx, "failed to update collection", "error", err, "id", id)
 		formErrors := models.NewFormErrors()
 		formErrors.General = "Failed to update collection. Please try again."
 		formInput := &models.CreateCollectionInput{

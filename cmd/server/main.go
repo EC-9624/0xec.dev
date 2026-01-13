@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +13,7 @@ import (
 	"github.com/EC-9624/0xec.dev/internal/config"
 	"github.com/EC-9624/0xec.dev/internal/database"
 	"github.com/EC-9624/0xec.dev/internal/handlers"
+	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/middleware"
 )
 
@@ -20,10 +21,17 @@ func main() {
 	// Load configuration
 	cfg := config.Load()
 
+	// Initialize structured logging (must be before validation for proper log output)
+	logger.Setup(cfg.Environment)
+
+	// Validate configuration (fails fast in production with insecure defaults)
+	cfg.MustValidate()
+
 	// Initialize database
 	db, err := database.Init(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		slog.Error("failed to initialize database", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
@@ -31,8 +39,8 @@ func main() {
 	h := handlers.NewWithDB(cfg, db)
 
 	// Ensure admin user exists
-	if err := h.Service().EnsureAdminExists(context.Background(), cfg.AdminUser, cfg.AdminPass); err != nil {
-		log.Printf("Warning: Failed to ensure admin user exists: %v", err)
+	if err := h.EnsureAdminExists(context.Background(), cfg.AdminUser, cfg.AdminPass); err != nil {
+		slog.Warn("failed to ensure admin user exists", "error", err)
 	}
 
 	// Create router
@@ -185,7 +193,7 @@ func main() {
 
 	// Wrap admin routes with CSRF + Auth middleware
 	// Order: CSRF runs first (sets token), then Auth checks session
-	authMiddleware := middleware.Auth(h.Service())
+	authMiddleware := middleware.Auth(h.AuthService())
 	protectedAdmin := csrfMiddleware(authMiddleware(adminMux))
 	mux.Handle("/admin", protectedAdmin)
 	mux.Handle("/admin/", protectedAdmin)
@@ -197,7 +205,7 @@ func main() {
 	// Get absolute path for static directory
 	if absPath, err := filepath.Abs(staticDir); err == nil {
 		if _, err := os.Stat(absPath); os.IsNotExist(err) {
-			log.Printf("Warning: Static directory does not exist: %s", absPath)
+			slog.Warn("static directory does not exist", "path", absPath)
 		}
 	}
 
@@ -213,14 +221,20 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		log.Printf("Starting server on http://localhost%s", addr)
-		log.Printf("Admin panel: http://localhost%s/admin", addr)
+		slog.Info("starting server",
+			"address", "http://localhost"+addr,
+			"admin", "http://localhost"+addr+"/admin",
+		)
 		if cfg.IsDevelopment() {
-			log.Printf("Default credentials: %s / %s", cfg.AdminUser, cfg.AdminPass)
+			slog.Debug("development credentials",
+				"user", cfg.AdminUser,
+				"pass", cfg.AdminPass,
+			)
 		}
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed: %v", err)
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -229,15 +243,16 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	slog.Info("shutting down server")
 
 	// Give outstanding requests 30 seconds to complete
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		slog.Error("server forced to shutdown", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("Server stopped gracefully")
+	slog.Info("server stopped gracefully")
 }

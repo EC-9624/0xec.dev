@@ -1080,26 +1080,26 @@ templ BookmarkRowOOBPrepend(bookmark models.Bookmark, collections []models.Colle
 						<span class="hidden items-center justify-center w-full h-full text-[10px]">{ getFirstLetter(bookmark.GetDomain()) }</span>
 					</div>
 					<div class="min-w-0 flex-1">
-				<button
-					type="button"
-						hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
-						hx-target="#drawer-content"
-						hx-swap="innerHTML"
-						onclick="window.drawerOpen('Edit Bookmark')"
-						class="font-medium text-foreground hover:underline block truncate text-left cursor-pointer"
-						title={ bookmark.Title }
-					>
-						{ bookmark.Title }
-					</button>
-					<a
-						href={ templ.URL(bookmark.URL) }
-						target="_blank"
-						class="text-[11px] text-muted-foreground hover:underline truncate block"
-						title={ bookmark.URL }
-					>
-						{ truncateURL(bookmark.URL, 50) }
-					</a>
-				</div>
+						<button
+							type="button"
+							hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+							hx-target="#drawer-content"
+							hx-swap="innerHTML"
+							onclick="window.drawerOpen('Edit Bookmark')"
+							class="font-medium text-foreground hover:underline block truncate text-left cursor-pointer"
+							title={ bookmark.Title }
+						>
+							{ bookmark.Title }
+						</button>
+						<a
+							href={ templ.URL(bookmark.URL) }
+							target="_blank"
+							class="text-[11px] text-muted-foreground hover:underline truncate block"
+							title={ bookmark.URL }
+						>
+							{ truncateURL(bookmark.URL, 50) }
+						</a>
+					</div>
 				</div>
 			</td>
 			<!-- Collection (inline dropdown) -->
