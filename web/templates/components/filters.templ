@@ -37,9 +37,18 @@ templ SearchInput(props SearchInputProps) {
 			id={ props.ID }
 			placeholder={ props.Placeholder }
 			class="input h-8 text-xs"
+			aria-label={ searchInputAriaLabel(props.Placeholder) }
 			{ inputAttrs(props.OnInput)... }
 		/>
 	</div>
+}
+
+// searchInputAriaLabel returns an appropriate aria-label for the search input
+func searchInputAriaLabel(placeholder string) string {
+	if placeholder != "" {
+		return placeholder
+	}
+	return "Search"
 }
 
 // inputAttrs returns oninput attribute if handler is provided

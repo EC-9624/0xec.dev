@@ -39,11 +39,36 @@
    */
   function applyTheme(theme) {
     var html = document.documentElement;
+
+    // Disable ALL transitions during theme switch
+    html.classList.add("no-transitions");
     html.classList.remove(DARK, LIGHT);
     html.classList.add(theme);
 
+    // Re-enable transitions after paint
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        html.classList.remove("no-transitions");
+      });
+    });
+
     // Update toggle button icons if they exist
     updateToggleButton(theme);
+
+    // Update meta theme-color
+    updateThemeColor(theme);
+  }
+
+  /**
+   * Update the meta theme-color tag
+   * @param {string} theme - current theme
+   */
+  function updateThemeColor(theme) {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      // Warm cream for light, cool dark blue for dark
+      meta.content = theme === DARK ? "#1e1e24" : "#faf9f7";
+    }
   }
 
   /**

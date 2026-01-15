@@ -23,6 +23,7 @@ templ RowActions(props RowActionsProps) {
 				class="btn-ghost btn-xs"
 				target="_blank"
 				title="View"
+				aria-label="View in new tab"
 			>
 				@ExternalLinkIcon(IconMD)
 			</a>
@@ -32,6 +33,7 @@ templ RowActions(props RowActionsProps) {
 				href={ templ.URL(props.EditHref) }
 				class="btn-ghost btn-xs"
 				title="Edit"
+				aria-label="Edit"
 			>
 				@EditIcon(IconMD)
 			</a>
@@ -45,6 +47,7 @@ templ RowActions(props RowActionsProps) {
 				hx-swap="outerHTML swap:0.2s"
 				class="btn-ghost btn-xs text-destructive hover:text-destructive"
 				title="Delete"
+				aria-label="Delete"
 			>
 				@TrashIcon(IconMD)
 			</button>
@@ -69,6 +72,7 @@ templ RowActionsViewOnly(viewHref string) {
 			class="btn-ghost btn-xs"
 			target="_blank"
 			title="View"
+			aria-label="View in new tab"
 		>
 			@ExternalLinkIcon(IconMD)
 		</a>

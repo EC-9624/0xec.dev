@@ -125,11 +125,13 @@ templ CollectionRow(collection models.Collection) {
 }
 
 // handleCollectionRowKeydown handles keyboard events for expandable rows
+
 script handleCollectionRowKeydown(collectionID int64) {
 	ExpandableRow.handleKeydown(event, 'collection', collectionID.toString());
 }
 
 // toggleCollectionExpand generates the onclick handler for expanding/collapsing collection bookmarks
+
 script toggleCollectionExpand(collectionID int64) {
 	ExpandableRow.toggle('collection', collectionID.toString());
 }

@@ -40,9 +40,10 @@ templ Login(errorMsg string) {
 									id="username"
 									name="username"
 									class="input"
-									placeholder="Enter your username"
+									placeholder="Enter your username..."
 									required
 									autofocus
+									autocomplete="username"
 								/>
 							</div>
 							<div class="space-y-2">
@@ -52,8 +53,9 @@ templ Login(errorMsg string) {
 									id="password"
 									name="password"
 									class="input"
-									placeholder="Enter your password"
+									placeholder="Enter your password..."
 									required
+									autocomplete="current-password"
 								/>
 							</div>
 							<button type="submit" class="btn-default w-full">

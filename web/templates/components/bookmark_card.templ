@@ -10,6 +10,8 @@ templ BookmarkCard(bookmark models.Bookmark) {
 					src={ bookmark.GetCoverImage() }
 					alt=""
 					class="bookmark-card-image"
+					width="400"
+					height="225"
 					loading="lazy"
 					decoding="async"
 					onload="this.parentElement.classList.add('loaded')"
@@ -33,6 +35,8 @@ templ BookmarkCard(bookmark models.Bookmark) {
 					src={ bookmark.GetFaviconURL() }
 					alt=""
 					class="inline-block w-4 h-4 mr-1 align-text-bottom"
+					width="16"
+					height="16"
 					loading="lazy"
 				/>
 				{ bookmark.GetDomain() }
