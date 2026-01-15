@@ -47,42 +47,40 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 	<div>
 		for i, bookmark := range bookmarks {
 			if i < 5 {
-				<div class="flex items-center gap-4 px-8 py-2.5 hover:bg-muted/30">
-					<!-- Tree line indicator -->
-					<span class="text-muted-foreground/50 text-sm w-4 text-center shrink-0">
+				<div class="tree-row group">
+					<!-- Tree indicator -->
+					<span class="tree-indicator">
 						if i == len(bookmarks) - 1 && totalCount <= 5 {
+							└
+						} else {
+							├
 						}
 					</span>
-					<!-- Bookmark title -->
-					<div class="flex-1 min-w-0">
+					<!-- Title + Domain + Favorite inline -->
+					<div class="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
 						<a
 							href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
-							class="text-sm text-foreground hover:underline truncate block"
+							class="text-xs text-foreground hover:text-primary truncate"
 						>
 							{ bookmark.Title }
 						</a>
-					</div>
-					<!-- Domain (external link) -->
-					<a
-						href={ templ.URL(bookmark.URL) }
-						target="_blank"
-						rel="noopener noreferrer"
-						class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-32 shrink-0 overflow-hidden"
-						title={ bookmark.URL }
-					>
-						<span class="truncate">{ bookmark.Domain }</span>
-						@components.ExternalLinkIcon(components.IconXS)
-					</a>
-					<!-- Favorite -->
-					<div class="shrink-0 w-6 text-center">
+						<a
+							href={ templ.URL(bookmark.URL) }
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-[10px] text-muted-foreground/70 hover:text-muted-foreground shrink-0"
+							title={ bookmark.URL }
+						>
+							{ bookmark.Domain }
+						</a>
 						if bookmark.IsFavorite {
-							<span class="text-amber-500" title="Favorite">
-								@components.StarFilledIcon(components.IconSM)
+							<span class="text-amber-500 shrink-0" title="Favorite">
+								@components.StarFilledIcon(components.IconXS)
 							</span>
 						}
 					</div>
-					<!-- Actions -->
-					<div class="flex items-center gap-1 shrink-0">
+					<!-- Actions (hidden until hover) -->
+					<div class="row-actions shrink-0">
 						<a
 							href={ templ.URL("/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit") }
 							class="btn-ghost btn-xs"
@@ -94,7 +92,7 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 							type="button"
 							hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
 							hx-confirm="Delete this bookmark?"
-							hx-target="closest div"
+							hx-target="closest .tree-row"
 							hx-swap="outerHTML swap:0.2s"
 							class="btn-ghost btn-xs text-destructive hover:text-destructive"
 							title="Delete"
@@ -106,8 +104,8 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 			}
 		}
 		if totalCount > 5 {
-			<div class="flex items-center gap-4 px-8 py-2.5 text-sm">
-				<span class="text-muted-foreground/50 w-4 text-center shrink-0"></span>
+			<div class="tree-row-more">
+				<span class="tree-indicator">└</span>
 				<span class="text-muted-foreground">+ { strconv.Itoa(totalCount - 5) } more</span>
 				<a
 					href={ templ.URL("/admin/bookmarks?collection=" + strconv.FormatInt(collectionID, 10)) }
@@ -118,7 +116,8 @@ templ CollectionBookmarksExpanded(collectionID int64, bookmarks []service.Collec
 			</div>
 		}
 		if len(bookmarks) == 0 {
-			<div class="px-8 py-4 text-sm text-muted-foreground">
+			<div class="tree-row-more text-muted-foreground">
+				<span class="tree-indicator"></span>
 				No bookmarks in this collection.
 			</div>
 		}

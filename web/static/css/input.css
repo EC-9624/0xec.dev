@@ -269,7 +269,9 @@ html:not(.light):not(.dark) {
 
   /* ===== PROFILE CARD ===== */
   .profile-card {
-    @apply flex items-center gap-3 p-2 transition-colors hover:bg-muted;
+    @apply flex items-center gap-3 p-2 hover:bg-muted;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   .profile-avatar {
@@ -290,7 +292,9 @@ html:not(.light):not(.dark) {
 
   /* ===== NAV LINKS (Left Sidebar) ===== */
   .nav-item {
-    @apply flex items-center justify-between p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+    @apply flex items-center justify-between p-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .nav-item-active {
@@ -319,7 +323,9 @@ html:not(.light):not(.dark) {
   }
 
   .social-link {
-    @apply flex items-center justify-between gap-2 p-2 text-sm font-medium text-foreground transition-colors hover:bg-muted;
+    @apply flex items-center justify-between gap-2 p-2 text-sm font-medium text-foreground hover:bg-muted;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   .social-link-inner {
@@ -328,14 +334,18 @@ html:not(.light):not(.dark) {
 
   /* ===== THEME TOGGLE ===== */
   .theme-toggle {
-    @apply flex items-center gap-2 p-2 text-sm font-medium text-foreground transition-colors hover:bg-muted w-full cursor-pointer;
+    @apply flex items-center gap-2 p-2 text-sm font-medium text-foreground hover:bg-muted w-full cursor-pointer;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   /* ===== LIST ITEM (Middle Column) ===== */
   .list-item {
-    @apply flex flex-col gap-1 p-2 text-sm transition-colors hover:bg-muted;
+    @apply flex flex-col gap-1 p-2 text-sm hover:bg-muted;
     display: flex !important;
     list-style: none !important;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   .list-item-active {
@@ -374,46 +384,59 @@ html:not(.light):not(.dark) {
   }
 
   /* ===== BUTTONS ===== */
+  /* Note: Use explicit transition-property to avoid border-color flashing on theme switch */
   .btn-default {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
-           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
            bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .btn-destructive {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
-           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
            bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 py-2;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
-           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
            border border-input bg-background hover:bg-muted hover:text-foreground h-10 px-4 py-2;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
-           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
            bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
-           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
            hover:bg-muted hover:text-foreground h-10 px-4 py-2;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .btn-link {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
-           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
            text-primary underline-offset-4 hover:underline h-auto p-0;
+    transition-property: color;
+    transition-duration: var(--transition-duration);
   }
 
   .btn-sm {
@@ -529,6 +552,20 @@ html:not(.light):not(.dark) {
     @apply flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity;
   }
 
+  /* ===== TREE ROW (Expandable content) ===== */
+  /* Note: Add 'group' class in HTML to enable .row-actions hover reveal */
+  .tree-row {
+    @apply flex items-center gap-2 pl-6 pr-3 py-1.5 hover:bg-muted/30;
+  }
+
+  .tree-indicator {
+    @apply text-muted-foreground/50 text-xs w-3 shrink-0 text-center font-normal;
+  }
+
+  .tree-row-more {
+    @apply flex items-center gap-2 pl-6 pr-3 py-1.5 text-xs;
+  }
+
   /* ===== FILTER BAR ===== */
   .filter-bar {
     @apply flex flex-wrap items-center gap-2 py-2 border-b border-border text-xs;
@@ -562,7 +599,9 @@ html:not(.light):not(.dark) {
 
   /* ===== SIDEBAR (Admin) ===== */
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors;
+    @apply flex items-center gap-3 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .sidebar-link-active {
@@ -571,7 +610,9 @@ html:not(.light):not(.dark) {
 
   /* ===== POST CARD (Home page) ===== */
   .post-card {
-    @apply block py-6 -mx-4 px-4 transition-colors hover:bg-muted/50;
+    @apply block py-6 -mx-4 px-4 hover:bg-muted/50;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   .post-card-title {
@@ -650,7 +691,9 @@ html:not(.light):not(.dark) {
 
   .bookmark-card-title {
     @apply font-medium text-foreground break-words
-           group-hover:text-primary transition-colors;
+           group-hover:text-primary;
+    transition-property: color;
+    transition-duration: var(--transition-duration);
   }
 
   .bookmark-card-domain {
@@ -693,7 +736,9 @@ html:not(.light):not(.dark) {
 
   /* ===== STAT CARD ===== */
   .stat-card {
-    @apply border border-border bg-card p-6 hover:bg-muted/50 transition-colors;
+    @apply border border-border bg-card p-6 hover:bg-muted/50;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   .stat-card-label {
@@ -728,7 +773,9 @@ html:not(.light):not(.dark) {
   }
 
   .table-row {
-    @apply border-b hover:bg-muted/50 data-[state=selected]:bg-muted transition-colors;
+    @apply border-b hover:bg-muted/50 data-[state=selected]:bg-muted;
+    transition-property: background-color;
+    transition-duration: var(--transition-duration);
   }
 
   /* Show row actions on focus-within (keyboard navigation) */
@@ -1244,7 +1291,9 @@ html:not(.light):not(.dark) {
   }
 
   .drawer-close {
-    @apply p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors;
+    @apply p-1 text-muted-foreground hover:text-foreground hover:bg-muted;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
   }
 
   .drawer-content {

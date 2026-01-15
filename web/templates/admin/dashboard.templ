@@ -55,7 +55,7 @@ templ Dashboard(data DashboardData) {
 				<div class="space-y-4">
 					<!-- Draft Posts Alert -->
 					if data.Stats.DraftPosts > 0 {
-						<a href="/admin/posts?status=draft" class="card hover:bg-muted/50 transition-colors block">
+						<a href="/admin/posts?status=draft" class="card hover:bg-muted/50 block">
 							<div class="card-header pb-2">
 								<div class="flex items-center gap-1.5 text-amber-600">
 									@components.EditIcon(components.IconLG)
@@ -113,7 +113,7 @@ templ Dashboard(data DashboardData) {
 
 // Stat card with weekly trend indicator
 templ statCardWithTrend(title string, count int, thisWeek int, href string, icon templ.Component) {
-	<a href={ templ.URL(href) } class="card hover:bg-muted/50 transition-colors">
+	<a href={ templ.URL(href) } class="card hover:bg-muted/50">
 		<div class="card-header flex-row items-center justify-between space-y-0 pb-2">
 			<h3 class="text-xs font-medium text-muted-foreground">{ title }</h3>
 			<div class="text-muted-foreground">
@@ -133,7 +133,7 @@ templ statCardWithTrend(title string, count int, thisWeek int, href string, icon
 
 // Simple stat card without trend
 templ statCardSimple(title string, count int, href string, icon templ.Component) {
-	<a href={ templ.URL(href) } class="card hover:bg-muted/50 transition-colors">
+	<a href={ templ.URL(href) } class="card hover:bg-muted/50">
 		<div class="card-header flex-row items-center justify-between space-y-0 pb-2">
 			<h3 class="text-xs font-medium text-muted-foreground">{ title }</h3>
 			<div class="text-muted-foreground">
