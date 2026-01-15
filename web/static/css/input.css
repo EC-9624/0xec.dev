@@ -6,27 +6,27 @@
 
 /* Self-hosted JetBrains Mono font */
 @font-face {
-  font-family: 'JetBrains Mono';
+  font-family: "JetBrains Mono";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/static/fonts/jetbrains-mono-400.woff2') format('woff2');
+  src: url("/static/fonts/jetbrains-mono-400.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'JetBrains Mono';
+  font-family: "JetBrains Mono";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/static/fonts/jetbrains-mono-500.woff2') format('woff2');
+  src: url("/static/fonts/jetbrains-mono-500.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'JetBrains Mono';
+  font-family: "JetBrains Mono";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/static/fonts/jetbrains-mono-600.woff2') format('woff2');
+  src: url("/static/fonts/jetbrains-mono-600.woff2") format("woff2");
 }
 
 /* Boxy, monospace theme - Light Mode */
@@ -591,7 +591,7 @@ html:not(.light):not(.dark) {
     @apply block overflow-hidden border border-border bg-card
            hover:shadow-md;
     transition-property: transform, box-shadow;
-    transition-duration: var(--transition-duration);
+    transition-duration: var(--duration-instant);
 
     &:hover {
       transform: scale(1.02);
@@ -1013,13 +1013,13 @@ html:not(.light):not(.dark) {
   }
 
   @keyframes checkmark-fade {
-    0% { 
+    0% {
       opacity: 1;
     }
     70% {
       opacity: 1;
     }
-    100% { 
+    100% {
       opacity: 0;
     }
   }
