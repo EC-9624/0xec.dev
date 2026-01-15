@@ -9,7 +9,7 @@ import (
 
 // ErrorTestPage renders a page for testing error handling scenarios
 templ ErrorTestPage() {
-	@layouts.Admin("Error Handling Tests") {
+	@layouts.Admin("Error Handling Tests", "/admin") {
 		<div class="space-y-8">
 			@components.PageHeaderSimple("Error Handling Tests", "Test various error scenarios for HTMX inline content loading")
 			<div class="grid gap-6">

@@ -16,10 +16,10 @@ func getCSRFToken(ctx context.Context) string {
 	return token
 }
 
-templ Admin(title string) {
+templ Admin(title string, currentPath string) {
 	@adminBase(title) {
 		<div class="flex min-h-screen">
-			@adminSidebar()
+			@adminSidebar(currentPath)
 			<main class="flex-1 bg-muted/30">
 				<div class="p-8">
 					{ children... }
@@ -84,7 +84,24 @@ func csrfHeaderJSON(ctx context.Context) string {
 	return `{"X-CSRF-Token": "` + token + `"}`
 }
 
-templ adminSidebar() {
+// adminNavClass returns the appropriate CSS class for admin sidebar nav items
+func adminNavClass(currentPath, targetPath string) string {
+	// Exact match for dashboard, prefix match for other paths
+	if targetPath == "/admin" {
+		if currentPath == "/admin" {
+			return "sidebar-link-active"
+		}
+		return "sidebar-link"
+	}
+
+	// Check if current path starts with target path
+	if len(currentPath) >= len(targetPath) && currentPath[:len(targetPath)] == targetPath {
+		return "sidebar-link-active"
+	}
+	return "sidebar-link"
+}
+
+templ adminSidebar(currentPath string) {
 	<aside class="w-64 border-r border-border bg-background">
 		<div class="flex h-14 items-center border-b border-border px-6">
 			<a href="/admin" class="font-semibold text-foreground">
@@ -92,24 +109,24 @@ templ adminSidebar() {
 			</a>
 		</div>
 		<nav class="flex flex-col gap-1 p-4">
-			<a href="/admin" class="sidebar-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+			<a href="/admin" class={ adminNavClass(currentPath, "/admin") }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
 				Dashboard
 			</a>
-			<a href="/admin/posts" class="sidebar-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M18 10h-8"></path></svg>
+			<a href="/admin/posts" class={ adminNavClass(currentPath, "/admin/posts") }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M18 10h-8"></path></svg>
 				Posts
 			</a>
-			<a href="/admin/bookmarks" class="sidebar-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
+			<a href="/admin/bookmarks" class={ adminNavClass(currentPath, "/admin/bookmarks") }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
 				Bookmarks
 			</a>
-			<a href="/admin/collections" class="sidebar-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+			<a href="/admin/collections" class={ adminNavClass(currentPath, "/admin/collections") }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
 				Collections
 			</a>
-			<a href="/admin/tags" class="sidebar-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
+			<a href="/admin/tags" class={ adminNavClass(currentPath, "/admin/tags") }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
 				Tags
 			</a>
 		</nav>

@@ -15,7 +15,7 @@ type DashboardData struct {
 }
 
 templ Dashboard(data DashboardData) {
-	@layouts.Admin("Dashboard") {
+	@layouts.Admin("Dashboard", "/admin") {
 		<div class="space-y-4">
 			<!-- Header -->
 			@components.PageHeaderSimple("Dashboard", "Overview of your content and activity")

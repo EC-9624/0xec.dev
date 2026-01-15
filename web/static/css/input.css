@@ -37,27 +37,31 @@
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Monaco,
     Consolas, monospace;
 
-  /* Neutral color palette - sharper contrast (Light) */
+  /* Neutral color palette with electric blue accent (Light) */
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(0 0% 9%);
   --color-card: hsl(0 0% 100%);
   --color-card-foreground: hsl(0 0% 9%);
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(0 0% 9%);
-  --color-primary: hsl(0 0% 9%);
-  --color-primary-foreground: hsl(0 0% 98%);
+  --color-primary: hsl(217 91% 60%);
+  --color-primary-foreground: hsl(0 0% 100%);
   --color-secondary: hsl(0 0% 96%);
   --color-secondary-foreground: hsl(0 0% 9%);
   --color-muted: hsl(0 0% 96%);
   --color-muted-foreground: hsl(0 0% 45%);
-  --color-accent: hsl(0 0% 96%);
-  --color-accent-foreground: hsl(0 0% 9%);
+  --color-accent: hsl(217 91% 60%);
+  --color-accent-foreground: hsl(0 0% 100%);
   --color-destructive: hsl(0 84% 60%);
   --color-destructive-foreground: hsl(0 0% 98%);
   --color-border: hsl(0 0% 90%);
   --color-input: hsl(0 0% 90%);
-  --color-ring: hsl(0 0% 9%);
+  --color-ring: hsl(217 91% 60%);
   --color-sidebar: hsl(0 0% 98%);
+
+  /* Link colors */
+  --color-link: hsl(217 91% 50%);
+  --color-link-hover: hsl(217 91% 40%);
 
   /* Sharp corners - no radius */
   --radius-sm: 0;
@@ -71,27 +75,29 @@
 .dark,
 html:not(.light):not(.dark) {
   @media (prefers-color-scheme: dark) {
-    /* Inverted neutral palette for dark mode */
+    /* Neutral palette with electric blue accent (Dark) */
     --color-background: hsl(0 0% 7%);
     --color-foreground: hsl(0 0% 95%);
     --color-card: hsl(0 0% 10%);
     --color-card-foreground: hsl(0 0% 95%);
     --color-popover: hsl(0 0% 10%);
     --color-popover-foreground: hsl(0 0% 95%);
-    --color-primary: hsl(0 0% 95%);
-    --color-primary-foreground: hsl(0 0% 9%);
+    --color-primary: hsl(217 91% 60%);
+    --color-primary-foreground: hsl(0 0% 100%);
     --color-secondary: hsl(0 0% 15%);
     --color-secondary-foreground: hsl(0 0% 95%);
     --color-muted: hsl(0 0% 15%);
     --color-muted-foreground: hsl(0 0% 60%);
-    --color-accent: hsl(0 0% 15%);
-    --color-accent-foreground: hsl(0 0% 95%);
+    --color-accent: hsl(217 91% 60%);
+    --color-accent-foreground: hsl(0 0% 100%);
     --color-destructive: hsl(0 72% 51%);
     --color-destructive-foreground: hsl(0 0% 98%);
     --color-border: hsl(0 0% 20%);
     --color-input: hsl(0 0% 20%);
-    --color-ring: hsl(0 0% 80%);
+    --color-ring: hsl(217 91% 60%);
     --color-sidebar: hsl(0 0% 9%);
+    --color-link: hsl(217 91% 65%);
+    --color-link-hover: hsl(217 91% 75%);
   }
 }
 
@@ -103,20 +109,22 @@ html:not(.light):not(.dark) {
   --color-card-foreground: hsl(0 0% 95%);
   --color-popover: hsl(0 0% 10%);
   --color-popover-foreground: hsl(0 0% 95%);
-  --color-primary: hsl(0 0% 95%);
-  --color-primary-foreground: hsl(0 0% 9%);
+  --color-primary: hsl(217 91% 60%);
+  --color-primary-foreground: hsl(0 0% 100%);
   --color-secondary: hsl(0 0% 15%);
   --color-secondary-foreground: hsl(0 0% 95%);
   --color-muted: hsl(0 0% 15%);
   --color-muted-foreground: hsl(0 0% 60%);
-  --color-accent: hsl(0 0% 15%);
-  --color-accent-foreground: hsl(0 0% 95%);
+  --color-accent: hsl(217 91% 60%);
+  --color-accent-foreground: hsl(0 0% 100%);
   --color-destructive: hsl(0 72% 51%);
   --color-destructive-foreground: hsl(0 0% 98%);
   --color-border: hsl(0 0% 20%);
   --color-input: hsl(0 0% 20%);
-  --color-ring: hsl(0 0% 80%);
+  --color-ring: hsl(217 91% 60%);
   --color-sidebar: hsl(0 0% 9%);
+  --color-link: hsl(217 91% 65%);
+  --color-link-hover: hsl(217 91% 75%);
 }
 
 @layer base {
@@ -133,6 +141,18 @@ html:not(.light):not(.dark) {
     font-feature-settings: "liga" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Link styling with accent color */
+  a:not([class]) {
+    color: var(--color-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.15s ease;
+  }
+
+  a:not([class]):hover {
+    color: var(--color-link-hover);
   }
 
   /* Sharp focus styles */
@@ -324,7 +344,7 @@ html:not(.light):not(.dark) {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
            transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
-           border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2;
+           border border-input bg-background hover:bg-muted hover:text-foreground h-10 px-4 py-2;
   }
 
   .btn-secondary {
@@ -338,7 +358,7 @@ html:not(.light):not(.dark) {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium
            transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
            focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
-           hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2;
+           hover:bg-muted hover:text-foreground h-10 px-4 py-2;
   }
 
   .btn-link {
@@ -496,7 +516,7 @@ html:not(.light):not(.dark) {
   }
 
   .sidebar-link-active {
-    @apply flex items-center gap-3 bg-muted px-3 py-2 text-foreground;
+    @apply flex items-center gap-3 bg-primary px-3 py-2 text-primary-foreground;
   }
 
   /* ===== POST CARD (Home page) ===== */

@@ -9,7 +9,7 @@ import (
 )
 
 templ TagsList(tags []service.TagWithCount) {
-	@layouts.Admin("Tags") {
+	@layouts.Admin("Tags", "/admin/tags") {
 		<div class="space-y-4">
 			<!-- Header -->
 			@components.PageHeader("Tags", strconv.Itoa(len(tags))+" tags") {

@@ -9,7 +9,7 @@ import (
 )
 
 templ CollectionsList(collections []models.Collection) {
-	@layouts.Admin("Collections") {
+	@layouts.Admin("Collections", "/admin/collections") {
 		<div class="space-y-4">
 			<!-- Header -->
 			@components.PageHeader("Collections", strconv.Itoa(len(collections))+" collections") {

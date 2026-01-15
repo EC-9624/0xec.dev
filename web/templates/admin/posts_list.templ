@@ -9,7 +9,7 @@ import (
 )
 
 templ PostsList(posts []models.Post) {
-	@layouts.Admin("Posts") {
+	@layouts.Admin("Posts", "/admin/posts") {
 		<div class="space-y-4">
 			<!-- Header -->
 			@components.PageHeader("Posts", strconv.Itoa(len(posts))+" posts") {

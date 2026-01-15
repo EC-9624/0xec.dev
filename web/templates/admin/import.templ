@@ -20,7 +20,7 @@ func getCSRFToken(ctx context.Context) string {
 }
 
 templ ImportPage(collections []models.Collection) {
-	@layouts.Admin("Import Bookmarks") {
+	@layouts.Admin("Import Bookmarks", "/admin/bookmarks") {
 		<div class="max-w-2xl space-y-6">
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">Import Bookmarks</h1>
@@ -104,7 +104,7 @@ templ ImportPage(collections []models.Collection) {
 }
 
 templ ImportResult(result *service.ImportResult) {
-	@layouts.Admin("Import Results") {
+	@layouts.Admin("Import Results", "/admin/bookmarks") {
 		<div class="max-w-2xl space-y-6">
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">Import Complete</h1>

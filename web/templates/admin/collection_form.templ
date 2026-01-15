@@ -10,7 +10,7 @@ import (
 
 // CollectionForm renders the full-page collection form
 templ CollectionForm(collection *models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateCollectionInput) {
-	@layouts.Admin(collectionFormTitle(collection, isNew)) {
+	@layouts.Admin(collectionFormTitle(collection, isNew), "/admin/collections") {
 		<div class="max-w-2xl space-y-6">
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">

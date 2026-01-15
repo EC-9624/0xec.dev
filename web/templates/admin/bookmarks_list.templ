@@ -16,7 +16,7 @@ type BookmarksListData struct {
 }
 
 templ BookmarksList(data BookmarksListData) {
-	@layouts.Admin("Bookmarks") {
+	@layouts.Admin("Bookmarks", "/admin/bookmarks") {
 		<div class="space-y-4">
 			<!-- Header -->
 			@components.PageHeader("Bookmarks", strconv.Itoa(len(data.Bookmarks))+" bookmarks") {

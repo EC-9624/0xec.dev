@@ -10,7 +10,7 @@ import (
 
 // BookmarkForm renders the full-page bookmark form
 templ BookmarkForm(bookmark *models.Bookmark, collections []models.Collection, isNew bool, errors *models.FormErrors, input *models.CreateBookmarkInput) {
-	@layouts.Admin(bookmarkFormTitle(bookmark, isNew)) {
+	@layouts.Admin(bookmarkFormTitle(bookmark, isNew), "/admin/bookmarks") {
 		<div class="max-w-2xl space-y-6">
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight text-foreground">
