@@ -1,15 +1,19 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"html/template"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 // PostsIndex handles the posts listing page
@@ -80,11 +84,23 @@ func (h *Handlers) getPostData(ctx context.Context, slug string) (*models.Post, 
 	return post, allPosts, contentHTML, nil
 }
 
-// markdownToHTML converts markdown to HTML
-// TODO: Use a proper markdown library
+// markdownToHTML converts markdown to HTML safely using goldmark.
+// By default, goldmark does NOT render raw HTML in markdown (safe mode),
+// preventing XSS attacks from malicious content.
 func markdownToHTML(content string) string {
-	// Simple placeholder - replace with goldmark or similar
-	return "<p>" + strings.ReplaceAll(content, "\n\n", "</p><p>") + "</p>"
+	var buf bytes.Buffer
+	md := goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			// Note: html.WithUnsafe() is intentionally NOT enabled
+			// This keeps raw HTML disabled for security
+		),
+	)
+	if err := md.Convert([]byte(content), &buf); err != nil {
+		// Fallback to escaped content on error
+		return "<p>" + template.HTMLEscapeString(content) + "</p>"
+	}
+	return buf.String()
 }
 
 // AdminPostsList handles the admin posts listing

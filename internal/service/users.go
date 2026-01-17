@@ -94,6 +94,19 @@ func (s *Service) DeleteSession(ctx context.Context, sessionID string) error {
 	return s.queries.DeleteSession(ctx, sessionID)
 }
 
+// RotateSession creates a new session and deletes the old one (if any).
+// This prevents session fixation attacks by ensuring a new session ID
+// is generated after successful authentication.
+func (s *Service) RotateSession(ctx context.Context, userID int64, oldSessionID string, duration time.Duration) (*models.Session, error) {
+	// Delete old session if it exists (ignore errors - old session may not exist)
+	if oldSessionID != "" {
+		_ = s.DeleteSession(ctx, oldSessionID)
+	}
+
+	// Create new session
+	return s.CreateSession(ctx, userID, duration)
+}
+
 // CleanupExpiredSessions removes all expired sessions
 func (s *Service) CleanupExpiredSessions(ctx context.Context) error {
 	return s.queries.CleanupExpiredSessions(ctx, time.Now())

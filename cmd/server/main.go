@@ -52,6 +52,9 @@ func main() {
 	}
 	csrfMiddleware := middleware.CSRF(csrfConfig)
 
+	// Rate limiter for login endpoint (5 attempts per minute per IP)
+	loginLimiter := middleware.NewRateLimiter(5.0/60.0, 5)
+
 	// Static files
 	staticDir := "./web/static"
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
@@ -96,10 +99,11 @@ func main() {
 	// ============================================
 
 	// Login routes need CSRF but not auth
+	// Rate limiting applied to prevent brute-force attacks
 	authMux := http.NewServeMux()
 	authMux.HandleFunc("GET /admin/login", h.LoginPage)
 	authMux.HandleFunc("POST /admin/login", h.Login)
-	mux.Handle("/admin/login", csrfMiddleware(authMux))
+	mux.Handle("/admin/login", loginLimiter.Limit(csrfMiddleware(authMux)))
 
 	// Logout needs CSRF + auth (handled via admin routes below)
 
@@ -199,8 +203,15 @@ func main() {
 	mux.Handle("/admin/", protectedAdmin)
 
 	// Apply global middleware
-	// Order: Logger → Recoverer → Router
-	handler := middleware.Logger(middleware.Recoverer(mux))
+	// Order: Logger → SecurityHeaders → Recoverer → Router
+	var handler http.Handler = mux
+	handler = middleware.Recoverer(handler)
+	if cfg.IsDevelopment() {
+		handler = middleware.SecurityHeaders(handler)
+	} else {
+		handler = middleware.SecurityHeadersWithHSTS(handler)
+	}
+	handler = middleware.Logger(handler)
 
 	// Get absolute path for static directory
 	if absPath, err := filepath.Abs(staticDir); err == nil {

@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -58,8 +59,15 @@ type UpdateCollectionInput struct {
 	SortOrder   int    `json:"sort_order"`
 }
 
-// Validate validates the CreateCollectionInput and returns field-level errors
-func (input CreateCollectionInput) Validate() *FormErrors {
+// Validate validates the CreateCollectionInput and returns field-level errors.
+// It also trims whitespace from string fields.
+func (input *CreateCollectionInput) Validate() *FormErrors {
+	// Trim whitespace from all string fields
+	input.Name = strings.TrimSpace(input.Name)
+	input.Slug = strings.TrimSpace(input.Slug)
+	input.Description = strings.TrimSpace(input.Description)
+	input.Color = strings.TrimSpace(input.Color)
+
 	errors := NewFormErrors()
 	validateCollectionFields(input.Name, input.Slug, input.Description, input.Color, errors)
 	if errors.HasErrors() {
@@ -68,8 +76,15 @@ func (input CreateCollectionInput) Validate() *FormErrors {
 	return nil
 }
 
-// Validate validates the UpdateCollectionInput and returns field-level errors
-func (input UpdateCollectionInput) Validate() *FormErrors {
+// Validate validates the UpdateCollectionInput and returns field-level errors.
+// It also trims whitespace from string fields.
+func (input *UpdateCollectionInput) Validate() *FormErrors {
+	// Trim whitespace from all string fields
+	input.Name = strings.TrimSpace(input.Name)
+	input.Slug = strings.TrimSpace(input.Slug)
+	input.Description = strings.TrimSpace(input.Description)
+	input.Color = strings.TrimSpace(input.Color)
+
 	errors := NewFormErrors()
 	validateCollectionFields(input.Name, input.Slug, input.Description, input.Color, errors)
 	if errors.HasErrors() {

@@ -146,7 +146,7 @@ func TestLogin_Success(t *testing.T) {
 		validatePasswordFunc: func(user *models.User, password string) bool {
 			return password == "correctpassword"
 		},
-		createSessionFunc: func(ctx context.Context, userID int64, duration time.Duration) (*models.Session, error) {
+		rotateSessionFunc: func(ctx context.Context, userID int64, oldSessionID string, duration time.Duration) (*models.Session, error) {
 			if userID == testUser.ID {
 				return testSession, nil
 			}
@@ -183,7 +183,7 @@ func TestLogin_SessionCreationFails(t *testing.T) {
 		validatePasswordFunc: func(user *models.User, password string) bool {
 			return true
 		},
-		createSessionFunc: func(ctx context.Context, userID int64, duration time.Duration) (*models.Session, error) {
+		rotateSessionFunc: func(ctx context.Context, userID int64, oldSessionID string, duration time.Duration) (*models.Session, error) {
 			return nil, errors.New("database error")
 		},
 	}

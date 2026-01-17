@@ -44,8 +44,14 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create session
-	session, err := h.service.CreateSession(r.Context(), user.ID, sessionDuration)
+	// Get existing session ID if any (for rotation to prevent session fixation)
+	var oldSessionID string
+	if cookie, err := r.Cookie("session"); err == nil {
+		oldSessionID = cookie.Value
+	}
+
+	// Create new session (and delete old one if it exists)
+	session, err := h.service.RotateSession(r.Context(), user.ID, oldSessionID, sessionDuration)
 	if err != nil {
 		render(w, r, pages.Login("Failed to create session"))
 		return

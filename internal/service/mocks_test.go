@@ -19,6 +19,7 @@ type MockService struct {
 	CreateSessionFunc          func(ctx context.Context, userID int64, duration time.Duration) (*models.Session, error)
 	GetSessionFunc             func(ctx context.Context, sessionID string) (*models.Session, error)
 	DeleteSessionFunc          func(ctx context.Context, sessionID string) error
+	RotateSessionFunc          func(ctx context.Context, userID int64, oldSessionID string, duration time.Duration) (*models.Session, error)
 	CleanupExpiredSessionsFunc func(ctx context.Context) error
 	EnsureAdminExistsFunc      func(ctx context.Context, username, password string) error
 
@@ -139,6 +140,13 @@ func (m *MockService) DeleteSession(ctx context.Context, sessionID string) error
 		return m.DeleteSessionFunc(ctx, sessionID)
 	}
 	return nil
+}
+
+func (m *MockService) RotateSession(ctx context.Context, userID int64, oldSessionID string, duration time.Duration) (*models.Session, error) {
+	if m.RotateSessionFunc != nil {
+		return m.RotateSessionFunc(ctx, userID, oldSessionID, duration)
+	}
+	return nil, nil
 }
 
 func (m *MockService) CleanupExpiredSessions(ctx context.Context) error {

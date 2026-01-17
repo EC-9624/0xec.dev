@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -94,8 +95,16 @@ type UpdateBookmarkInput struct {
 	IsFavorite   bool   `json:"is_favorite"`
 }
 
-// Validate validates the CreateBookmarkInput and returns field-level errors
-func (input CreateBookmarkInput) Validate() *FormErrors {
+// Validate validates the CreateBookmarkInput and returns field-level errors.
+// It also trims whitespace from string fields.
+func (input *CreateBookmarkInput) Validate() *FormErrors {
+	// Trim whitespace from all string fields
+	input.URL = strings.TrimSpace(input.URL)
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+	input.CoverImage = strings.TrimSpace(input.CoverImage)
+	input.Favicon = strings.TrimSpace(input.Favicon)
+
 	errors := NewFormErrors()
 	validateBookmarkFields(input.URL, input.Title, input.Description, input.CoverImage, errors)
 	if errors.HasErrors() {
@@ -104,8 +113,16 @@ func (input CreateBookmarkInput) Validate() *FormErrors {
 	return nil
 }
 
-// Validate validates the UpdateBookmarkInput and returns field-level errors
-func (input UpdateBookmarkInput) Validate() *FormErrors {
+// Validate validates the UpdateBookmarkInput and returns field-level errors.
+// It also trims whitespace from string fields.
+func (input *UpdateBookmarkInput) Validate() *FormErrors {
+	// Trim whitespace from all string fields
+	input.URL = strings.TrimSpace(input.URL)
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+	input.CoverImage = strings.TrimSpace(input.CoverImage)
+	input.Favicon = strings.TrimSpace(input.Favicon)
+
 	errors := NewFormErrors()
 	validateBookmarkFields(input.URL, input.Title, input.Description, input.CoverImage, errors)
 	if errors.HasErrors() {
