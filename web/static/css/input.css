@@ -1468,6 +1468,15 @@ html:not(.light):not(.dark) {
     @apply opacity-100;
   }
 
+  /* Kanban card dropdown - specific styles for icon-trigger dropdowns */
+  .kanban-dropdown-menu {
+    width: 140px !important;
+  }
+
+  .kanban-dropdown-option {
+    @apply flex items-center gap-2;
+  }
+
   /* Drag states */
   .kanban-card.sortable-ghost {
     @apply opacity-50 bg-muted;
