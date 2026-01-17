@@ -16,37 +16,89 @@ import (
 // ============================================
 // These handlers manage bookmarks in the admin panel.
 
-// AdminBookmarksList handles the admin bookmarks listing
+// AdminBookmarksList handles the admin bookmarks page with board or table view
 func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	bookmarks, err := h.service.ListBookmarks(ctx, service.BookmarkListOptions{
-		Limit:  h.config.AdminBookmarksLimit, // Load more for client-side filtering
-		Offset: 0,
-	})
-	if err != nil {
-		errors.WriteInternalError(w, r, "Failed to load bookmarks", err)
-		return
+	// Determine view mode (default to "board")
+	view := r.URL.Query().Get("view")
+	if view == "" {
+		view = "board"
 	}
 
-	collections, err := h.service.ListCollections(ctx, false)
-	if err != nil {
-		logger.Error(ctx, "failed to load collections for bookmarks list", "error", err)
+	// Check if filtering to a specific collection
+	collectionParam := r.URL.Query().Get("collection")
+
+	// Build page data
+	data := admin.BookmarksPageData{
+		View: view,
 	}
 
-	// Parse preselected collection ID from query param
-	var preselectedCollectionID int64
-	if collectionParam := r.URL.Query().Get("collection"); collectionParam != "" {
-		if id, err := strconv.ParseInt(collectionParam, 10, 64); err == nil {
-			preselectedCollectionID = id
+	// Handle different views
+	if view == "board" && collectionParam == "" {
+		// Board view - show Kanban columns with all bookmarks
+		boardData, err := h.service.GetBoardViewData(ctx, 100) // All bookmarks per collection (up to 100)
+		if err != nil {
+			errors.WriteInternalError(w, r, "Failed to load board data", err)
+			return
+		}
+		data.BoardData = boardData
+	} else {
+		// Table view - show bookmark list
+		data.View = "table" // Force table view when filtering
+
+		collections, err := h.service.ListCollections(ctx, false)
+		if err != nil {
+			logger.Error(ctx, "failed to load collections for bookmarks list", "error", err)
+		}
+		data.Collections = collections
+
+		// Handle filtering
+		if collectionParam == "unsorted" {
+			// Filter to unsorted bookmarks
+			data.FilteredCollectionID = "unsorted"
+			bookmarks, err := h.service.ListUnsortedBookmarks(ctx, h.config.AdminBookmarksLimit, 0)
+			if err != nil {
+				errors.WriteInternalError(w, r, "Failed to load unsorted bookmarks", err)
+				return
+			}
+			data.Bookmarks = bookmarks
+		} else if collectionParam != "" {
+			// Filter to specific collection
+			collectionID, err := strconv.ParseInt(collectionParam, 10, 64)
+			if err == nil {
+				collection, err := h.service.GetCollectionByID(ctx, collectionID)
+				if err == nil {
+					data.FilteredCollection = collection
+					data.PreselectedCollectionID = collectionID
+				}
+
+				bookmarks, err := h.service.ListBookmarks(ctx, service.BookmarkListOptions{
+					CollectionID: &collectionID,
+					Limit:        h.config.AdminBookmarksLimit,
+					Offset:       0,
+				})
+				if err != nil {
+					errors.WriteInternalError(w, r, "Failed to load bookmarks", err)
+					return
+				}
+				data.Bookmarks = bookmarks
+			}
+		} else {
+			// All bookmarks
+			bookmarks, err := h.service.ListBookmarks(ctx, service.BookmarkListOptions{
+				Limit:  h.config.AdminBookmarksLimit,
+				Offset: 0,
+			})
+			if err != nil {
+				errors.WriteInternalError(w, r, "Failed to load bookmarks", err)
+				return
+			}
+			data.Bookmarks = bookmarks
 		}
 	}
 
-	render(w, r, admin.BookmarksList(admin.BookmarksListData{
-		Bookmarks:               bookmarks,
-		Collections:             collections,
-		PreselectedCollectionID: preselectedCollectionID,
-	}))
+	render(w, r, admin.BookmarksPage(data))
 }
 
 // AdminBookmarkNew handles the new bookmark form

@@ -165,6 +165,60 @@ func (q *Queries) GetCollectionBySlug(ctx context.Context, slug string) (Collect
 	return i, err
 }
 
+const getRecentBookmarksByCollectionID = `-- name: GetRecentBookmarksByCollectionID :many
+SELECT id, title, url, domain, is_favorite, is_public, created_at
+FROM bookmarks
+WHERE collection_id = ?
+ORDER BY created_at DESC
+LIMIT ?
+`
+
+type GetRecentBookmarksByCollectionIDParams struct {
+	CollectionID *int64 `json:"collection_id"`
+	Limit        int64  `json:"limit"`
+}
+
+type GetRecentBookmarksByCollectionIDRow struct {
+	ID         int64      `json:"id"`
+	Title      string     `json:"title"`
+	Url        string     `json:"url"`
+	Domain     *string    `json:"domain"`
+	IsFavorite *int64     `json:"is_favorite"`
+	IsPublic   *int64     `json:"is_public"`
+	CreatedAt  *time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetRecentBookmarksByCollectionID(ctx context.Context, arg GetRecentBookmarksByCollectionIDParams) ([]GetRecentBookmarksByCollectionIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRecentBookmarksByCollectionID, arg.CollectionID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetRecentBookmarksByCollectionIDRow{}
+	for rows.Next() {
+		var i GetRecentBookmarksByCollectionIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Url,
+			&i.Domain,
+			&i.IsFavorite,
+			&i.IsPublic,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllCollections = `-- name: ListAllCollections :many
 SELECT id, name, slug, description, color, parent_id, sort_order, is_public, created_at, updated_at FROM collections ORDER BY sort_order, name
 `

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EC-9624/0xec.dev/internal/database/sqlc/db"
+	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
 )
 
@@ -236,6 +237,142 @@ func (s *Service) GetBookmarksByCollectionID(ctx context.Context, collectionID i
 		}
 		if r.IsFavorite != nil {
 			bookmark.IsFavorite = *r.IsFavorite == 1
+		}
+		result = append(result, bookmark)
+	}
+
+	return result, nil
+}
+
+// ============================================
+// BOARD VIEW METHODS
+// ============================================
+
+// RecentBookmark represents a minimal bookmark for board view preview
+type RecentBookmark struct {
+	ID         int64
+	Title      string
+	URL        string
+	Domain     string
+	IsFavorite bool
+	IsPublic   bool
+}
+
+// CollectionWithRecent represents a collection with its recent bookmarks for board view
+type CollectionWithRecent struct {
+	Collection      models.Collection
+	RecentBookmarks []RecentBookmark
+}
+
+// UnsortedInfo represents the "unsorted" pseudo-collection for board view
+type UnsortedInfo struct {
+	Count           int
+	RecentBookmarks []RecentBookmark
+}
+
+// BoardViewData contains all data needed for the bookmarks board view
+type BoardViewData struct {
+	Collections []CollectionWithRecent
+	Unsorted    UnsortedInfo
+}
+
+// GetBoardViewData retrieves all data needed for the board view
+func (s *Service) GetBoardViewData(ctx context.Context, recentLimit int) (*BoardViewData, error) {
+	// Get all collections with counts
+	collections, err := s.ListCollections(ctx, false)
+	if err != nil {
+		logger.Error(ctx, "failed to list collections for board view", "error", err)
+		return nil, err
+	}
+
+	// Build collections with recent bookmarks
+	collectionsWithRecent := make([]CollectionWithRecent, 0, len(collections))
+	for _, c := range collections {
+		recent, err := s.GetRecentBookmarksByCollectionID(ctx, c.ID, recentLimit)
+		if err != nil {
+			// Continue with empty recent on error
+			recent = []RecentBookmark{}
+		}
+		collectionsWithRecent = append(collectionsWithRecent, CollectionWithRecent{
+			Collection:      c,
+			RecentBookmarks: recent,
+		})
+	}
+
+	// Get unsorted info
+	unsortedCount, err := s.queries.CountUnsortedBookmarks(ctx)
+	if err != nil {
+		unsortedCount = 0
+	}
+
+	unsortedRecent, err := s.GetRecentUnsortedBookmarks(ctx, recentLimit)
+	if err != nil {
+		unsortedRecent = []RecentBookmark{}
+	}
+
+	return &BoardViewData{
+		Collections: collectionsWithRecent,
+		Unsorted: UnsortedInfo{
+			Count:           int(unsortedCount),
+			RecentBookmarks: unsortedRecent,
+		},
+	}, nil
+}
+
+// GetRecentBookmarksByCollectionID returns recent bookmarks for a collection
+func (s *Service) GetRecentBookmarksByCollectionID(ctx context.Context, collectionID int64, limit int) ([]RecentBookmark, error) {
+	rows, err := s.queries.GetRecentBookmarksByCollectionID(ctx, db.GetRecentBookmarksByCollectionIDParams{
+		CollectionID: &collectionID,
+		Limit:        int64(limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]RecentBookmark, 0, len(rows))
+	for _, r := range rows {
+		bookmark := RecentBookmark{
+			ID:    r.ID,
+			Title: r.Title,
+			URL:   r.Url,
+		}
+		if r.Domain != nil {
+			bookmark.Domain = *r.Domain
+		}
+		if r.IsFavorite != nil {
+			bookmark.IsFavorite = *r.IsFavorite == 1
+		}
+		if r.IsPublic != nil {
+			bookmark.IsPublic = *r.IsPublic == 1
+		}
+		result = append(result, bookmark)
+	}
+
+	return result, nil
+}
+
+// GetRecentUnsortedBookmarks returns recent bookmarks without a collection
+func (s *Service) GetRecentUnsortedBookmarks(ctx context.Context, limit int) ([]RecentBookmark, error) {
+	rows, err := s.queries.ListRecentUnsortedBookmarks(ctx, int64(limit))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]RecentBookmark, 0, len(rows))
+	for _, r := range rows {
+		bookmark := RecentBookmark{
+			ID:    r.ID,
+			Title: r.Title,
+			URL:   r.Url,
+		}
+		if r.Domain != nil {
+			bookmark.Domain = *r.Domain
+		}
+		if r.IsFavorite != nil {
+			bookmark.IsFavorite = *r.IsFavorite == 1
+		}
+		if r.IsPublic != nil {
+			bookmark.IsPublic = *r.IsPublic == 1
 		}
 		result = append(result, bookmark)
 	}

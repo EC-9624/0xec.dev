@@ -264,8 +264,10 @@
       const spaceBelow = viewportHeight - triggerRect.bottom - CONFIG.VIEWPORT_MARGIN;
       const spaceAbove = triggerRect.top - CONFIG.VIEWPORT_MARGIN;
 
-      // Set width
-      this.menu.style.width = `${triggerRect.width}px`;
+      // Set width - use minWidth to allow CSS to override, or match trigger if wider
+      const menuMinWidth = parseInt(getComputedStyle(this.menu).minWidth) || 0;
+      const menuWidth = Math.max(triggerRect.width, menuMinWidth);
+      this.menu.style.width = `${menuWidth}px`;
       this.menu.style.left = `${triggerRect.left}px`;
 
       // Decide direction: open upward if not enough space below but more space above

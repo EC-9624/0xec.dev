@@ -29,6 +29,7 @@ type MockService struct {
 	GetBookmarkByIDFunc                func(ctx context.Context, id int64) (*models.Bookmark, error)
 	GetBookmarkByURLFunc               func(ctx context.Context, url string) (*models.Bookmark, error)
 	ListBookmarksFunc                  func(ctx context.Context, opts BookmarkListOptions) ([]models.Bookmark, error)
+	ListUnsortedBookmarksFunc          func(ctx context.Context, limit, offset int) ([]models.Bookmark, error)
 	CountBookmarksFunc                 func(ctx context.Context, opts BookmarkListOptions) (int, error)
 	UpdateBookmarkPublicFunc           func(ctx context.Context, id int64, isPublic bool) error
 	UpdateBookmarkFavoriteFunc         func(ctx context.Context, id int64, isFavorite bool) error
@@ -60,6 +61,7 @@ type MockService struct {
 	UpdateCollectionNameFunc       func(ctx context.Context, id int64, name string) error
 	UpdateCollectionPublicFunc     func(ctx context.Context, id int64, isPublic bool) error
 	GetBookmarksByCollectionIDFunc func(ctx context.Context, collectionID int64) ([]CollectionBookmark, error)
+	GetBoardViewDataFunc           func(ctx context.Context, recentLimit int) (*BoardViewData, error)
 
 	// Tag methods
 	CreateTagFunc         func(ctx context.Context, input models.CreateTagInput) (*models.Tag, error)
@@ -197,6 +199,13 @@ func (m *MockService) GetBookmarkByURL(ctx context.Context, url string) (*models
 func (m *MockService) ListBookmarks(ctx context.Context, opts BookmarkListOptions) ([]models.Bookmark, error) {
 	if m.ListBookmarksFunc != nil {
 		return m.ListBookmarksFunc(ctx, opts)
+	}
+	return nil, nil
+}
+
+func (m *MockService) ListUnsortedBookmarks(ctx context.Context, limit, offset int) ([]models.Bookmark, error) {
+	if m.ListUnsortedBookmarksFunc != nil {
+		return m.ListUnsortedBookmarksFunc(ctx, limit, offset)
 	}
 	return nil, nil
 }
@@ -383,6 +392,13 @@ func (m *MockService) UpdateCollectionPublic(ctx context.Context, id int64, isPu
 func (m *MockService) GetBookmarksByCollectionID(ctx context.Context, collectionID int64) ([]CollectionBookmark, error) {
 	if m.GetBookmarksByCollectionIDFunc != nil {
 		return m.GetBookmarksByCollectionIDFunc(ctx, collectionID)
+	}
+	return nil, nil
+}
+
+func (m *MockService) GetBoardViewData(ctx context.Context, recentLimit int) (*BoardViewData, error) {
+	if m.GetBoardViewDataFunc != nil {
+		return m.GetBoardViewDataFunc(ctx, recentLimit)
 	}
 	return nil, nil
 }

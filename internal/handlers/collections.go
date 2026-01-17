@@ -11,22 +11,6 @@ import (
 	"github.com/EC-9624/0xec.dev/web/templates/components"
 )
 
-// AdminCollectionsList handles the admin collections listing
-func (h *Handlers) AdminCollectionsList(w http.ResponseWriter, r *http.Request) {
-	collections, err := h.service.ListCollections(r.Context(), false)
-	if err != nil {
-		http.Error(w, "Failed to load collections", http.StatusInternalServerError)
-		return
-	}
-
-	render(w, r, admin.CollectionsList(collections))
-}
-
-// AdminCollectionNew handles the new collection form
-func (h *Handlers) AdminCollectionNew(w http.ResponseWriter, r *http.Request) {
-	render(w, r, admin.CollectionForm(nil, true, nil, nil))
-}
-
 // AdminCollectionCreate handles creating a new collection
 func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -71,7 +55,7 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	collection, err := h.service.CreateCollection(ctx, input)
+	_, err := h.service.CreateCollection(ctx, input)
 	if err != nil {
 		logger.Error(ctx, "failed to create collection", "error", err, "name", input.Name)
 		formErrors := models.NewFormErrors()
@@ -85,32 +69,15 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// For drawer requests, return success response with close trigger and OOB row
+	// For drawer requests, return success response with close trigger and redirect
 	if isDrawer {
 		w.Header().Set("HX-Trigger", "closeDrawer")
-		w.Header().Set("HX-Reswap", "none")
-		render(w, r, admin.CollectionRowOOBPrepend(*collection))
+		w.Header().Set("HX-Redirect", "/admin/bookmarks")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	http.Redirect(w, r, "/admin/collections", http.StatusSeeOther)
-}
-
-// AdminCollectionEdit handles the edit collection form
-func (h *Handlers) AdminCollectionEdit(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	collection, err := h.service.GetCollectionByID(r.Context(), id)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	render(w, r, admin.CollectionForm(collection, false, nil, nil))
+	http.Redirect(w, r, "/admin/bookmarks", http.StatusSeeOther)
 }
 
 // AdminCollectionUpdate handles updating a collection
@@ -177,7 +144,7 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	updatedCollection, err := h.service.UpdateCollection(ctx, id, input)
+	_, err = h.service.UpdateCollection(ctx, id, input)
 	if err != nil {
 		logger.Error(ctx, "failed to update collection", "error", err, "id", id)
 		formErrors := models.NewFormErrors()
@@ -198,15 +165,15 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// For drawer requests, return success response with close trigger and OOB row update
+	// For drawer requests, return success response with close trigger and redirect
 	if isDrawer {
 		w.Header().Set("HX-Trigger", "closeDrawer")
-		w.Header().Set("HX-Reswap", "none")
-		render(w, r, admin.CollectionRowOOB(*updatedCollection))
+		w.Header().Set("HX-Redirect", "/admin/bookmarks")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	http.Redirect(w, r, "/admin/collections", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/bookmarks", http.StatusSeeOther)
 }
 
 // AdminCollectionDelete handles deleting a collection
@@ -223,12 +190,12 @@ func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request)
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/admin/collections")
+		w.Header().Set("HX-Redirect", "/admin/bookmarks")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	http.Redirect(w, r, "/admin/collections", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/bookmarks", http.StatusSeeOther)
 }
 
 // ============================================

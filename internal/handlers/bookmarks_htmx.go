@@ -176,6 +176,7 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	// Parse collection ID (empty string means no collection)
 	var collectionID *int64
 	cidStr := r.FormValue("collection_id")
+
 	if cidStr != "" {
 		cid, err := strconv.ParseInt(cidStr, 10, 64)
 		if err == nil {
@@ -185,6 +186,7 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 
 	err = h.service.UpdateBookmarkCollection(ctx, id, collectionID)
 	if err != nil {
+		logger.Error(ctx, "failed to update bookmark collection", "error", err, "bookmark_id", id)
 		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
 		return
 	}
@@ -223,7 +225,18 @@ func (h *Handlers) HTMXAdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		logger.Error(ctx, "failed to load collections for new bookmark drawer", "error", err)
 	}
-	render(w, r, admin.BookmarkFormDrawer(nil, collections, true, nil, nil))
+
+	// Check for preselected collection from query param
+	var input *models.CreateBookmarkInput
+	if collectionIDStr := r.URL.Query().Get("collection_id"); collectionIDStr != "" {
+		if collectionID, err := strconv.ParseInt(collectionIDStr, 10, 64); err == nil {
+			input = &models.CreateBookmarkInput{
+				CollectionID: &collectionID,
+			}
+		}
+	}
+
+	render(w, r, admin.BookmarkFormDrawer(nil, collections, true, nil, input))
 }
 
 // HTMXAdminBookmarkEditDrawer returns the edit bookmark form for the drawer

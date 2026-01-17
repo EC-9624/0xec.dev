@@ -1,0 +1,325 @@
+package admin
+
+import (
+	"fmt"
+	"net/url"
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/service"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
+
+// BookmarksBoardData contains data for the bookmarks board view
+type BookmarksBoardData struct {
+	BoardData *service.BoardViewData
+}
+
+// BookmarksBoard renders the Kanban board view with collection columns
+templ BookmarksBoard(data BookmarksBoardData) {
+	<div class="kanban-board-wrapper">
+		<!-- Live region for screen reader announcements (positioned absolute to not affect layout) -->
+		<div id="kanban-live-region" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+		<div 
+			class="kanban-board" 
+			id="kanban-board"
+			role="region"
+			aria-label="Bookmark board"
+		>
+		<!-- Unsorted Column (always first) -->
+		@KanbanColumn(KanbanColumnData{
+			ID:        "",
+			Name:      "Unsorted",
+			Color:     "",
+			IsPublic:  false,
+			Count:     data.BoardData.Unsorted.Count,
+			Bookmarks: unsortedToBookmarks(data.BoardData.Unsorted.RecentBookmarks),
+			IsUnsorted: true,
+		})
+		<!-- Collection Columns -->
+		for _, c := range data.BoardData.Collections {
+			@KanbanColumn(KanbanColumnData{
+				ID:        strconv.FormatInt(c.Collection.ID, 10),
+				Name:      c.Collection.Name,
+				Color:     c.Collection.GetColor(),
+				IsPublic:  c.Collection.IsPublic,
+				Count:     c.Collection.BookmarkCount,
+				Bookmarks: recentToBookmarks(c.RecentBookmarks),
+				IsUnsorted: false,
+			})
+		}
+		<!-- New Collection Column -->
+		@KanbanNewColumn()
+		</div>
+	</div>
+}
+
+// KanbanColumnData holds data for a single Kanban column
+type KanbanColumnData struct {
+	ID         string
+	Name       string
+	Color      string
+	IsPublic   bool
+	Count      int
+	Bookmarks  []KanbanBookmark
+	IsUnsorted bool
+}
+
+// KanbanBookmark represents a bookmark in the Kanban view
+type KanbanBookmark struct {
+	ID         int64
+	Title      string
+	URL        string
+	Domain     string
+	IsFavorite bool
+	IsPublic   bool
+}
+
+// KanbanColumn renders a single Kanban column
+templ KanbanColumn(data KanbanColumnData) {
+	<div 
+		class="kanban-column" 
+		data-collection-id={ data.ID }
+		role="group"
+		aria-label={ data.Name + ", " + strconv.Itoa(data.Count) + " bookmarks" }
+		if data.IsUnsorted {
+			data-unsorted="true"
+		}
+	>
+		<!-- Header -->
+		<div class="kanban-column-header">
+			<div class="kanban-column-title">
+				if data.Color != "" {
+					<span 
+						class="w-3 h-3 shrink-0" 
+						style={ "background-color: " + data.Color }
+					></span>
+				} else if data.IsUnsorted {
+					<span class="text-muted-foreground">
+						@components.InboxIcon(components.IconSM)
+					</span>
+				}
+				<h3>{ data.Name }</h3>
+				if !data.IsUnsorted {
+					if data.IsPublic {
+						<span class="text-green-600" title="Public">
+							@components.GlobeIcon(components.IconXS)
+						</span>
+					} else {
+						<span class="text-muted-foreground" title="Private">
+							@components.LockIcon(components.IconXS)
+						</span>
+					}
+				}
+			</div>
+			<div class="kanban-column-actions">
+				<span class="kanban-column-count">{ strconv.Itoa(data.Count) }</span>
+				if !data.IsUnsorted {
+					<button
+						type="button"
+						hx-get={ "/admin/htmx/collections/" + data.ID + "/edit-drawer" }
+						hx-target="#drawer-content"
+						hx-swap="innerHTML"
+						onclick="window.drawerOpen('Edit Collection')"
+						class="p-1 text-muted-foreground hover:text-foreground hover:bg-muted"
+						title="Edit collection"
+					>
+						@components.SettingsIcon(components.IconSM)
+					</button>
+				}
+			</div>
+		</div>
+		<!-- Content (sortable area) -->
+		<div 
+			class="kanban-column-content" 
+			data-sortable="true"
+			data-collection-id={ data.ID }
+			role="list"
+			aria-label={ "Bookmarks in " + data.Name }
+		>
+			if len(data.Bookmarks) > 0 {
+				for _, bookmark := range data.Bookmarks {
+					@KanbanCard(bookmark)
+				}
+			} else {
+				<div class="kanban-empty">
+					<p class="kanban-empty-text">
+						if data.IsUnsorted {
+							No unsorted bookmarks
+						} else {
+							Drop bookmarks here
+						}
+					</p>
+				</div>
+			}
+		</div>
+		<!-- Footer -->
+		<div class="kanban-column-footer">
+			<button
+				type="button"
+				hx-get={ addBookmarkURL(data.ID) }
+				hx-target="#drawer-content"
+				hx-swap="innerHTML"
+				onclick="window.drawerOpen('New Bookmark')"
+				class="kanban-add-btn"
+			>
+				@components.PlusIcon(components.IconSM)
+				<span>Add Bookmark</span>
+			</button>
+		</div>
+	</div>
+}
+
+// KanbanCard renders a single bookmark card in the Kanban view
+templ KanbanCard(bookmark KanbanBookmark) {
+	<div 
+		class="kanban-card group"
+		tabindex="0"
+		role="listitem"
+		aria-label={ bookmark.Title }
+		aria-grabbed="false"
+		data-bookmark-id={ strconv.FormatInt(bookmark.ID, 10) }
+		data-bookmark-domain={ bookmark.Domain }
+		draggable="true"
+	>
+		<!-- Hidden description for screen readers -->
+		<span id={ "card-desc-" + strconv.FormatInt(bookmark.ID, 10) } class="sr-only">
+			{ bookmark.Domain }. Press Space to pick up and move, or Tab to access actions.
+		</span>
+		<!-- Drag Handle -->
+		<div class="kanban-card-drag-handle" aria-hidden="true">
+			@components.GripVerticalIcon(components.IconSM)
+		</div>
+		<!-- Content -->
+		<div class="kanban-card-content">
+			<div class="kanban-card-title" title={ bookmark.Title }>
+				{ truncateText(bookmark.Title, 40) }
+			</div>
+			<div class="kanban-card-meta">
+				<span class="kanban-card-domain">{ bookmark.Domain }</span>
+				<div class="kanban-card-badges">
+					if bookmark.IsFavorite {
+						<span class="text-amber-500" title="Favorite">
+							@components.StarFilledIcon(components.IconXS)
+						</span>
+					}
+					if bookmark.IsPublic {
+						<span class="text-green-600" title="Public">
+							@components.GlobeIcon(components.IconXS)
+						</span>
+					}
+				</div>
+			</div>
+		</div>
+		<!-- Actions (visible on hover) -->
+		<div class="kanban-card-actions">
+			@KanbanCardDropdown(bookmark)
+		</div>
+	</div>
+}
+
+// KanbanCardDropdown renders the actions dropdown for a Kanban card
+templ KanbanCardDropdown(bookmark KanbanBookmark) {
+	<div class="dropdown w-auto" data-dropdown>
+		<button
+			type="button"
+			class="p-1 text-muted-foreground hover:text-foreground hover:bg-muted"
+			data-dropdown-trigger
+			title="Actions"
+		>
+			@components.MoreHorizontalIcon(components.IconSM)
+		</button>
+		<div class="dropdown-menu kanban-dropdown-menu" data-dropdown-menu>
+			<button
+				type="button"
+				class="dropdown-option kanban-dropdown-option"
+				hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+				hx-target="#drawer-content"
+				hx-swap="innerHTML"
+				onclick="window.drawerOpen('Edit Bookmark')"
+			>
+				@components.EditIcon(components.IconSM)
+				<span>Edit</span>
+			</button>
+			<a
+				href={ templ.URL(bookmark.URL) }
+				target="_blank"
+				rel="noopener noreferrer"
+				class="dropdown-option kanban-dropdown-option"
+			>
+				@components.ExternalLinkIcon(components.IconSM)
+				<span>Open URL</span>
+			</a>
+			<button
+				type="button"
+				class="dropdown-option kanban-dropdown-option text-destructive hover:text-destructive"
+				hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+				hx-confirm="Are you sure you want to delete this bookmark?"
+				hx-target="closest .kanban-card"
+				hx-swap="outerHTML"
+			>
+				@components.TrashIcon(components.IconSM)
+				<span>Delete</span>
+			</button>
+		</div>
+	</div>
+}
+
+// KanbanNewColumn renders the "+ New Collection" column
+templ KanbanNewColumn() {
+	<button
+		type="button"
+		hx-get="/admin/htmx/collections/new-drawer"
+		hx-target="#drawer-content"
+		hx-swap="innerHTML"
+		onclick="window.drawerOpen('New Collection')"
+		class="kanban-column kanban-new-column"
+	>
+		<div class="kanban-new-column-content">
+			@components.PlusIcon(components.IconLG)
+			<span class="text-sm">New Collection</span>
+		</div>
+	</button>
+}
+
+// Helper: Extract domain from URL
+func extractDomain(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	host := parsed.Host
+	// Remove www. prefix
+	if len(host) > 4 && host[:4] == "www." {
+		host = host[4:]
+	}
+	return host
+}
+
+// Helper: Generate URL for adding bookmark with optional collection preselection
+func addBookmarkURL(collectionID string) string {
+	if collectionID == "" {
+		return "/admin/htmx/bookmarks/new-drawer"
+	}
+	return fmt.Sprintf("/admin/htmx/bookmarks/new-drawer?collection_id=%s", collectionID)
+}
+
+// Helper: Convert RecentBookmark slice to KanbanBookmark slice
+func recentToBookmarks(recent []service.RecentBookmark) []KanbanBookmark {
+	bookmarks := make([]KanbanBookmark, len(recent))
+	for i, r := range recent {
+		bookmarks[i] = KanbanBookmark{
+			ID:         r.ID,
+			Title:      r.Title,
+			URL:        r.URL,
+			Domain:     extractDomain(r.URL),
+			IsFavorite: r.IsFavorite,
+			IsPublic:   r.IsPublic,
+		}
+	}
+	return bookmarks
+}
+
+// Helper: Convert UnsortedInfo bookmarks to KanbanBookmark slice
+func unsortedToBookmarks(recent []service.RecentBookmark) []KanbanBookmark {
+	return recentToBookmarks(recent)
+}

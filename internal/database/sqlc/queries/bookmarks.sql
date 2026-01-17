@@ -86,3 +86,23 @@ UPDATE bookmarks SET collection_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
 
 -- name: UpdateBookmarkTitle :exec
 UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+
+-- ============================================
+-- BOARD VIEW QUERIES
+-- ============================================
+
+-- name: CountUnsortedBookmarks :one
+SELECT COUNT(*) FROM bookmarks WHERE collection_id IS NULL;
+
+-- name: ListRecentUnsortedBookmarks :many
+SELECT id, title, url, domain, is_favorite, is_public, created_at
+FROM bookmarks
+WHERE collection_id IS NULL
+ORDER BY created_at DESC
+LIMIT ?;
+
+-- name: ListUnsortedBookmarks :many
+SELECT * FROM bookmarks
+WHERE collection_id IS NULL
+ORDER BY sort_order, created_at DESC
+LIMIT ? OFFSET ?;
