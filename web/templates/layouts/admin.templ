@@ -18,12 +18,24 @@ func getCSRFToken(ctx context.Context) string {
 
 templ Admin(title string, currentPath string) {
 	@adminBase(title) {
-		<div class="flex min-h-screen">
+		<div class="flex h-screen">
 			@adminSidebar(currentPath)
-			<main class="flex-1 bg-muted/30">
-				<div class="p-8">
+			<main class="flex-1 min-w-0 bg-muted/30 overflow-y-auto">
+				<div class="p-8 max-w-7xl">
 					{ children... }
 				</div>
+			</main>
+		</div>
+	}
+}
+
+// AdminFullWidth is a layout variant with no padding wrapper for full-width content like Kanban boards
+templ AdminFullWidth(title string, currentPath string) {
+	@adminBase(title) {
+		<div class="flex h-screen">
+			@adminSidebar(currentPath)
+			<main class="flex-1 min-w-0 bg-muted/30 overflow-hidden flex flex-col">
+				{ children... }
 			</main>
 		</div>
 	}
@@ -50,6 +62,9 @@ templ adminBase(title string) {
 			<script src="/static/js/tag-select.js"></script>
 			<script src="/static/js/expandable-row.js"></script>
 			<script src="/static/js/drawer.js"></script>
+			<!-- SortableJS for Kanban drag-and-drop -->
+			<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+			<script src="/static/js/kanban.js"></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }
@@ -103,7 +118,7 @@ func adminNavClass(currentPath, targetPath string) string {
 }
 
 templ adminSidebar(currentPath string) {
-	<aside class="w-64 border-r border-border bg-sidebar">
+	<aside class="w-64 shrink-0 border-r border-border bg-sidebar">
 		<div class="flex h-14 items-center border-b border-border px-3">
 			<a href="/admin" class="font-semibold text-foreground">
 				Admin

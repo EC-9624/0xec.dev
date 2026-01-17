@@ -95,7 +95,7 @@ UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 SELECT COUNT(*) FROM bookmarks WHERE collection_id IS NULL;
 
 -- name: ListRecentUnsortedBookmarks :many
-SELECT id, title, url, domain, is_favorite, created_at
+SELECT id, title, url, domain, is_favorite, is_public, created_at
 FROM bookmarks
 WHERE collection_id IS NULL
 ORDER BY created_at DESC

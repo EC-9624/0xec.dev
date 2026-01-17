@@ -254,6 +254,7 @@ type RecentBookmark struct {
 	URL        string
 	Domain     string
 	IsFavorite bool
+	IsPublic   bool
 }
 
 // CollectionWithRecent represents a collection with its recent bookmarks for board view
@@ -339,6 +340,9 @@ func (s *Service) GetRecentBookmarksByCollectionID(ctx context.Context, collecti
 		if r.IsFavorite != nil {
 			bookmark.IsFavorite = *r.IsFavorite == 1
 		}
+		if r.IsPublic != nil {
+			bookmark.IsPublic = *r.IsPublic == 1
+		}
 		result = append(result, bookmark)
 	}
 
@@ -364,6 +368,9 @@ func (s *Service) GetRecentUnsortedBookmarks(ctx context.Context, limit int) ([]
 		}
 		if r.IsFavorite != nil {
 			bookmark.IsFavorite = *r.IsFavorite == 1
+		}
+		if r.IsPublic != nil {
+			bookmark.IsPublic = *r.IsPublic == 1
 		}
 		result = append(result, bookmark)
 	}

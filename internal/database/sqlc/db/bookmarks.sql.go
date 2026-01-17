@@ -497,7 +497,7 @@ func (q *Queries) ListPublicFavoriteBookmarks(ctx context.Context, arg ListPubli
 }
 
 const listRecentUnsortedBookmarks = `-- name: ListRecentUnsortedBookmarks :many
-SELECT id, title, url, domain, is_favorite, created_at
+SELECT id, title, url, domain, is_favorite, is_public, created_at
 FROM bookmarks
 WHERE collection_id IS NULL
 ORDER BY created_at DESC
@@ -510,6 +510,7 @@ type ListRecentUnsortedBookmarksRow struct {
 	Url        string     `json:"url"`
 	Domain     *string    `json:"domain"`
 	IsFavorite *int64     `json:"is_favorite"`
+	IsPublic   *int64     `json:"is_public"`
 	CreatedAt  *time.Time `json:"created_at"`
 }
 
@@ -528,6 +529,7 @@ func (q *Queries) ListRecentUnsortedBookmarks(ctx context.Context, limit int64) 
 			&i.Url,
 			&i.Domain,
 			&i.IsFavorite,
+			&i.IsPublic,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

@@ -27,17 +27,32 @@ type BookmarksPageData struct {
 
 // BookmarksPage renders the unified bookmarks page with board or table view
 templ BookmarksPage(data BookmarksPageData) {
+	if data.View == "board" {
+		@BookmarksBoardPage(data)
+	} else {
+		@BookmarksTablePage(data)
+	}
+}
+
+// BookmarksBoardPage renders the full-width Kanban board layout
+templ BookmarksBoardPage(data BookmarksPageData) {
+	@layouts.AdminFullWidth("Bookmarks", "/admin/bookmarks") {
+		<div class="flex-1 overflow-hidden p-8 flex flex-col gap-4" id="bookmarks-content">
+			@bookmarksPageHeader(data)
+			@BookmarksBoard(BookmarksBoardData{BoardData: data.BoardData})
+		</div>
+	}
+}
+
+// BookmarksTablePage renders the standard table view with constrained width
+templ BookmarksTablePage(data BookmarksPageData) {
 	@layouts.Admin("Bookmarks", "/admin/bookmarks") {
 		<div class="space-y-4">
 			<!-- Header with view toggle -->
 			@bookmarksPageHeader(data)
 			<!-- Content area -->
 			<div id="bookmarks-content">
-				if data.View == "board" {
-					@BookmarksBoard(BookmarksBoardData{BoardData: data.BoardData})
-				} else {
-					@bookmarksTableView(data)
-				}
+				@bookmarksTableView(data)
 			</div>
 		</div>
 	}

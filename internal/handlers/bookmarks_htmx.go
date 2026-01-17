@@ -223,7 +223,18 @@ func (h *Handlers) HTMXAdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		logger.Error(ctx, "failed to load collections for new bookmark drawer", "error", err)
 	}
-	render(w, r, admin.BookmarkFormDrawer(nil, collections, true, nil, nil))
+
+	// Check for preselected collection from query param
+	var input *models.CreateBookmarkInput
+	if collectionIDStr := r.URL.Query().Get("collection_id"); collectionIDStr != "" {
+		if collectionID, err := strconv.ParseInt(collectionIDStr, 10, 64); err == nil {
+			input = &models.CreateBookmarkInput{
+				CollectionID: &collectionID,
+			}
+		}
+	}
+
+	render(w, r, admin.BookmarkFormDrawer(nil, collections, true, nil, input))
 }
 
 // HTMXAdminBookmarkEditDrawer returns the edit bookmark form for the drawer

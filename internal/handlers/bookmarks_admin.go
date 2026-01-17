@@ -36,8 +36,8 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 
 	// Handle different views
 	if view == "board" && collectionParam == "" {
-		// Board view - show collection cards
-		boardData, err := h.service.GetBoardViewData(ctx, 3) // 3 recent bookmarks per collection
+		// Board view - show Kanban columns with all bookmarks
+		boardData, err := h.service.GetBoardViewData(ctx, 100) // All bookmarks per collection (up to 100)
 		if err != nil {
 			errors.WriteInternalError(w, r, "Failed to load board data", err)
 			return

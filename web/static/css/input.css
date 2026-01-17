@@ -1364,4 +1364,161 @@ html:not(.light):not(.dark) {
   .mode-btn-active {
     @apply bg-primary text-primary-foreground border-primary;
   }
+
+  /* ===== KANBAN BOARD ===== */
+  .kanban-board {
+    @apply flex gap-4 overflow-x-auto pb-4 h-full;
+  }
+
+  .kanban-column {
+    @apply flex flex-col bg-muted/30 border border-border shrink-0 h-full;
+    width: 280px;
+  }
+
+  .kanban-column-header {
+    @apply sticky top-0 z-10 flex items-center justify-between gap-2 px-3 py-2 bg-card border-b border-border;
+  }
+
+  .kanban-column-title {
+    @apply flex items-center gap-2 min-w-0;
+  }
+
+  .kanban-column-title h3 {
+    @apply text-sm font-semibold text-foreground truncate;
+  }
+
+  .kanban-column-count {
+    @apply text-xs text-muted-foreground shrink-0;
+  }
+
+  .kanban-column-actions {
+    @apply flex items-center gap-1 shrink-0;
+  }
+
+  .kanban-column-content {
+    @apply flex-1 overflow-y-auto p-2 space-y-2;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  .kanban-column-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .kanban-column-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .kanban-column-content::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+  }
+
+  .kanban-column-footer {
+    @apply sticky bottom-0 p-2 bg-card border-t border-border;
+  }
+
+  /* Kanban Card */
+  .kanban-card {
+    @apply flex items-start gap-2 p-2 bg-card border border-border cursor-grab;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+
+  .kanban-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .kanban-card:active {
+    cursor: grabbing;
+  }
+
+  .kanban-card-drag-handle {
+    @apply shrink-0 text-muted-foreground/50 cursor-grab mt-0.5;
+  }
+
+  .kanban-card-drag-handle:hover {
+    @apply text-muted-foreground;
+  }
+
+  .kanban-card-content {
+    @apply flex-1 min-w-0;
+  }
+
+  .kanban-card-title {
+    @apply text-xs font-medium text-foreground truncate;
+  }
+
+  .kanban-card-meta {
+    @apply flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground;
+  }
+
+  .kanban-card-domain {
+    @apply truncate;
+  }
+
+  .kanban-card-badges {
+    @apply flex items-center gap-1 shrink-0;
+  }
+
+  .kanban-card-actions {
+    @apply shrink-0 opacity-0;
+    transition: opacity 0.1s ease;
+  }
+
+  .kanban-card:hover .kanban-card-actions {
+    @apply opacity-100;
+  }
+
+  /* Drag states */
+  .kanban-card.sortable-ghost {
+    @apply opacity-50 bg-muted;
+  }
+
+  .kanban-card.sortable-chosen {
+    @apply shadow-lg;
+    transform: rotate(2deg);
+  }
+
+  .kanban-card.sortable-drag {
+    @apply shadow-lg bg-card;
+    transform: rotate(2deg);
+  }
+
+  .kanban-column-content.sortable-drag-over {
+    @apply bg-primary/5;
+  }
+
+  /* Empty column state */
+  .kanban-empty {
+    @apply flex flex-col items-center justify-center py-8 text-center;
+  }
+
+  .kanban-empty-text {
+    @apply text-xs text-muted-foreground;
+  }
+
+  /* New collection column */
+  .kanban-new-column {
+    @apply flex items-center justify-center border-dashed cursor-pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .kanban-new-column:hover {
+    @apply bg-muted/50 border-primary/50;
+  }
+
+  .kanban-new-column-content {
+    @apply flex flex-col items-center gap-2 text-muted-foreground;
+    transition: color 0.15s ease;
+  }
+
+  .kanban-new-column:hover .kanban-new-column-content {
+    @apply text-primary;
+  }
+
+  /* Add bookmark button */
+  .kanban-add-btn {
+    @apply w-full flex items-center justify-center gap-1 py-1.5 text-xs text-muted-foreground
+           hover:text-foreground hover:bg-muted;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
 }
