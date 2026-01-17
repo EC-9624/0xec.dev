@@ -50,6 +50,7 @@ templ adminBase(title string) {
 			<script src="/static/js/tag-select.js"></script>
 			<script src="/static/js/expandable-row.js"></script>
 			<script src="/static/js/drawer.js"></script>
+			<script src="/static/js/theme-switcher.js"></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }
@@ -57,6 +58,7 @@ templ adminBase(title string) {
 			@dropdownPortal()
 			@components.Drawer()
 			@htmxErrorHandler()
+			@adminThemeSwitcherPanel()
 		</body>
 	</html>
 }
@@ -102,6 +104,123 @@ func adminNavClass(currentPath, targetPath string) string {
 	return "sidebar-link"
 }
 
+// Theme switcher panel for admin
+templ adminThemeSwitcherPanel() {
+	<div class="theme-panel">
+		<div class="theme-panel-header" onclick="themeSwitcher.togglePanel()">
+			<span class="theme-panel-title">
+				@adminIconPalette()
+				Appearance
+			</span>
+			<button type="button" id="theme-panel-toggle" class="theme-panel-toggle">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+			</button>
+		</div>
+		<div id="theme-panel-content" class="theme-panel-content">
+			<!-- Theme presets -->
+			<div class="theme-panel-section">
+				<div class="theme-panel-section-title">Theme</div>
+				<div class="flex flex-col">
+					<button type="button" data-preset="neutralOrange" onclick="themeSwitcher.setPreset('neutralOrange')" class="theme-option theme-option-active">
+						<span class="theme-swatch" style="background-color: hsl(24 95% 53%)"></span>
+						<span class="theme-option-name">Neutral + Orange</span>
+						<span class="theme-option-check">
+							@adminIconCheck()
+						</span>
+					</button>
+					<button type="button" data-preset="current" onclick="themeSwitcher.setPreset('current')" class="theme-option">
+						<span class="theme-swatch" style="background-color: hsl(175 70% 40%)"></span>
+						<span class="theme-option-name">Default</span>
+						<span class="theme-option-check">
+							@adminIconCheck()
+						</span>
+					</button>
+					<button type="button" data-preset="stoneAmber" onclick="themeSwitcher.setPreset('stoneAmber')" class="theme-option">
+						<span class="theme-swatch" style="background-color: hsl(38 92% 50%)"></span>
+						<span class="theme-option-name">Stone + Amber</span>
+						<span class="theme-option-check">
+							@adminIconCheck()
+						</span>
+					</button>
+					<button type="button" data-preset="coolBlue" onclick="themeSwitcher.setPreset('coolBlue')" class="theme-option">
+						<span class="theme-swatch" style="background-color: hsl(220 70% 50%)"></span>
+						<span class="theme-option-name">Cool + Blue</span>
+						<span class="theme-option-check">
+							@adminIconCheck()
+						</span>
+					</button>
+					<button type="button" data-preset="tealDepth" onclick="themeSwitcher.setPreset('tealDepth')" class="theme-option">
+						<span class="theme-swatch" style="background-color: hsl(175 65% 35%)"></span>
+						<span class="theme-option-name">Teal + Depth</span>
+						<span class="theme-option-check">
+							@adminIconCheck()
+						</span>
+					</button>
+				</div>
+			</div>
+			<!-- Mode toggle -->
+			<div class="theme-panel-section border-t border-border">
+				<div class="theme-panel-section-title">Mode</div>
+				<div class="mode-toggle">
+					<button type="button" data-mode="light" onclick="themeSwitcher.setMode('light')" class="mode-btn">
+						@adminIconSun()
+					</button>
+					<button type="button" data-mode="dark" onclick="themeSwitcher.setMode('dark')" class="mode-btn">
+						@adminIconMoon()
+					</button>
+					<button type="button" data-mode="system" onclick="themeSwitcher.setMode('system')" class="mode-btn mode-btn-active">
+						@adminIconMonitor()
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ adminIconPalette() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+		<circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+		<circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+		<circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+		<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z"></path>
+	</svg>
+}
+
+templ adminIconCheck() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M20 6 9 17l-5-5"></path>
+	</svg>
+}
+
+templ adminIconSun() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<circle cx="12" cy="12" r="4"></circle>
+		<path d="M12 2v2"></path>
+		<path d="M12 20v2"></path>
+		<path d="m4.93 4.93 1.41 1.41"></path>
+		<path d="m17.66 17.66 1.41 1.41"></path>
+		<path d="M2 12h2"></path>
+		<path d="M20 12h2"></path>
+		<path d="m6.34 17.66-1.41 1.41"></path>
+		<path d="m19.07 4.93-1.41 1.41"></path>
+	</svg>
+}
+
+templ adminIconMoon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+	</svg>
+}
+
+templ adminIconMonitor() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<rect width="20" height="14" x="2" y="3" rx="2"></rect>
+		<line x1="8" x2="16" y1="21" y2="21"></line>
+		<line x1="12" x2="12" y1="17" y2="21"></line>
+	</svg>
+}
+
 templ adminSidebar(currentPath string) {
 	<aside class="w-64 border-r border-border bg-background">
 		<div class="flex h-14 items-center border-b border-border px-6">
@@ -132,32 +251,6 @@ templ adminSidebar(currentPath string) {
 			</a>
 		</nav>
 		<div class="mt-auto border-t border-border p-4">
-			<button
-				type="button"
-				onclick="toggleTheme()"
-				class="sidebar-link w-full text-left mb-1"
-				aria-label="Toggle dark mode"
-			>
-				<span id="theme-icon-sun" class="hidden">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<circle cx="12" cy="12" r="4"></circle>
-						<path d="M12 2v2"></path>
-						<path d="M12 20v2"></path>
-						<path d="m4.93 4.93 1.41 1.41"></path>
-						<path d="m17.66 17.66 1.41 1.41"></path>
-						<path d="M2 12h2"></path>
-						<path d="M20 12h2"></path>
-						<path d="m6.34 17.66-1.41 1.41"></path>
-						<path d="m19.07 4.93-1.41 1.41"></path>
-					</svg>
-				</span>
-				<span id="theme-icon-moon">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-					</svg>
-				</span>
-				Toggle theme
-			</button>
 			<a href="/" class="sidebar-link">
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" x2="3" y1="12" y2="12"></line></svg>
 				View Site

@@ -265,7 +265,7 @@
   };
 
   // Current state
-  var currentPreset = 'current';
+  var currentPreset = 'neutralOrange';
   var currentMode = MODE_SYSTEM;
 
   /**

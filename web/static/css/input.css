@@ -29,7 +29,7 @@
   src: url("/static/fonts/jetbrains-mono-600.woff2") format("woff2");
 }
 
-/* Boxy, monospace theme - Light Mode */
+/* Boxy, monospace theme - Light Mode (Neutral + Orange) */
 @theme {
   /* Monospace font stack */
   --font-sans:
@@ -51,31 +51,31 @@
   --shadow-md: 0 2px 4px 0 rgb(0 0 0 / 0.1);
   --shadow-lg: 0 4px 8px 0 rgb(0 0 0 / 0.1);
 
-  /* Warm light palette with teal accent */
-  --color-background: hsl(40 20% 98%);
-  --color-foreground: hsl(40 10% 9%);
-  --color-card: hsl(40 30% 99%);
-  --color-card-foreground: hsl(40 10% 9%);
-  --color-popover: hsl(40 30% 99%);
-  --color-popover-foreground: hsl(40 10% 9%);
-  --color-primary: hsl(175 70% 40%);
+  /* Neutral + Orange palette */
+  --color-background: hsl(0 0% 96%);
+  --color-foreground: hsl(0 0% 9%);
+  --color-card: hsl(0 0% 99%);
+  --color-card-foreground: hsl(0 0% 9%);
+  --color-popover: hsl(0 0% 99%);
+  --color-popover-foreground: hsl(0 0% 9%);
+  --color-primary: hsl(24 95% 53%);
   --color-primary-foreground: hsl(0 0% 100%);
-  --color-secondary: hsl(40 15% 94%);
-  --color-secondary-foreground: hsl(40 10% 9%);
-  --color-muted: hsl(40 15% 94%);
-  --color-muted-foreground: hsl(40 10% 45%);
-  --color-accent: hsl(175 70% 40%);
+  --color-secondary: hsl(0 0% 90%);
+  --color-secondary-foreground: hsl(0 0% 9%);
+  --color-muted: hsl(0 0% 90%);
+  --color-muted-foreground: hsl(0 0% 40%);
+  --color-accent: hsl(24 95% 53%);
   --color-accent-foreground: hsl(0 0% 100%);
   --color-destructive: hsl(0 84% 60%);
   --color-destructive-foreground: hsl(0 0% 98%);
-  --color-border: hsl(40 10% 85%);
-  --color-input: hsl(40 10% 82%);
-  --color-ring: hsl(175 70% 40%);
-  --color-sidebar: hsl(40 20% 96%);
+  --color-border: hsl(0 0% 80%);
+  --color-input: hsl(0 0% 78%);
+  --color-ring: hsl(24 95% 53%);
+  --color-sidebar: hsl(0 0% 93%);
 
-  /* Link colors (teal-based) */
-  --color-link: hsl(175 70% 35%);
-  --color-link-hover: hsl(175 70% 28%);
+  /* Link colors (orange-based) */
+  --color-link: hsl(24 95% 43%);
+  --color-link-hover: hsl(24 95% 35%);
 
   /* Sharp corners - no radius */
   --radius-sm: 0;
@@ -91,29 +91,29 @@ html:not(.light):not(.dark) {
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
 
-    /* Cool dark palette with teal accent */
-    --color-background: hsl(220 10% 12%);
-    --color-foreground: hsl(220 5% 95%);
-    --color-card: hsl(220 10% 15%);
-    --color-card-foreground: hsl(220 5% 95%);
-    --color-popover: hsl(220 10% 17%);
-    --color-popover-foreground: hsl(220 5% 95%);
-    --color-primary: hsl(175 70% 45%);
-    --color-primary-foreground: hsl(220 10% 10%);
-    --color-secondary: hsl(220 10% 18%);
-    --color-secondary-foreground: hsl(220 5% 95%);
-    --color-muted: hsl(220 10% 20%);
-    --color-muted-foreground: hsl(220 5% 60%);
-    --color-accent: hsl(175 70% 45%);
-    --color-accent-foreground: hsl(220 10% 10%);
+    /* Neutral + Orange dark palette */
+    --color-background: hsl(0 0% 10%);
+    --color-foreground: hsl(0 0% 95%);
+    --color-card: hsl(0 0% 13%);
+    --color-card-foreground: hsl(0 0% 95%);
+    --color-popover: hsl(0 0% 15%);
+    --color-popover-foreground: hsl(0 0% 95%);
+    --color-primary: hsl(24 95% 58%);
+    --color-primary-foreground: hsl(0 0% 9%);
+    --color-secondary: hsl(0 0% 16%);
+    --color-secondary-foreground: hsl(0 0% 95%);
+    --color-muted: hsl(0 0% 18%);
+    --color-muted-foreground: hsl(0 0% 60%);
+    --color-accent: hsl(24 95% 58%);
+    --color-accent-foreground: hsl(0 0% 9%);
     --color-destructive: hsl(0 72% 51%);
     --color-destructive-foreground: hsl(0 0% 98%);
-    --color-border: hsl(220 10% 25%);
-    --color-input: hsl(220 10% 28%);
-    --color-ring: hsl(175 70% 45%);
-    --color-sidebar: hsl(220 10% 10%);
-    --color-link: hsl(175 70% 50%);
-    --color-link-hover: hsl(175 70% 60%);
+    --color-border: hsl(0 0% 22%);
+    --color-input: hsl(0 0% 25%);
+    --color-ring: hsl(24 95% 58%);
+    --color-sidebar: hsl(0 0% 8%);
+    --color-link: hsl(24 95% 63%);
+    --color-link-hover: hsl(24 95% 73%);
 
     /* Shadows for dark mode */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
@@ -126,29 +126,29 @@ html:not(.light):not(.dark) {
 .dark {
   color-scheme: dark;
 
-  /* Cool dark palette with teal accent */
-  --color-background: hsl(220 10% 12%);
-  --color-foreground: hsl(220 5% 95%);
-  --color-card: hsl(220 10% 15%);
-  --color-card-foreground: hsl(220 5% 95%);
-  --color-popover: hsl(220 10% 17%);
-  --color-popover-foreground: hsl(220 5% 95%);
-  --color-primary: hsl(175 70% 45%);
-  --color-primary-foreground: hsl(220 10% 10%);
-  --color-secondary: hsl(220 10% 18%);
-  --color-secondary-foreground: hsl(220 5% 95%);
-  --color-muted: hsl(220 10% 20%);
-  --color-muted-foreground: hsl(220 5% 60%);
-  --color-accent: hsl(175 70% 45%);
-  --color-accent-foreground: hsl(220 10% 10%);
+  /* Neutral + Orange dark palette */
+  --color-background: hsl(0 0% 10%);
+  --color-foreground: hsl(0 0% 95%);
+  --color-card: hsl(0 0% 13%);
+  --color-card-foreground: hsl(0 0% 95%);
+  --color-popover: hsl(0 0% 15%);
+  --color-popover-foreground: hsl(0 0% 95%);
+  --color-primary: hsl(24 95% 58%);
+  --color-primary-foreground: hsl(0 0% 9%);
+  --color-secondary: hsl(0 0% 16%);
+  --color-secondary-foreground: hsl(0 0% 95%);
+  --color-muted: hsl(0 0% 18%);
+  --color-muted-foreground: hsl(0 0% 60%);
+  --color-accent: hsl(24 95% 58%);
+  --color-accent-foreground: hsl(0 0% 9%);
   --color-destructive: hsl(0 72% 51%);
   --color-destructive-foreground: hsl(0 0% 98%);
-  --color-border: hsl(220 10% 25%);
-  --color-input: hsl(220 10% 28%);
-  --color-ring: hsl(175 70% 45%);
-  --color-sidebar: hsl(220 10% 10%);
-  --color-link: hsl(175 70% 50%);
-  --color-link-hover: hsl(175 70% 60%);
+  --color-border: hsl(0 0% 22%);
+  --color-input: hsl(0 0% 25%);
+  --color-ring: hsl(24 95% 58%);
+  --color-sidebar: hsl(0 0% 8%);
+  --color-link: hsl(24 95% 63%);
+  --color-link-hover: hsl(24 95% 73%);
 
   /* Shadows for dark mode */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
@@ -302,7 +302,7 @@ html:not(.light):not(.dark) {
   }
 
   .nav-item-active {
-    @apply flex items-center justify-between p-2 text-sm font-medium bg-primary text-white;
+    @apply flex items-center justify-between p-2 text-sm font-medium bg-primary text-primary-foreground;
   }
 
   .nav-item-icon {

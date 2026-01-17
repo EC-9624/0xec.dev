@@ -41,7 +41,14 @@ templ themeSwitcherPanel() {
 			<div class="theme-panel-section">
 				<div class="theme-panel-section-title">Theme</div>
 				<div class="flex flex-col">
-					<button type="button" data-preset="current" onclick="themeSwitcher.setPreset('current')" class="theme-option theme-option-active">
+					<button type="button" data-preset="neutralOrange" onclick="themeSwitcher.setPreset('neutralOrange')" class="theme-option theme-option-active">
+						<span class="theme-swatch" style="background-color: hsl(24 95% 53%)"></span>
+						<span class="theme-option-name">Neutral + Orange</span>
+						<span class="theme-option-check">
+							@iconCheck()
+						</span>
+					</button>
+					<button type="button" data-preset="current" onclick="themeSwitcher.setPreset('current')" class="theme-option">
 						<span class="theme-swatch" style="background-color: hsl(175 70% 40%)"></span>
 						<span class="theme-option-name">Default</span>
 						<span class="theme-option-check">
@@ -58,13 +65,6 @@ templ themeSwitcherPanel() {
 					<button type="button" data-preset="coolBlue" onclick="themeSwitcher.setPreset('coolBlue')" class="theme-option">
 						<span class="theme-swatch" style="background-color: hsl(220 70% 50%)"></span>
 						<span class="theme-option-name">Cool + Blue</span>
-						<span class="theme-option-check">
-							@iconCheck()
-						</span>
-					</button>
-					<button type="button" data-preset="neutralOrange" onclick="themeSwitcher.setPreset('neutralOrange')" class="theme-option">
-						<span class="theme-swatch" style="background-color: hsl(24 95% 53%)"></span>
-						<span class="theme-option-name">Neutral + Orange</span>
 						<span class="theme-option-check">
 							@iconCheck()
 						</span>
