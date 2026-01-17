@@ -62,6 +62,80 @@ templ BookmarksBoard(data BookmarksBoardData) {
 		</div>
 		<!-- Keyboard Help Modal -->
 		@KanbanHelpModal()
+		<!-- Selection Toolbar -->
+		@KanbanSelectionToolbar(data.BoardData.Collections)
+	</div>
+}
+
+// KanbanSelectionToolbar renders the floating toolbar for multi-select actions
+templ KanbanSelectionToolbar(collections []service.CollectionWithRecent) {
+	<div 
+		id="kanban-selection-toolbar"
+		class="kanban-selection-toolbar hidden"
+		role="toolbar"
+		aria-label="Selection actions"
+	>
+		<span class="selection-count">0 selected</span>
+		<div class="selection-toolbar-divider"></div>
+		<div class="selection-toolbar-actions">
+			<!-- Move to dropdown -->
+			<div class="selection-move-dropdown" data-selection-move-dropdown>
+				<button
+					type="button"
+					class="selection-toolbar-btn"
+					data-selection-move-trigger
+					aria-haspopup="true"
+					aria-expanded="false"
+				>
+					@components.FolderIcon(components.IconSM)
+					<span>Move to</span>
+					@components.ChevronUpIcon(components.IconSM)
+				</button>
+				<div class="selection-move-menu" data-selection-move-menu>
+					<!-- Unsorted option -->
+					<button
+						type="button"
+						class="selection-move-option"
+						data-move-collection-id=""
+					>
+						@components.InboxIcon(components.IconSM)
+						<span>Unsorted</span>
+					</button>
+					<!-- Collection options -->
+					for _, c := range collections {
+						<button
+							type="button"
+							class="selection-move-option"
+							data-move-collection-id={ strconv.FormatInt(c.Collection.ID, 10) }
+						>
+							<span 
+								class="selection-move-option-color" 
+								style={ "background-color: " + c.Collection.GetColor() }
+							></span>
+							<span>{ c.Collection.Name }</span>
+						</button>
+					}
+				</div>
+			</div>
+			<!-- Delete button -->
+			<button
+				type="button"
+				class="selection-toolbar-btn selection-toolbar-btn-destructive delete-selected"
+			>
+				@components.TrashIcon(components.IconSM)
+				<span>Delete</span>
+			</button>
+		</div>
+		<div class="selection-toolbar-divider"></div>
+		<!-- Clear selection / close -->
+		<button
+			type="button"
+			class="selection-toolbar-close clear-selection"
+			title="Clear selection (Esc)"
+			aria-label="Clear selection"
+		>
+			@components.XIcon(components.IconSM)
+		</button>
 	</div>
 }
 
@@ -151,29 +225,70 @@ templ KanbanHelpModal() {
 						</div>
 					</dl>
 				</div>
-				<div class="kanban-help-section">
-					<h3 class="kanban-help-section-title">Quick Actions</h3>
-					<dl class="kanban-help-list">
-						<div class="kanban-help-item">
-							<dt class="kanban-help-keys">
-								<kbd>E</kbd>
-							</dt>
-							<dd class="kanban-help-desc">Edit bookmark</dd>
-						</div>
-						<div class="kanban-help-item">
-							<dt class="kanban-help-keys">
-								<kbd>O</kbd>
-							</dt>
-							<dd class="kanban-help-desc">Open URL in new tab</dd>
-						</div>
-						<div class="kanban-help-item">
-							<dt class="kanban-help-keys">
-								<kbd>Delete</kbd>
-							</dt>
-							<dd class="kanban-help-desc">Delete bookmark</dd>
-						</div>
-					</dl>
-				</div>
+			<div class="kanban-help-section">
+				<h3 class="kanban-help-section-title">Selection</h3>
+				<dl class="kanban-help-list">
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>Click</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Select card</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>⌘</kbd><kbd>Click</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Toggle selection</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>Shift</kbd><kbd>Click</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Select range</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>Shift</kbd><kbd>↑</kbd><kbd>↓</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Extend selection</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>⌘</kbd><kbd>A</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Select all in column</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>Esc</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Clear selection</dd>
+					</div>
+				</dl>
+			</div>
+			<div class="kanban-help-section">
+				<h3 class="kanban-help-section-title">Quick Actions</h3>
+				<dl class="kanban-help-list">
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>E</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Edit bookmark</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>O</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Open URL in new tab</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>Delete</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Delete bookmark(s)</dd>
+					</div>
+				</dl>
+			</div>
 				<div class="kanban-help-section">
 					<h3 class="kanban-help-section-title">Help</h3>
 					<dl class="kanban-help-list">

@@ -432,6 +432,50 @@ func (s *Service) rebalanceBookmarks(ctx context.Context, collectionID *int64, s
 	return nil
 }
 
+// BulkMoveBookmarks moves multiple bookmarks to a collection (or unsorted if collectionID is nil)
+func (s *Service) BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64) error {
+	for _, id := range bookmarkIDs {
+		// Move each bookmark to the end of the target collection
+		err := s.queries.UpdateBookmarkCollection(ctx, db.UpdateBookmarkCollectionParams{
+			CollectionID: collectionID,
+			ID:           id,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Log activity for bulk move
+	count := len(bookmarkIDs)
+	s.LogActivity(ctx, ActionBookmarkUpdated, EntityBookmark, 0, "", map[string]interface{}{
+		"action":       "bulk_move",
+		"count":        count,
+		"bookmark_ids": bookmarkIDs,
+	})
+
+	return nil
+}
+
+// BulkDeleteBookmarks deletes multiple bookmarks
+func (s *Service) BulkDeleteBookmarks(ctx context.Context, bookmarkIDs []int64) error {
+	for _, id := range bookmarkIDs {
+		err := s.queries.DeleteBookmark(ctx, id)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Log activity for bulk delete
+	count := len(bookmarkIDs)
+	s.LogActivity(ctx, ActionBookmarkDeleted, EntityBookmark, 0, "", map[string]interface{}{
+		"action":       "bulk_delete",
+		"count":        count,
+		"bookmark_ids": bookmarkIDs,
+	})
+
+	return nil
+}
+
 // ListUnsortedBookmarks retrieves bookmarks without a collection
 func (s *Service) ListUnsortedBookmarks(ctx context.Context, limit, offset int) ([]models.Bookmark, error) {
 	bookmarks, err := s.queries.ListUnsortedBookmarks(ctx, db.ListUnsortedBookmarksParams{

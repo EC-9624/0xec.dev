@@ -171,6 +171,8 @@ func main() {
 	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/toggle-public", h.AdminToggleBookmarkPublic)
 	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/toggle-favorite", h.AdminToggleBookmarkFavorite)
 	adminMux.HandleFunc("POST /admin/htmx/bookmarks/{id}/collection", h.AdminUpdateBookmarkCollection)
+	adminMux.HandleFunc("POST /admin/htmx/bookmarks/bulk/move", h.AdminBulkMoveBookmarks)
+	adminMux.HandleFunc("DELETE /admin/htmx/bookmarks/bulk/delete", h.AdminBulkDeleteBookmarks)
 
 	// Collections (HTMX)
 	adminMux.HandleFunc("GET /admin/htmx/collections/new-drawer", h.HTMXAdminCollectionNewDrawer)

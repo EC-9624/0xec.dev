@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -271,4 +272,79 @@ func (h *Handlers) HTMXAdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Re
 		logger.Error(ctx, "failed to load collections for bookmark edit drawer", "error", err)
 	}
 	render(w, r, admin.BookmarkFormDrawer(bookmark, collections, false, nil, nil))
+}
+
+// ============================================
+// BULK OPERATIONS (HTMX)
+// ============================================
+
+// BulkMoveRequest represents the JSON request body for bulk move
+type BulkMoveRequest struct {
+	BookmarkIDs  []int64 `json:"bookmark_ids"`
+	CollectionID *int64  `json:"collection_id"`
+}
+
+// BulkDeleteRequest represents the JSON request body for bulk delete
+type BulkDeleteRequest struct {
+	BookmarkIDs []int64 `json:"bookmark_ids"`
+}
+
+// AdminBulkMoveBookmarks handles moving multiple bookmarks to a collection
+func (h *Handlers) AdminBulkMoveBookmarks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req BulkMoveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) == 0 {
+		http.Error(w, "No bookmarks specified", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) > 50 {
+		http.Error(w, "Too many bookmarks (max 50)", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.BulkMoveBookmarks(ctx, req.BookmarkIDs, req.CollectionID)
+	if err != nil {
+		logger.Error(ctx, "failed to bulk move bookmarks", "error", err)
+		http.Error(w, "Failed to move bookmarks", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// AdminBulkDeleteBookmarks handles deleting multiple bookmarks
+func (h *Handlers) AdminBulkDeleteBookmarks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req BulkDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) == 0 {
+		http.Error(w, "No bookmarks specified", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) > 50 {
+		http.Error(w, "Too many bookmarks (max 50)", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.BulkDeleteBookmarks(ctx, req.BookmarkIDs)
+	if err != nil {
+		logger.Error(ctx, "failed to bulk delete bookmarks", "error", err)
+		http.Error(w, "Failed to delete bookmarks", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
