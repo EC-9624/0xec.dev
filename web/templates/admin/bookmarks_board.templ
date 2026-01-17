@@ -16,7 +16,15 @@ type BookmarksBoardData struct {
 
 // BookmarksBoard renders the Kanban board view with collection columns
 templ BookmarksBoard(data BookmarksBoardData) {
-	<div class="kanban-board" id="kanban-board">
+	<div class="kanban-board-wrapper">
+		<!-- Live region for screen reader announcements (positioned absolute to not affect layout) -->
+		<div id="kanban-live-region" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+		<div 
+			class="kanban-board" 
+			id="kanban-board"
+			role="region"
+			aria-label="Bookmark board"
+		>
 		<!-- Unsorted Column (always first) -->
 		@KanbanColumn(KanbanColumnData{
 			ID:        "",
@@ -41,6 +49,7 @@ templ BookmarksBoard(data BookmarksBoardData) {
 		}
 		<!-- New Collection Column -->
 		@KanbanNewColumn()
+		</div>
 	</div>
 }
 
@@ -70,6 +79,8 @@ templ KanbanColumn(data KanbanColumnData) {
 	<div 
 		class="kanban-column" 
 		data-collection-id={ data.ID }
+		role="group"
+		aria-label={ data.Name + ", " + strconv.Itoa(data.Count) + " bookmarks" }
 		if data.IsUnsorted {
 			data-unsorted="true"
 		}
@@ -122,6 +133,8 @@ templ KanbanColumn(data KanbanColumnData) {
 			class="kanban-column-content" 
 			data-sortable="true"
 			data-collection-id={ data.ID }
+			role="list"
+			aria-label={ "Bookmarks in " + data.Name }
 		>
 			if len(data.Bookmarks) > 0 {
 				for _, bookmark := range data.Bookmarks {
@@ -159,12 +172,21 @@ templ KanbanColumn(data KanbanColumnData) {
 // KanbanCard renders a single bookmark card in the Kanban view
 templ KanbanCard(bookmark KanbanBookmark) {
 	<div 
-		class="kanban-card group" 
+		class="kanban-card group"
+		tabindex="0"
+		role="listitem"
+		aria-label={ bookmark.Title }
+		aria-grabbed="false"
 		data-bookmark-id={ strconv.FormatInt(bookmark.ID, 10) }
+		data-bookmark-domain={ bookmark.Domain }
 		draggable="true"
 	>
+		<!-- Hidden description for screen readers -->
+		<span id={ "card-desc-" + strconv.FormatInt(bookmark.ID, 10) } class="sr-only">
+			{ bookmark.Domain }. Press Space to pick up and move, or Tab to access actions.
+		</span>
 		<!-- Drag Handle -->
-		<div class="kanban-card-drag-handle">
+		<div class="kanban-card-drag-handle" aria-hidden="true">
 			@components.GripVerticalIcon(components.IconSM)
 		</div>
 		<!-- Content -->
