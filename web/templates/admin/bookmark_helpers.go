@@ -27,16 +27,6 @@ func getFirstLetter(s string) string {
 	return "?"
 }
 
-// getCollectionName returns the collection name by ID
-func getCollectionName(id int64, collections []models.Collection) string {
-	for _, c := range collections {
-		if c.ID == id {
-			return c.Name
-		}
-	}
-	return "Unknown"
-}
-
 // truncateURL truncates a URL to the specified length
 func truncateURL(url string, maxLen int) string {
 	if len(url) <= maxLen {
@@ -122,17 +112,6 @@ func bookmarkFormValue(bookmark *models.Bookmark, input *models.CreateBookmarkIn
 	}
 	// Otherwise use the bookmark data
 	return bookmarkValue(bookmark, field)
-}
-
-// bookmarkFormCollectionSelected returns whether a collection option should be selected
-func bookmarkFormCollectionSelected(bookmark *models.Bookmark, input *models.CreateBookmarkInput, collectionID int64) bool {
-	if input != nil && input.CollectionID != nil {
-		return *input.CollectionID == collectionID
-	}
-	if bookmark != nil && bookmark.CollectionID.Valid {
-		return bookmark.CollectionID.Int64 == collectionID
-	}
-	return false
 }
 
 // bookmarkFormIsPublic returns whether the public checkbox should be checked

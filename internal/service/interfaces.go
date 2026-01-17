@@ -34,6 +34,7 @@ type BookmarkService interface {
 	GetBookmarkByID(ctx context.Context, id int64) (*models.Bookmark, error)
 	GetBookmarkByURL(ctx context.Context, url string) (*models.Bookmark, error)
 	ListBookmarks(ctx context.Context, opts BookmarkListOptions) ([]models.Bookmark, error)
+	ListUnsortedBookmarks(ctx context.Context, limit, offset int) ([]models.Bookmark, error)
 	CountBookmarks(ctx context.Context, opts BookmarkListOptions) (int, error)
 	UpdateBookmarkPublic(ctx context.Context, id int64, isPublic bool) error
 	UpdateBookmarkFavorite(ctx context.Context, id int64, isFavorite bool) error
@@ -71,6 +72,7 @@ type CollectionService interface {
 	UpdateCollectionName(ctx context.Context, id int64, name string) error
 	UpdateCollectionPublic(ctx context.Context, id int64, isPublic bool) error
 	GetBookmarksByCollectionID(ctx context.Context, collectionID int64) ([]CollectionBookmark, error)
+	GetBoardViewData(ctx context.Context, recentLimit int) (*BoardViewData, error)
 }
 
 // TagService defines tag management operations

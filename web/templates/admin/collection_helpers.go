@@ -8,14 +8,6 @@ import (
 // COLLECTION HELPER FUNCTIONS
 // ============================================
 
-// truncateCollectionText truncates text to the specified length
-func truncateCollectionText(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen-3] + "..."
-}
-
 // ============================================
 // FORM HELPER FUNCTIONS
 // ============================================
@@ -26,34 +18,6 @@ func collectionFormTitle(collection *models.Collection, isNew bool) string {
 		return "New Collection"
 	}
 	return "Edit: " + collection.Name
-}
-
-// collectionValue returns a field value from a collection
-func collectionValue(collection *models.Collection, field string) string {
-	if collection == nil {
-		return ""
-	}
-	switch field {
-	case "name":
-		return collection.Name
-	case "slug":
-		return collection.Slug
-	case "description":
-		return collection.GetDescription()
-	}
-	return ""
-}
-
-// collectionColorValue returns the color value from a collection
-func collectionColorValue(collection *models.Collection) string {
-	if collection == nil {
-		return "#3b82f6" // Default blue
-	}
-	color := collection.GetColor()
-	if color == "" {
-		return "#3b82f6"
-	}
-	return color
 }
 
 // collectionFormValue returns the value for a form field, preferring input over collection.

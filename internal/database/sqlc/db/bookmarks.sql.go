@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const countAllBookmarks = `-- name: CountAllBookmarks :one
@@ -70,6 +71,21 @@ SELECT COUNT(*) FROM bookmarks WHERE is_public = 1 AND is_favorite = 1
 
 func (q *Queries) CountPublicFavoriteBookmarks(ctx context.Context) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countPublicFavoriteBookmarks)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUnsortedBookmarks = `-- name: CountUnsortedBookmarks :one
+
+SELECT COUNT(*) FROM bookmarks WHERE collection_id IS NULL
+`
+
+// ============================================
+// BOARD VIEW QUERIES
+// ============================================
+func (q *Queries) CountUnsortedBookmarks(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUnsortedBookmarks)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -445,6 +461,102 @@ type ListPublicFavoriteBookmarksParams struct {
 
 func (q *Queries) ListPublicFavoriteBookmarks(ctx context.Context, arg ListPublicFavoriteBookmarksParams) ([]Bookmark, error) {
 	rows, err := q.db.QueryContext(ctx, listPublicFavoriteBookmarks, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Bookmark{}
+	for rows.Next() {
+		var i Bookmark
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.Title,
+			&i.Description,
+			&i.CoverImage,
+			&i.Favicon,
+			&i.Domain,
+			&i.CollectionID,
+			&i.IsPublic,
+			&i.IsFavorite,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentUnsortedBookmarks = `-- name: ListRecentUnsortedBookmarks :many
+SELECT id, title, url, domain, is_favorite, created_at
+FROM bookmarks
+WHERE collection_id IS NULL
+ORDER BY created_at DESC
+LIMIT ?
+`
+
+type ListRecentUnsortedBookmarksRow struct {
+	ID         int64      `json:"id"`
+	Title      string     `json:"title"`
+	Url        string     `json:"url"`
+	Domain     *string    `json:"domain"`
+	IsFavorite *int64     `json:"is_favorite"`
+	CreatedAt  *time.Time `json:"created_at"`
+}
+
+func (q *Queries) ListRecentUnsortedBookmarks(ctx context.Context, limit int64) ([]ListRecentUnsortedBookmarksRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRecentUnsortedBookmarks, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecentUnsortedBookmarksRow{}
+	for rows.Next() {
+		var i ListRecentUnsortedBookmarksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Url,
+			&i.Domain,
+			&i.IsFavorite,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnsortedBookmarks = `-- name: ListUnsortedBookmarks :many
+SELECT id, url, title, description, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks
+WHERE collection_id IS NULL
+ORDER BY sort_order, created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListUnsortedBookmarksParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+func (q *Queries) ListUnsortedBookmarks(ctx context.Context, arg ListUnsortedBookmarksParams) ([]Bookmark, error) {
+	rows, err := q.db.QueryContext(ctx, listUnsortedBookmarks, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

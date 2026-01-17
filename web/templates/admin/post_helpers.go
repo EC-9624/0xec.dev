@@ -91,23 +91,3 @@ func postFormTagIDs(post *models.Post, tags []models.Tag, input *models.CreatePo
 	}
 	return nil
 }
-
-// postValue returns a field value from a post (deprecated, use postFormValue)
-func postValue(post *models.Post, field string) string {
-	if post == nil {
-		return ""
-	}
-	switch field {
-	case "title":
-		return post.Title
-	case "slug":
-		return post.Slug
-	case "content":
-		return post.Content
-	case "excerpt":
-		return post.GetExcerpt()
-	case "cover_image":
-		return post.GetCoverImage()
-	}
-	return ""
-}

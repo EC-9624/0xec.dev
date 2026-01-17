@@ -1,0 +1,213 @@
+package admin
+
+import (
+	"strconv"
+
+	"github.com/EC-9624/0xec.dev/internal/models"
+	"github.com/EC-9624/0xec.dev/internal/service"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+	"github.com/EC-9624/0xec.dev/web/templates/layouts"
+)
+
+// BookmarksPageData contains data for the unified bookmarks page
+type BookmarksPageData struct {
+	// View mode: "board" or "table"
+	View string
+
+	// For board view
+	BoardData *service.BoardViewData
+
+	// For table view
+	Bookmarks               []models.Bookmark
+	Collections             []models.Collection
+	FilteredCollection      *models.Collection // nil if showing all, set if filtered to a collection
+	FilteredCollectionID    string             // "unsorted" or collection ID as string, empty if all
+	PreselectedCollectionID int64
+}
+
+// BookmarksPage renders the unified bookmarks page with board or table view
+templ BookmarksPage(data BookmarksPageData) {
+	@layouts.Admin("Bookmarks", "/admin/bookmarks") {
+		<div class="space-y-4">
+			<!-- Header with view toggle -->
+			@bookmarksPageHeader(data)
+			<!-- Content area -->
+			<div id="bookmarks-content">
+				if data.View == "board" {
+					@BookmarksBoard(BookmarksBoardData{BoardData: data.BoardData})
+				} else {
+					@bookmarksTableView(data)
+				}
+			</div>
+		</div>
+	}
+}
+
+// bookmarksPageHeader renders the page header with view toggle
+templ bookmarksPageHeader(data BookmarksPageData) {
+	<div class="flex items-center justify-between">
+		<div class="flex items-center gap-4">
+			<!-- Back button when filtered -->
+			if data.FilteredCollection != nil || data.FilteredCollectionID == "unsorted" {
+				<a
+					href="/admin/bookmarks"
+					class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+				>
+					@components.ArrowLeftIcon(components.IconSM)
+					Back to Board
+				</a>
+				<span class="text-muted-foreground">/</span>
+			}
+			<!-- Title -->
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
+					if data.FilteredCollection != nil {
+						{ data.FilteredCollection.Name }
+					} else if data.FilteredCollectionID == "unsorted" {
+						Unsorted
+					} else {
+						Bookmarks
+					}
+				</h1>
+				<p class="text-muted-foreground">
+					if data.View == "board" {
+						{ strconv.Itoa(len(data.BoardData.Collections)) } collections
+					} else if data.FilteredCollection != nil {
+						{ strconv.Itoa(len(data.Bookmarks)) } bookmarks
+					} else if data.FilteredCollectionID == "unsorted" {
+						{ strconv.Itoa(len(data.Bookmarks)) } unsorted bookmarks
+					} else {
+						{ strconv.Itoa(len(data.Bookmarks)) } bookmarks
+					}
+				</p>
+			</div>
+		</div>
+		<div class="flex items-center gap-2">
+			<!-- View Toggle (only show when not filtered) -->
+			if data.FilteredCollection == nil && data.FilteredCollectionID != "unsorted" {
+				@ViewToggle(data.View)
+			}
+			<!-- Action buttons -->
+			if data.View == "table" {
+				@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
+				@components.ImportButton("/admin/import")
+			}
+			@components.NewButtonDrawer("/admin/htmx/bookmarks/new-drawer", "New Bookmark", "New Bookmark")
+		</div>
+	</div>
+}
+
+// ViewToggle renders the board/table view toggle buttons
+templ ViewToggle(currentView string) {
+	<div class="flex border border-border">
+		<a
+			href="/admin/bookmarks?view=board"
+			class={ "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
+				templ.KV("bg-primary text-primary-foreground", currentView == "board"),
+				templ.KV("text-muted-foreground hover:text-foreground hover:bg-muted", currentView != "board") }
+			title="Board view"
+		>
+			@components.GridIcon(components.IconSM)
+			Board
+		</a>
+		<a
+			href="/admin/bookmarks?view=table"
+			class={ "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-border",
+				templ.KV("bg-primary text-primary-foreground", currentView == "table"),
+				templ.KV("text-muted-foreground hover:text-foreground hover:bg-muted", currentView != "table") }
+			title="Table view"
+		>
+			@components.ListIcon(components.IconSM)
+			Table
+		</a>
+	</div>
+}
+
+// bookmarksTableView renders the table view content
+templ bookmarksTableView(data BookmarksPageData) {
+	<div class="space-y-4">
+		<!-- Filters Bar (hide collection filter when already filtered) -->
+		@components.FilterBar(components.FilterBarProps{}) {
+			@components.SearchInput(components.SearchInputProps{
+				ID:          "bookmark-search",
+				Placeholder: "Search bookmarks...",
+				OnInput:     "bookmarksFilter.apply()",
+			})
+			if data.FilteredCollection == nil && data.FilteredCollectionID != "unsorted" {
+				<!-- Collection Filter (only when not filtered) -->
+				@bookmarkCollectionFilter(data.Collections, data.PreselectedCollectionID)
+			}
+			@components.FilterDropdown(components.FilterDropdownProps{
+				ID:           "status-filter",
+				DefaultLabel: "All Status",
+				Options:      components.BookmarkStatusOptions(),
+				OnChange:     "bookmarksFilter.apply()",
+			})
+			@components.ClearFiltersButton("bookmarksFilter.clear()")
+		}
+		<!-- Table -->
+		if len(data.Bookmarks) > 0 {
+			<div class="card">
+				<table class="table" id="bookmarks-table">
+					<thead class="table-header bg-muted/50">
+						<tr class="table-row">
+							<th class="table-head w-[50%]">Title</th>
+							<th class="table-head w-[20%]">Collection</th>
+							<th class="table-head w-[15%]">Status</th>
+							<th class="table-head w-[15%] text-right">Actions</th>
+						</tr>
+					</thead>
+					<tbody class="table-body" id="bookmarks-tbody">
+						for _, bookmark := range data.Bookmarks {
+							@BookmarkRow(bookmark, data.Collections)
+						}
+					</tbody>
+				</table>
+			</div>
+			<!-- No results message (hidden by default) -->
+			@components.NoResults("bookmarks", "bookmarksFilter.clear")
+		} else {
+			@components.EmptyState(components.EmptyStateProps{
+				Icon:        components.BookmarkIcon(components.IconXXL),
+				Title:       emptyStateTitle(data),
+				Description: emptyStateDescription(data),
+			})
+		}
+	</div>
+	<!-- Client-side filtering script -->
+	@bookmarksFilterScript()
+	<!-- Refresh Progress Banner (hidden by default) -->
+	<div id="refresh-progress" class="hidden fixed bottom-4 right-4 w-96 z-50">
+		<div class="bg-card border border-border p-4 space-y-2 shadow-lg">
+			<div class="flex items-center justify-between">
+				<span id="refresh-status" class="text-sm font-medium">Preparing...</span>
+				<span id="refresh-count" class="text-sm text-muted-foreground"></span>
+			</div>
+			<div class="w-full bg-border h-2">
+				<div id="refresh-bar" class="bg-primary h-2 transition-[width] duration-300 w-0"></div>
+			</div>
+			<p id="refresh-current" class="text-xs text-muted-foreground truncate"></p>
+		</div>
+	</div>
+}
+
+// Helper functions for empty states
+func emptyStateTitle(data BookmarksPageData) string {
+	if data.FilteredCollection != nil {
+		return "No bookmarks in this collection"
+	}
+	if data.FilteredCollectionID == "unsorted" {
+		return "No unsorted bookmarks"
+	}
+	return "No bookmarks yet"
+}
+
+func emptyStateDescription(data BookmarksPageData) string {
+	if data.FilteredCollection != nil {
+		return "Add bookmarks to this collection to see them here."
+	}
+	if data.FilteredCollectionID == "unsorted" {
+		return "All your bookmarks are organized in collections."
+	}
+	return "Start saving interesting links."
+}

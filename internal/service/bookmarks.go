@@ -291,3 +291,21 @@ func (s *Service) UpdateBookmarkTitle(ctx context.Context, id int64, title strin
 		ID:    id,
 	})
 }
+
+// ListUnsortedBookmarks retrieves bookmarks without a collection
+func (s *Service) ListUnsortedBookmarks(ctx context.Context, limit, offset int) ([]models.Bookmark, error) {
+	bookmarks, err := s.queries.ListUnsortedBookmarks(ctx, db.ListUnsortedBookmarksParams{
+		Limit:  int64(limit),
+		Offset: int64(offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]models.Bookmark, 0, len(bookmarks))
+	for _, b := range bookmarks {
+		result = append(result, *dbBookmarkToModel(b))
+	}
+
+	return result, nil
+}

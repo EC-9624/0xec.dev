@@ -13,6 +13,11 @@ import (
 	"github.com/EC-9624/0xec.dev/internal/service"
 )
 
+// helper to create a sql.NullString
+func nullString(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
+}
+
 func TestBookmarksIndex(t *testing.T) {
 	testBookmarks := []models.Bookmark{
 		{ID: 1, URL: "https://example.com", Title: "Example Site", IsPublic: true},
@@ -131,30 +136,68 @@ func TestAdminBookmarksList(t *testing.T) {
 		{ID: 2, URL: "https://private.com", Title: "Private", IsPublic: false},
 	}
 
-	mock := &mockService{
-		listBookmarksFunc: func(ctx context.Context, opts service.BookmarkListOptions) ([]models.Bookmark, error) {
-			// Admin should see all bookmarks (not just public)
-			if opts.PublicOnly {
-				t.Error("Admin list should not filter by public only")
-			}
-			return testBookmarks, nil
-		},
-		countBookmarksFunc: func(ctx context.Context, opts service.BookmarkListOptions) (int, error) {
-			return len(testBookmarks), nil
-		},
-		listCollectionsFunc: func(ctx context.Context, publicOnly bool) ([]models.Collection, error) {
-			return []models.Collection{}, nil
+	testCollections := []service.CollectionWithRecent{
+		{
+			Collection: models.Collection{
+				ID:            1,
+				Name:          "Tech",
+				Slug:          "tech",
+				Color:         nullString("blue"),
+				IsPublic:      true,
+				BookmarkCount: 2,
+			},
+			RecentBookmarks: []service.RecentBookmark{},
 		},
 	}
-	h := newTestHandlers(mock)
 
-	req := httptest.NewRequest(http.MethodGet, "/admin/bookmarks", nil)
-	rec := httptest.NewRecorder()
+	t.Run("board view (default)", func(t *testing.T) {
+		mock := &mockService{
+			getBoardViewDataFunc: func(ctx context.Context, recentLimit int) (*service.BoardViewData, error) {
+				return &service.BoardViewData{
+					Collections: testCollections,
+					Unsorted: service.UnsortedInfo{
+						Count: 5,
+					},
+				}, nil
+			},
+		}
+		h := newTestHandlers(mock)
 
-	h.AdminBookmarksList(rec, req)
+		req := httptest.NewRequest(http.MethodGet, "/admin/bookmarks", nil)
+		rec := httptest.NewRecorder()
 
-	assertStatus(t, rec, http.StatusOK)
-	assertBodyContains(t, rec, "Bookmarks")
+		h.AdminBookmarksList(rec, req)
+
+		assertStatus(t, rec, http.StatusOK)
+		assertBodyContains(t, rec, "Bookmarks")
+	})
+
+	t.Run("table view", func(t *testing.T) {
+		mock := &mockService{
+			listBookmarksFunc: func(ctx context.Context, opts service.BookmarkListOptions) ([]models.Bookmark, error) {
+				// Admin should see all bookmarks (not just public)
+				if opts.PublicOnly {
+					t.Error("Admin list should not filter by public only")
+				}
+				return testBookmarks, nil
+			},
+			countBookmarksFunc: func(ctx context.Context, opts service.BookmarkListOptions) (int, error) {
+				return len(testBookmarks), nil
+			},
+			listCollectionsFunc: func(ctx context.Context, publicOnly bool) ([]models.Collection, error) {
+				return []models.Collection{}, nil
+			},
+		}
+		h := newTestHandlers(mock)
+
+		req := httptest.NewRequest(http.MethodGet, "/admin/bookmarks?view=table", nil)
+		rec := httptest.NewRecorder()
+
+		h.AdminBookmarksList(rec, req)
+
+		assertStatus(t, rec, http.StatusOK)
+		assertBodyContains(t, rec, "Bookmarks")
+	})
 }
 
 func TestAdminBookmarkNew(t *testing.T) {

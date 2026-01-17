@@ -23,7 +23,7 @@ templ Dashboard(data DashboardData) {
 			<div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
 				@statCardWithTrend("Posts", data.Stats.TotalPosts, data.Stats.PostsThisWeek, "/admin/posts", components.FileTextIcon(components.IconLG))
 				@statCardWithTrend("Bookmarks", data.Stats.TotalBookmarks, data.Stats.BookmarksThisWeek, "/admin/bookmarks", components.BookmarkIcon(components.IconLG))
-				@statCardSimple("Collections", data.Stats.TotalCollections, "/admin/collections", components.FolderIcon(components.IconLG))
+				@statCardSimple("Collections", data.Stats.TotalCollections, "/admin/bookmarks", components.FolderIcon(components.IconLG))
 				@statCardSimple("Tags", data.Stats.TotalTags, "/admin/tags", components.TagIcon(components.IconLG))
 			</div>
 			<!-- Main Grid: Activity + Sidebar -->
@@ -94,14 +94,28 @@ templ Dashboard(data DashboardData) {
 									@components.PlusIcon(components.IconMD)
 									New Post
 								</a>
-								<a href="/admin/bookmarks/new" class="btn-outline btn-sm justify-start">
+								<button
+									type="button"
+									hx-get="/admin/htmx/bookmarks/new-drawer"
+									hx-target="#drawer-content"
+									hx-swap="innerHTML"
+									onclick="window.drawerOpen('New Bookmark')"
+									class="btn-outline btn-sm justify-start"
+								>
 									@components.PlusIcon(components.IconMD)
 									New Bookmark
-								</a>
-								<a href="/admin/collections/new" class="btn-outline btn-sm justify-start">
+								</button>
+								<button
+									type="button"
+									hx-get="/admin/htmx/collections/new-drawer"
+									hx-target="#drawer-content"
+									hx-swap="innerHTML"
+									onclick="window.drawerOpen('New Collection')"
+									class="btn-outline btn-sm justify-start"
+								>
 									@components.PlusIcon(components.IconMD)
 									New Collection
-								</a>
+								</button>
 							</div>
 						</div>
 					</div>

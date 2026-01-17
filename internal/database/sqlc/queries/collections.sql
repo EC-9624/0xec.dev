@@ -56,3 +56,10 @@ FROM bookmarks
 WHERE collection_id = ?
 ORDER BY sort_order, created_at DESC
 LIMIT 6;
+
+-- name: GetRecentBookmarksByCollectionID :many
+SELECT id, title, url, domain, is_favorite, created_at
+FROM bookmarks
+WHERE collection_id = ?
+ORDER BY created_at DESC
+LIMIT ?;

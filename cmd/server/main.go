@@ -142,11 +142,8 @@ func main() {
 	adminMux.HandleFunc("GET /admin/import", h.AdminImportPage)
 	adminMux.HandleFunc("POST /admin/import", h.AdminImportBookmarks)
 
-	// Collections
-	adminMux.HandleFunc("GET /admin/collections", h.AdminCollectionsList)
+	// Collections (CRUD only - list is now part of bookmarks board view)
 	adminMux.HandleFunc("POST /admin/collections", h.AdminCollectionCreate)
-	adminMux.HandleFunc("GET /admin/collections/new", h.AdminCollectionNew)
-	adminMux.HandleFunc("GET /admin/collections/{id}/edit", h.AdminCollectionEdit)
 	adminMux.HandleFunc("POST /admin/collections/{id}", h.AdminCollectionUpdate)
 	adminMux.HandleFunc("DELETE /admin/collections/{id}", h.AdminCollectionDelete)
 
