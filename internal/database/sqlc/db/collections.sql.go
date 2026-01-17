@@ -65,7 +65,7 @@ const getBookmarksByCollectionID = `-- name: GetBookmarksByCollectionID :many
 SELECT id, title, url, domain, is_public, is_favorite, created_at
 FROM bookmarks
 WHERE collection_id = ?
-ORDER BY sort_order, created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT 6
 `
 
@@ -166,10 +166,10 @@ func (q *Queries) GetCollectionBySlug(ctx context.Context, slug string) (Collect
 }
 
 const getRecentBookmarksByCollectionID = `-- name: GetRecentBookmarksByCollectionID :many
-SELECT id, title, url, domain, is_favorite, is_public, created_at
+SELECT id, title, url, domain, is_favorite, is_public, updated_at
 FROM bookmarks
 WHERE collection_id = ?
-ORDER BY created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT ?
 `
 
@@ -185,7 +185,7 @@ type GetRecentBookmarksByCollectionIDRow struct {
 	Domain     *string    `json:"domain"`
 	IsFavorite *int64     `json:"is_favorite"`
 	IsPublic   *int64     `json:"is_public"`
-	CreatedAt  *time.Time `json:"created_at"`
+	UpdatedAt  *time.Time `json:"updated_at"`
 }
 
 func (q *Queries) GetRecentBookmarksByCollectionID(ctx context.Context, arg GetRecentBookmarksByCollectionIDParams) ([]GetRecentBookmarksByCollectionIDRow, error) {
@@ -204,7 +204,7 @@ func (q *Queries) GetRecentBookmarksByCollectionID(ctx context.Context, arg GetR
 			&i.Domain,
 			&i.IsFavorite,
 			&i.IsPublic,
-			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

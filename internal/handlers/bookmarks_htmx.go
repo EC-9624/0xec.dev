@@ -158,7 +158,7 @@ func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Re
 	render(w, r, admin.BookmarkFavoriteStar(id, newStatus, true))
 }
 
-// AdminUpdateBookmarkCollection updates the collection of a bookmark
+// AdminUpdateBookmarkCollection updates the collection and position of a bookmark
 func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -173,7 +173,7 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 
 	ctx := r.Context()
 
-	// Parse collection ID (empty string means no collection)
+	// Parse collection ID (empty string means no collection/unsorted)
 	var collectionID *int64
 	cidStr := r.FormValue("collection_id")
 
@@ -184,10 +184,22 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 		}
 	}
 
-	err = h.service.UpdateBookmarkCollection(ctx, id, collectionID)
+	// Parse after_id for position (empty string means insert at beginning)
+	var afterBookmarkID *int64
+	afterIDStr := r.FormValue("after_id")
+
+	if afterIDStr != "" {
+		aid, err := strconv.ParseInt(afterIDStr, 10, 64)
+		if err == nil {
+			afterBookmarkID = &aid
+		}
+	}
+
+	// Use MoveBookmark which handles both collection and position
+	err = h.service.MoveBookmark(ctx, id, collectionID, afterBookmarkID)
 	if err != nil {
-		logger.Error(ctx, "failed to update bookmark collection", "error", err, "bookmark_id", id)
-		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		logger.Error(ctx, "failed to move bookmark", "error", err, "bookmark_id", id)
+		http.Error(w, "Failed to move bookmark", http.StatusInternalServerError)
 		return
 	}
 

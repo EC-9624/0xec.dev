@@ -201,6 +201,80 @@ func (q *Queries) GetBookmarkByURL(ctx context.Context, url string) (Bookmark, e
 	return i, err
 }
 
+const getCollectionBookmarkSortOrders = `-- name: GetCollectionBookmarkSortOrders :many
+
+SELECT id, COALESCE(sort_order, 999999) as sort_order
+FROM bookmarks
+WHERE collection_id = ?
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
+`
+
+type GetCollectionBookmarkSortOrdersRow struct {
+	ID        int64 `json:"id"`
+	SortOrder int64 `json:"sort_order"`
+}
+
+// ============================================
+// POSITION/SORT ORDER QUERIES
+// ============================================
+func (q *Queries) GetCollectionBookmarkSortOrders(ctx context.Context, collectionID *int64) ([]GetCollectionBookmarkSortOrdersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCollectionBookmarkSortOrders, collectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetCollectionBookmarkSortOrdersRow{}
+	for rows.Next() {
+		var i GetCollectionBookmarkSortOrdersRow
+		if err := rows.Scan(&i.ID, &i.SortOrder); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUnsortedBookmarkSortOrders = `-- name: GetUnsortedBookmarkSortOrders :many
+SELECT id, COALESCE(sort_order, 999999) as sort_order
+FROM bookmarks
+WHERE collection_id IS NULL
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
+`
+
+type GetUnsortedBookmarkSortOrdersRow struct {
+	ID        int64 `json:"id"`
+	SortOrder int64 `json:"sort_order"`
+}
+
+func (q *Queries) GetUnsortedBookmarkSortOrders(ctx context.Context) ([]GetUnsortedBookmarkSortOrdersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUnsortedBookmarkSortOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetUnsortedBookmarkSortOrdersRow{}
+	for rows.Next() {
+		var i GetUnsortedBookmarkSortOrdersRow
+		if err := rows.Scan(&i.ID, &i.SortOrder); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllBookmarks = `-- name: ListAllBookmarks :many
 SELECT id, url, title, description, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks 
 ORDER BY sort_order, created_at DESC 
@@ -497,10 +571,10 @@ func (q *Queries) ListPublicFavoriteBookmarks(ctx context.Context, arg ListPubli
 }
 
 const listRecentUnsortedBookmarks = `-- name: ListRecentUnsortedBookmarks :many
-SELECT id, title, url, domain, is_favorite, is_public, created_at
+SELECT id, title, url, domain, is_favorite, is_public, updated_at
 FROM bookmarks
 WHERE collection_id IS NULL
-ORDER BY created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT ?
 `
 
@@ -511,7 +585,7 @@ type ListRecentUnsortedBookmarksRow struct {
 	Domain     *string    `json:"domain"`
 	IsFavorite *int64     `json:"is_favorite"`
 	IsPublic   *int64     `json:"is_public"`
-	CreatedAt  *time.Time `json:"created_at"`
+	UpdatedAt  *time.Time `json:"updated_at"`
 }
 
 func (q *Queries) ListRecentUnsortedBookmarks(ctx context.Context, limit int64) ([]ListRecentUnsortedBookmarksRow, error) {
@@ -530,7 +604,7 @@ func (q *Queries) ListRecentUnsortedBookmarks(ctx context.Context, limit int64) 
 			&i.Domain,
 			&i.IsFavorite,
 			&i.IsPublic,
-			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -548,7 +622,7 @@ func (q *Queries) ListRecentUnsortedBookmarks(ctx context.Context, limit int64) 
 const listUnsortedBookmarks = `-- name: ListUnsortedBookmarks :many
 SELECT id, url, title, description, cover_image, favicon, domain, collection_id, is_public, is_favorite, sort_order, created_at, updated_at FROM bookmarks
 WHERE collection_id IS NULL
-ORDER BY sort_order, created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT ? OFFSET ?
 `
 
@@ -655,6 +729,23 @@ type UpdateBookmarkFavoriteParams struct {
 
 func (q *Queries) UpdateBookmarkFavorite(ctx context.Context, arg UpdateBookmarkFavoriteParams) error {
 	_, err := q.db.ExecContext(ctx, updateBookmarkFavorite, arg.IsFavorite, arg.ID)
+	return err
+}
+
+const updateBookmarkPosition = `-- name: UpdateBookmarkPosition :exec
+UPDATE bookmarks 
+SET collection_id = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP 
+WHERE id = ?
+`
+
+type UpdateBookmarkPositionParams struct {
+	CollectionID *int64 `json:"collection_id"`
+	SortOrder    *int64 `json:"sort_order"`
+	ID           int64  `json:"id"`
+}
+
+func (q *Queries) UpdateBookmarkPosition(ctx context.Context, arg UpdateBookmarkPositionParams) error {
+	_, err := q.db.ExecContext(ctx, updateBookmarkPosition, arg.CollectionID, arg.SortOrder, arg.ID)
 	return err
 }
 

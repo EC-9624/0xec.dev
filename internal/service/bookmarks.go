@@ -292,6 +292,146 @@ func (s *Service) UpdateBookmarkTitle(ctx context.Context, id int64, title strin
 	})
 }
 
+// MoveBookmark moves a bookmark to a new position within a collection (or unsorted).
+// collectionID: target collection (nil = unsorted column)
+// afterBookmarkID: bookmark ID to insert after (nil = insert at the beginning)
+func (s *Service) MoveBookmark(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error {
+	const (
+		defaultGap    = 1000
+		minGap        = 1
+		rebalanceGap  = 1000
+		firstPosition = 1000
+	)
+
+	// Get all bookmark sort orders in the target column
+	var sortOrders []struct {
+		ID        int64
+		SortOrder int64
+	}
+
+	if collectionID != nil {
+		rows, err := s.queries.GetCollectionBookmarkSortOrders(ctx, collectionID)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			sortOrders = append(sortOrders, struct {
+				ID        int64
+				SortOrder int64
+			}{ID: r.ID, SortOrder: r.SortOrder})
+		}
+	} else {
+		rows, err := s.queries.GetUnsortedBookmarkSortOrders(ctx)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			sortOrders = append(sortOrders, struct {
+				ID        int64
+				SortOrder int64
+			}{ID: r.ID, SortOrder: r.SortOrder})
+		}
+	}
+
+	// Filter out the bookmark being moved (it might already be in this column)
+	filtered := make([]struct {
+		ID        int64
+		SortOrder int64
+	}, 0, len(sortOrders))
+	for _, so := range sortOrders {
+		if so.ID != bookmarkID {
+			filtered = append(filtered, so)
+		}
+	}
+	sortOrders = filtered
+
+	// Calculate new sort_order based on position
+	var newSortOrder int64
+
+	if afterBookmarkID == nil {
+		// Insert at the beginning
+		if len(sortOrders) == 0 {
+			newSortOrder = firstPosition
+		} else {
+			// Place before the first item
+			firstOrder := sortOrders[0].SortOrder
+			if firstOrder > minGap {
+				newSortOrder = firstOrder / 2
+			} else {
+				// Need to rebalance - shift everything down
+				newSortOrder = firstPosition
+				if err := s.rebalanceBookmarks(ctx, collectionID, sortOrders, rebalanceGap, firstPosition+rebalanceGap); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		// Find the position of afterBookmarkID
+		afterIndex := -1
+		for i, so := range sortOrders {
+			if so.ID == *afterBookmarkID {
+				afterIndex = i
+				break
+			}
+		}
+
+		if afterIndex == -1 {
+			// afterBookmarkID not found in target column, insert at end
+			if len(sortOrders) == 0 {
+				newSortOrder = firstPosition
+			} else {
+				newSortOrder = sortOrders[len(sortOrders)-1].SortOrder + defaultGap
+			}
+		} else if afterIndex == len(sortOrders)-1 {
+			// Insert at the end (after the last item)
+			newSortOrder = sortOrders[afterIndex].SortOrder + defaultGap
+		} else {
+			// Insert between afterIndex and afterIndex+1
+			prevOrder := sortOrders[afterIndex].SortOrder
+			nextOrder := sortOrders[afterIndex+1].SortOrder
+			gap := nextOrder - prevOrder
+
+			if gap > minGap {
+				newSortOrder = prevOrder + gap/2
+			} else {
+				// Need to rebalance
+				newSortOrder = prevOrder + rebalanceGap/2
+				if err := s.rebalanceBookmarks(ctx, collectionID, sortOrders, rebalanceGap, firstPosition); err != nil {
+					return err
+				}
+				// Recalculate position after rebalance
+				newSortOrder = int64(afterIndex+1)*rebalanceGap + rebalanceGap/2
+			}
+		}
+	}
+
+	// Update the bookmark's position
+	return s.queries.UpdateBookmarkPosition(ctx, db.UpdateBookmarkPositionParams{
+		CollectionID: collectionID,
+		SortOrder:    &newSortOrder,
+		ID:           bookmarkID,
+	})
+}
+
+// rebalanceBookmarks reassigns sort_order values with consistent gaps
+func (s *Service) rebalanceBookmarks(ctx context.Context, collectionID *int64, sortOrders []struct {
+	ID        int64
+	SortOrder int64
+}, gap int64, startAt int64) error {
+	for i, so := range sortOrders {
+		newOrder := startAt + int64(i)*gap
+		err := s.queries.UpdateBookmarkPosition(ctx, db.UpdateBookmarkPositionParams{
+			CollectionID: collectionID,
+			SortOrder:    &newOrder,
+			ID:           so.ID,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ListUnsortedBookmarks retrieves bookmarks without a collection
 func (s *Service) ListUnsortedBookmarks(ctx context.Context, limit, offset int) ([]models.Bookmark, error) {
 	bookmarks, err := s.queries.ListUnsortedBookmarks(ctx, db.ListUnsortedBookmarksParams{
