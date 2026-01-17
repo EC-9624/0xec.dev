@@ -81,9 +81,9 @@ templ BookmarkListCompactItem(bookmark models.Bookmark) {
 		href={ templ.URL(bookmark.URL) }
 		target="_blank"
 		rel="noopener noreferrer"
-		class="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2 group"
+		class="flex items-center justify-between py-2 hover:bg-muted/50 -mx-2 px-2"
 	>
-		<span class="text-sm font-medium text-foreground group-hover:text-primary truncate">
+		<span class="text-sm font-medium text-foreground truncate">
 			{ bookmark.Title }
 		</span>
 		<span class="text-xs text-muted-foreground shrink-0 ml-4">
