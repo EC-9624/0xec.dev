@@ -1516,22 +1516,18 @@ html:not(.light):not(.dark) {
     @apply flex items-center gap-2;
   }
 
-  /* Drag states */
-  .kanban-card.sortable-ghost {
-    @apply opacity-50 bg-muted;
+  /* Native drag states */
+  .kanban-card.dragging {
+    @apply opacity-50;
   }
 
-  .kanban-card.sortable-chosen {
-    @apply shadow-lg;
-    transform: rotate(2deg);
+  /* Drop position indicator - line/bar */
+  .kanban-drop-placeholder {
+    @apply h-1 bg-primary my-1;
   }
 
-  .kanban-card.sortable-drag {
-    @apply shadow-lg bg-card;
-    transform: rotate(2deg);
-  }
-
-  .kanban-column-content.sortable-drag-over {
+  /* Column receiving drop */
+  .kanban-column-content.drag-over {
     @apply bg-primary/5;
   }
 

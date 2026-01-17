@@ -1,18 +1,26 @@
 /**
  * Kanban Board Component
- * Drag-and-drop bookmark management using SortableJS
- * Includes keyboard accessibility support
+ * Native HTML5 Drag-and-Drop with keyboard accessibility
  */
 (function () {
   "use strict";
 
-  // Store Sortable instances for cleanup
-  let sortableInstances = [];
+  // ============================================
+  // DRAG STATE
+  // ============================================
+
+  const dragState = {
+    isDragging: false,
+    draggedCard: null,
+    sourceColumn: null,
+    sourceIndex: null,
+    placeholder: null
+  };
 
   // ============================================
   // KEYBOARD DRAG-AND-DROP STATE
   // ============================================
-  
+
   const keyboardDragState = {
     isActive: false,
     card: null,
@@ -22,7 +30,7 @@
   };
 
   // ============================================
-  // KEYBOARD ACCESSIBILITY FUNCTIONS
+  // SCREEN READER ANNOUNCEMENTS
   // ============================================
 
   /**
@@ -38,6 +46,10 @@
       });
     }
   }
+
+  // ============================================
+  // HELPER FUNCTIONS
+  // ============================================
 
   /**
    * Get column name from column element
@@ -65,11 +77,251 @@
   }
 
   /**
+   * Get index of card within its column
+   */
+  function getCardIndex(card) {
+    const column = card.closest(".kanban-column-content");
+    const cards = Array.from(column.querySelectorAll(".kanban-card"));
+    return cards.indexOf(card);
+  }
+
+  /**
+   * Get CSRF token from page
+   */
+  function getCSRFToken() {
+    const body = document.body;
+    const headers = body.getAttribute("hx-headers");
+    
+    // DEBUG: Log raw headers value
+    console.log("[Kanban] Raw hx-headers:", headers);
+    
+    if (headers) {
+      try {
+        const parsed = JSON.parse(headers);
+        console.log("[Kanban] Parsed headers:", parsed);
+        if (parsed["X-CSRF-Token"]) {
+          return parsed["X-CSRF-Token"];
+        }
+      } catch (e) {
+        console.error("[Kanban] Failed to parse hx-headers:", e);
+      }
+    }
+    
+    // Fallback: try to get from cookie
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf_token') {
+        console.log("[Kanban] Using CSRF from cookie:", value);
+        return value;
+      }
+    }
+    
+    console.warn("[Kanban] No CSRF token found!");
+    return "";
+  }
+
+  // ============================================
+  // NATIVE DRAG AND DROP
+  // ============================================
+
+  /**
+   * Create placeholder element for drop position indicator
+   */
+  function createPlaceholder() {
+    const el = document.createElement("div");
+    el.className = "kanban-drop-placeholder";
+    el.setAttribute("aria-hidden", "true");
+    return el;
+  }
+
+  /**
+   * Remove placeholder from DOM
+   */
+  function removePlaceholder() {
+    if (dragState.placeholder && dragState.placeholder.parentNode) {
+      dragState.placeholder.remove();
+    }
+  }
+
+  /**
+   * Remove all drag-over classes from columns
+   */
+  function removeAllDragOverClasses() {
+    document.querySelectorAll(".drag-over").forEach((el) => {
+      el.classList.remove("drag-over");
+    });
+  }
+
+  /**
+   * Calculate drop position based on mouse Y coordinate
+   * Returns the card element to insert before, or null to append at end
+   */
+  function getDropPosition(container, mouseY) {
+    const cards = Array.from(
+      container.querySelectorAll(".kanban-card:not(.dragging)")
+    );
+
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      const cardMiddle = rect.top + rect.height / 2;
+
+      if (mouseY < cardMiddle) {
+        return card; // Insert before this card
+      }
+    }
+
+    return null; // Insert at end
+  }
+
+  /**
+   * Update placeholder position in the column
+   */
+  function updatePlaceholder(column, beforeCard) {
+    const { placeholder } = dragState;
+    if (!placeholder) return;
+
+    // Remove empty state if present
+    const emptyState = column.querySelector(".kanban-empty");
+    if (emptyState) {
+      emptyState.remove();
+    }
+
+    if (beforeCard) {
+      beforeCard.parentNode.insertBefore(placeholder, beforeCard);
+    } else {
+      column.appendChild(placeholder);
+    }
+  }
+
+  /**
+   * Handle drag start event
+   */
+  function handleDragStart(e) {
+    const card = e.target.closest(".kanban-card");
+    if (!card) return;
+
+    dragState.isDragging = true;
+    dragState.draggedCard = card;
+    dragState.sourceColumn = card.closest(".kanban-column-content");
+    dragState.sourceIndex = getCardIndex(card);
+
+    // Set drag data
+    e.dataTransfer.setData("text/plain", card.dataset.bookmarkId);
+    e.dataTransfer.effectAllowed = "move";
+
+    // Visual feedback (use timeout to avoid affecting drag image)
+    setTimeout(() => {
+      card.classList.add("dragging");
+    }, 0);
+
+    // Create placeholder
+    dragState.placeholder = createPlaceholder();
+  }
+
+  /**
+   * Handle drag end event
+   */
+  function handleDragEnd(e) {
+    const card = e.target.closest(".kanban-card");
+    if (!card) return;
+
+    card.classList.remove("dragging");
+    removePlaceholder();
+    removeAllDragOverClasses();
+
+    // Reset state
+    dragState.isDragging = false;
+    dragState.draggedCard = null;
+    dragState.sourceColumn = null;
+    dragState.sourceIndex = null;
+    dragState.placeholder = null;
+  }
+
+  /**
+   * Handle drag over event - calculate and show drop position
+   */
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+
+    const column = e.target.closest(".kanban-column-content");
+    if (!column || !dragState.isDragging) return;
+
+    // Calculate drop position and show placeholder
+    const afterCard = getDropPosition(column, e.clientY);
+    updatePlaceholder(column, afterCard);
+  }
+
+  /**
+   * Handle drag enter event - add visual feedback to column
+   */
+  function handleDragEnter(e) {
+    const column = e.target.closest(".kanban-column-content");
+    if (!column || !dragState.isDragging) return;
+
+    column.classList.add("drag-over");
+  }
+
+  /**
+   * Handle drag leave event - remove visual feedback from column
+   */
+  function handleDragLeave(e) {
+    const column = e.target.closest(".kanban-column-content");
+    if (!column) return;
+
+    // Only remove if actually leaving the column (not entering a child)
+    const relatedTarget = e.relatedTarget;
+    if (!column.contains(relatedTarget)) {
+      column.classList.remove("drag-over");
+    }
+  }
+
+  /**
+   * Handle drop event - move card to new position
+   */
+  function handleDrop(e) {
+    e.preventDefault();
+
+    const column = e.target.closest(".kanban-column-content");
+    if (!column || !dragState.draggedCard) return;
+
+    const { draggedCard, sourceColumn, sourceIndex, placeholder } = dragState;
+
+    // Insert card at placeholder position
+    if (placeholder && placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(draggedCard, placeholder);
+    } else {
+      column.appendChild(draggedCard);
+    }
+
+    // Remove placeholder and visual feedback
+    removePlaceholder();
+    removeAllDragOverClasses();
+    draggedCard.classList.remove("dragging");
+
+    // If moved to different column, update backend
+    if (column !== sourceColumn) {
+      const bookmarkId = draggedCard.dataset.bookmarkId;
+      const newCollectionId = column.dataset.collectionId || "";
+
+      moveBookmark(bookmarkId, newCollectionId, draggedCard, sourceColumn, sourceIndex);
+    }
+
+    // Update counts
+    updateColumnCounts();
+  }
+
+  // ============================================
+  // KEYBOARD DRAG AND DROP
+  // ============================================
+
+  /**
    * Start keyboard drag mode
    */
   function startKeyboardDrag(card) {
     const column = card.closest(".kanban-column-content");
-    
+
     keyboardDragState.isActive = true;
     keyboardDragState.card = card;
     keyboardDragState.originalColumn = column;
@@ -77,11 +329,11 @@
     keyboardDragState.originalIndex = Array.from(
       column.querySelectorAll(".kanban-card")
     ).indexOf(card);
-    
+
     card.classList.add("keyboard-dragging");
     card.setAttribute("aria-grabbed", "true");
     column.classList.add("keyboard-drop-target");
-    
+
     const title = getCardTitle(card);
     announce(
       `Grabbed ${title}. Use arrow keys to move, Enter or Space to drop, Escape to cancel.`
@@ -93,11 +345,11 @@
    */
   function endKeyboardDrag(cancelled = false) {
     if (!keyboardDragState.isActive) return;
-    
+
     const { card, originalColumn, originalNextSibling } = keyboardDragState;
     const currentColumn = card.closest(".kanban-column-content");
     const title = getCardTitle(card);
-    
+
     if (cancelled) {
       // Restore original position
       if (originalNextSibling) {
@@ -110,12 +362,11 @@
       // Commit the move - call the existing update logic if column changed
       const columnName = getColumnName(currentColumn.closest(".kanban-column"));
       const position = getCardPosition(card);
-      
+
       if (currentColumn !== originalColumn) {
         const bookmarkId = card.dataset.bookmarkId;
         const newCollectionId = currentColumn.dataset.collectionId || "";
-        
-        // Use existing moveBookmark function
+
         moveBookmark(
           bookmarkId,
           newCollectionId,
@@ -124,29 +375,29 @@
           keyboardDragState.originalIndex
         );
       }
-      
+
       announce(
         `${title} dropped in ${columnName} at position ${position.index} of ${position.total}.`
       );
     }
-    
+
     // Clean up state
     card.classList.remove("keyboard-dragging");
     card.setAttribute("aria-grabbed", "false");
     document.querySelectorAll(".keyboard-drop-target").forEach((el) => {
       el.classList.remove("keyboard-drop-target");
     });
-    
+
     // Update column counts
     updateColumnCounts();
-    
+
     // Reset state
     keyboardDragState.isActive = false;
     keyboardDragState.card = null;
     keyboardDragState.originalColumn = null;
     keyboardDragState.originalNextSibling = null;
     keyboardDragState.originalIndex = null;
-    
+
     // Keep focus on card
     card.focus();
   }
@@ -183,8 +434,6 @@
 
   /**
    * Move card to adjacent column (left or right)
-   * @param {HTMLElement} card - The card to move
-   * @param {number} direction - -1 for left, 1 for right
    */
   function moveCardToColumn(card, direction) {
     const currentColumnEl = card.closest(".kanban-column");
@@ -193,41 +442,41 @@
     );
     const currentIndex = columns.indexOf(currentColumnEl);
     const targetIndex = currentIndex + direction;
-    
+
     if (targetIndex < 0 || targetIndex >= columns.length) {
       announce(direction < 0 ? "Already in first column" : "Already in last column");
       return;
     }
-    
+
     const targetColumnEl = columns[targetIndex];
     const targetContent = targetColumnEl.querySelector(".kanban-column-content");
     const currentContent = currentColumnEl.querySelector(".kanban-column-content");
-    
+
     // Get current position to maintain same index
     const currentCards = Array.from(currentContent.querySelectorAll(".kanban-card"));
     const currentPos = currentCards.indexOf(card);
-    
+
     // Remove empty state from target if present
     const emptyState = targetContent.querySelector(".kanban-empty");
     if (emptyState) {
       emptyState.remove();
     }
-    
+
     // Find target position (same index or end if fewer cards)
     const targetCards = Array.from(targetContent.querySelectorAll(".kanban-card"));
     const targetPos = Math.min(currentPos, targetCards.length);
-    
+
     // Move the card
     if (targetPos < targetCards.length) {
       targetContent.insertBefore(card, targetCards[targetPos]);
     } else {
       targetContent.appendChild(card);
     }
-    
+
     // Update visual feedback
     currentContent.classList.remove("keyboard-drop-target");
     targetContent.classList.add("keyboard-drop-target");
-    
+
     const columnName = getColumnName(targetColumnEl);
     const position = getCardPosition(card);
     announce(`Moved to ${columnName}, position ${position.index} of ${position.total}`);
@@ -240,17 +489,17 @@
   function handleCardKeydown(e) {
     const card = e.target.closest(".kanban-card");
     if (!card) return;
-    
+
     // Don't interfere if focus is on interactive element inside the card
     const isOnCard = e.target === card;
     const isOnDragHandle = e.target.closest(".kanban-card-drag-handle");
-    
+
     switch (e.key) {
       case " ":
       case "Enter":
         // Only handle if focus is on the card itself (not buttons/links inside)
         if (!isOnCard && !isOnDragHandle) return;
-        
+
         e.preventDefault();
         if (keyboardDragState.isActive && keyboardDragState.card === card) {
           endKeyboardDrag(false); // Drop
@@ -258,35 +507,35 @@
           startKeyboardDrag(card); // Pick up
         }
         break;
-        
+
       case "ArrowUp":
         if (keyboardDragState.isActive && keyboardDragState.card === card) {
           e.preventDefault();
           moveCardUp(card);
         }
         break;
-        
+
       case "ArrowDown":
         if (keyboardDragState.isActive && keyboardDragState.card === card) {
           e.preventDefault();
           moveCardDown(card);
         }
         break;
-        
+
       case "ArrowLeft":
         if (keyboardDragState.isActive && keyboardDragState.card === card) {
           e.preventDefault();
           moveCardToColumn(card, -1);
         }
         break;
-        
+
       case "ArrowRight":
         if (keyboardDragState.isActive && keyboardDragState.card === card) {
           e.preventDefault();
           moveCardToColumn(card, 1);
         }
         break;
-        
+
       case "Escape":
         if (keyboardDragState.isActive) {
           e.preventDefault();
@@ -296,73 +545,9 @@
     }
   }
 
-  /**
-   * Initialize the Kanban board
-   */
-  function init() {
-    const board = document.getElementById("kanban-board");
-    if (!board) return;
-
-    // Check if SortableJS is loaded
-    if (typeof Sortable === "undefined") {
-      console.error("SortableJS is not loaded");
-      return;
-    }
-
-    // Initialize sortable on each column
-    const columns = board.querySelectorAll("[data-sortable]");
-    columns.forEach(initColumn);
-
-    // Initialize keyboard navigation
-    board.addEventListener("keydown", handleCardKeydown);
-
-    // Listen for HTMX events to reinitialize after content changes
-    document.body.addEventListener("htmx:afterSwap", handleAfterSwap);
-  }
-
-  /**
-   * Initialize sortable for a single column
-   */
-  function initColumn(column) {
-    const collectionId = column.dataset.collectionId;
-
-    const sortable = Sortable.create(column, {
-      group: "bookmarks", // Allow dragging between columns
-      animation: 150,
-      ghostClass: "sortable-ghost",
-      chosenClass: "sortable-chosen",
-      dragClass: "sortable-drag",
-      draggable: ".kanban-card",
-      
-      // Visual feedback when dragging over
-      onMove: function (evt) {
-        evt.to.classList.add("sortable-drag-over");
-      },
-
-      // When item is dropped
-      onEnd: function (evt) {
-        // Remove drag-over class from all columns
-        document.querySelectorAll(".sortable-drag-over").forEach((el) => {
-          el.classList.remove("sortable-drag-over");
-        });
-
-        // If item moved to different column, update collection
-        if (evt.from !== evt.to) {
-          const bookmarkId = evt.item.dataset.bookmarkId;
-          const newCollectionId = evt.to.dataset.collectionId;
-          
-          moveBookmark(bookmarkId, newCollectionId, evt.item, evt.from, evt.oldIndex);
-        }
-      },
-
-      // Clear drag-over when leaving
-      onLeave: function (evt) {
-        evt.to.classList.remove("sortable-drag-over");
-      },
-    });
-
-    sortableInstances.push(sortable);
-  }
+  // ============================================
+  // API AND STATE UPDATES
+  // ============================================
 
   /**
    * Move a bookmark to a new collection
@@ -371,31 +556,47 @@
     const url = `/admin/htmx/bookmarks/${bookmarkId}/collection`;
     const csrfToken = getCSRFToken();
 
-    // Create form data
-    const formData = new FormData();
-    formData.append("collection_id", collectionId);
-
-    // Make the request
+    // Make the request with URL-encoded form data
+    // (FormData uses multipart/form-data which requires ParseMultipartForm on server)
     fetch(url, {
       method: "POST",
       headers: {
         "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: formData,
+      body: `collection_id=${encodeURIComponent(collectionId)}`,
     })
       .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to move bookmark");
-        }
-        // Update column counts
-        updateColumnCounts();
-        // Show success feedback
-        showMoveSuccess(item);
+        // DEBUG: Log response
+        console.log("[Kanban] Response:", {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+        });
+
+        // Always read the response body for debugging
+        return response.text().then((text) => {
+          console.log("[Kanban] Response body length:", text.length);
+          console.log("[Kanban] Response body preview:", text.substring(0, 200));
+          
+          if (!response.ok) {
+            console.error("[Kanban] Error response body:", text);
+            throw new Error(`Failed to move bookmark: ${response.status} ${text}`);
+          }
+          
+          // Update column counts
+          updateColumnCounts();
+          // Show success feedback
+          showMoveSuccess(item);
+          console.log("[Kanban] Move successful!");
+        });
       })
       .catch((error) => {
-        console.error("Error moving bookmark:", error);
+        console.error("[Kanban] Error moving bookmark:", error);
         // Revert the move
         revertMove(item, fromColumn, oldIndex);
+        // Update counts after revert
+        updateColumnCounts();
         // Show error toast
         showMoveError();
       });
@@ -405,7 +606,7 @@
    * Revert a failed move
    */
   function revertMove(item, fromColumn, oldIndex) {
-    const children = fromColumn.children;
+    const children = Array.from(fromColumn.querySelectorAll(".kanban-card"));
     if (oldIndex >= children.length) {
       fromColumn.appendChild(item);
     } else {
@@ -424,7 +625,7 @@
       if (content && countEl) {
         const cards = content.querySelectorAll(".kanban-card");
         countEl.textContent = cards.length.toString();
-        
+
         // Update empty state
         const emptyState = content.querySelector(".kanban-empty");
         if (cards.length === 0 && !emptyState) {
@@ -463,24 +664,30 @@
     }
   }
 
+  // ============================================
+  // INITIALIZATION
+  // ============================================
+
   /**
-   * Get CSRF token from page
+   * Initialize the Kanban board
    */
-  function getCSRFToken() {
-    // Try to get from body hx-headers attribute
-    const body = document.body;
-    const headers = body.getAttribute("hx-headers");
-    if (headers) {
-      try {
-        const parsed = JSON.parse(headers);
-        if (parsed["X-CSRF-Token"]) {
-          return parsed["X-CSRF-Token"];
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-    return "";
+  function init() {
+    const board = document.getElementById("kanban-board");
+    if (!board) return;
+
+    // Native drag and drop events (delegated)
+    board.addEventListener("dragstart", handleDragStart);
+    board.addEventListener("dragend", handleDragEnd);
+    board.addEventListener("dragover", handleDragOver);
+    board.addEventListener("dragenter", handleDragEnter);
+    board.addEventListener("dragleave", handleDragLeave);
+    board.addEventListener("drop", handleDrop);
+
+    // Keyboard navigation
+    board.addEventListener("keydown", handleCardKeydown);
+
+    // Listen for HTMX events to reinitialize after content changes
+    document.body.addEventListener("htmx:afterSwap", handleAfterSwap);
   }
 
   /**
@@ -498,33 +705,40 @@
   }
 
   /**
-   * Cleanup sortable instances and keyboard handlers
+   * Cleanup event listeners
    */
   function cleanup() {
-    sortableInstances.forEach((instance) => {
-      if (instance && typeof instance.destroy === "function") {
-        instance.destroy();
-      }
-    });
-    sortableInstances = [];
-    
+    const board = document.getElementById("kanban-board");
+    if (board) {
+      board.removeEventListener("dragstart", handleDragStart);
+      board.removeEventListener("dragend", handleDragEnd);
+      board.removeEventListener("dragover", handleDragOver);
+      board.removeEventListener("dragenter", handleDragEnter);
+      board.removeEventListener("dragleave", handleDragLeave);
+      board.removeEventListener("drop", handleDrop);
+      board.removeEventListener("keydown", handleCardKeydown);
+    }
+
     // Cancel any active keyboard drag
     if (keyboardDragState.isActive) {
       endKeyboardDrag(true);
     }
-    
-    // Remove keyboard listener
-    const board = document.getElementById("kanban-board");
-    if (board) {
-      board.removeEventListener("keydown", handleCardKeydown);
-    }
+
+    // Clean up drag state
+    removePlaceholder();
+    removeAllDragOverClasses();
+    dragState.isDragging = false;
+    dragState.draggedCard = null;
+    dragState.sourceColumn = null;
+    dragState.sourceIndex = null;
+    dragState.placeholder = null;
   }
 
   // Export for global access
   window.kanban = {
     init: init,
     cleanup: cleanup,
-    announce: announce, // Expose for external use if needed
+    announce: announce,
   };
 
   // Initialize on DOM ready

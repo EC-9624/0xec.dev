@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EC-9624/0xec.dev/internal/database/sqlc/db"
+	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
 )
 
@@ -280,6 +281,7 @@ func (s *Service) GetBoardViewData(ctx context.Context, recentLimit int) (*Board
 	// Get all collections with counts
 	collections, err := s.ListCollections(ctx, false)
 	if err != nil {
+		logger.Error(ctx, "failed to list collections for board view", "error", err)
 		return nil, err
 	}
 
