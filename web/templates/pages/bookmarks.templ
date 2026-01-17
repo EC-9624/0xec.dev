@@ -57,15 +57,15 @@ templ BookmarkContent(data templates.BookmarksData) {
 
 // BookmarkHeader renders the page header with title and count
 templ BookmarkHeader(collection *models.Collection, total int) {
-	<div class="space-y-2">
-		<h1 class="text-3xl font-bold tracking-tight text-foreground">
+	<div class="space-y-1">
+		<h1 class="text-2xl font-bold tracking-tight text-foreground">
 			if collection != nil {
 				{ collection.Name }
 			} else {
 				Bookmarks
 			}
 		</h1>
-		<p class="text-muted-foreground">{ strconv.Itoa(total) } bookmarks</p>
+		<p class="text-sm text-muted-foreground">{ strconv.Itoa(total) } bookmarks</p>
 	</div>
 }
 

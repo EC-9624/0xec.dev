@@ -841,11 +841,11 @@ html:not(.light):not(.dark) {
 
   /* ===== ARTICLE CONTENT ===== */
   .article-header {
-    @apply mb-8 space-y-4;
+    @apply mb-6 space-y-2;
   }
 
   .article-title {
-    @apply text-3xl font-bold tracking-tight text-foreground lg:text-4xl;
+    @apply text-2xl font-bold tracking-tight text-foreground lg:text-3xl;
   }
 
   .article-meta {
