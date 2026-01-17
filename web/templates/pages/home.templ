@@ -8,44 +8,44 @@ import (
 
 templ Home(recentPosts []models.Post, recentBookmarks []models.Bookmark) {
 	@layouts.TwoColumn("0xec - Home", "/") {
-		<div class="space-y-16">
+		<div class="space-y-8">
 			<!-- Hero Section -->
-			<section class="space-y-4">
-				<h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-5xl text-balance">
+			<section class="space-y-1">
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
 					Welcome
 				</h1>
-				<p class="text-xl text-muted-foreground prose-width">
+				<p class="text-sm text-muted-foreground">
 					A personal space for writing and collecting interesting things from the web.
 				</p>
 			</section>
 			<!-- Recent Posts -->
 			if len(recentPosts) > 0 {
-				<section class="space-y-6">
+				<section class="space-y-3">
 					<div class="flex items-center justify-between">
-						<h2 class="text-2xl font-semibold tracking-tight text-foreground">
+						<h2 class="text-sm font-semibold text-foreground">
 							Recent Writing
 						</h2>
-						<a href="/posts" class="text-sm text-muted-foreground hover:text-foreground">
+						<a href="/posts" class="text-xs text-muted-foreground hover:text-foreground">
 							View all &rarr;
 						</a>
 					</div>
 					<div class="separator-horizontal"></div>
-					@components.PostList(recentPosts)
+					@components.PostListCompact(recentPosts)
 				</section>
 			}
 			<!-- Recent Bookmarks -->
 			if len(recentBookmarks) > 0 {
-				<section class="space-y-6">
+				<section class="space-y-3">
 					<div class="flex items-center justify-between">
-						<h2 class="text-2xl font-semibold tracking-tight text-foreground">
+						<h2 class="text-sm font-semibold text-foreground">
 							Recent Bookmarks
 						</h2>
-						<a href="/bookmarks" class="text-sm text-muted-foreground hover:text-foreground">
+						<a href="/bookmarks" class="text-xs text-muted-foreground hover:text-foreground">
 							View all &rarr;
 						</a>
 					</div>
 					<div class="separator-horizontal"></div>
-					@components.BookmarkGrid(recentBookmarks)
+					@components.BookmarkListCompact(recentBookmarks)
 				</section>
 			}
 		</div>
