@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -66,8 +67,16 @@ type UpdatePostInput struct {
 	TagIDs     []int64 `json:"tag_ids"`
 }
 
-// Validate validates the CreatePostInput and returns field-level errors
-func (input CreatePostInput) Validate() *FormErrors {
+// Validate validates the CreatePostInput and returns field-level errors.
+// It also trims whitespace from string fields.
+func (input *CreatePostInput) Validate() *FormErrors {
+	// Trim whitespace from all string fields
+	input.Title = strings.TrimSpace(input.Title)
+	input.Slug = strings.TrimSpace(input.Slug)
+	input.Content = strings.TrimSpace(input.Content)
+	input.Excerpt = strings.TrimSpace(input.Excerpt)
+	input.CoverImage = strings.TrimSpace(input.CoverImage)
+
 	errors := NewFormErrors()
 	validatePostFields(input.Title, input.Slug, input.Content, input.CoverImage, input.IsDraft, errors)
 	if errors.HasErrors() {
@@ -76,8 +85,16 @@ func (input CreatePostInput) Validate() *FormErrors {
 	return nil
 }
 
-// Validate validates the UpdatePostInput and returns field-level errors
-func (input UpdatePostInput) Validate() *FormErrors {
+// Validate validates the UpdatePostInput and returns field-level errors.
+// It also trims whitespace from string fields.
+func (input *UpdatePostInput) Validate() *FormErrors {
+	// Trim whitespace from all string fields
+	input.Title = strings.TrimSpace(input.Title)
+	input.Slug = strings.TrimSpace(input.Slug)
+	input.Content = strings.TrimSpace(input.Content)
+	input.Excerpt = strings.TrimSpace(input.Excerpt)
+	input.CoverImage = strings.TrimSpace(input.CoverImage)
+
 	errors := NewFormErrors()
 	validatePostFields(input.Title, input.Slug, input.Content, input.CoverImage, input.IsDraft, errors)
 	if errors.HasErrors() {
