@@ -20,64 +20,218 @@
   };
 
   // ============================================
-  // DRAG STATE
+  // STATE FACTORY FUNCTIONS
   // ============================================
 
-  const dragState = {
-    isDragging: false,
-    draggedCard: null,       // Primary card being dragged
-    draggedCards: [],        // All cards being dragged (for multi-select)
-    sourceColumn: null,
-    sourceIndex: null,
-    sourcePositions: [],     // Original positions for revert [{card, column, nextSibling}]
-    placeholder: null,
-    isMultiDrag: false       // True when dragging multiple selected cards
-  };
+  function createDragState() {
+    return {
+      isDragging: false,
+      draggedCard: null,
+      draggedCards: [],
+      sourceColumn: null,
+      sourceIndex: null,
+      sourcePositions: [],
+      placeholder: null,
+      isMultiDrag: false
+    };
+  }
+
+  function createScrollState() {
+    return {
+      animationId: null,
+      horizontalSpeed: 0,
+      verticalSpeed: 0,
+      boardContainer: null,
+      columnContainer: null,
+    };
+  }
+
+  function createKeyboardDragState() {
+    return {
+      isActive: false,
+      card: null,
+      originalColumn: null,
+      originalNextSibling: null,
+      originalIndex: null
+    };
+  }
+
+  function createSelectionState() {
+    return {
+      selectedIds: new Set(),
+      lastSelectedId: null,
+      columnId: null,
+    };
+  }
+
+  function createMoveMenuState() {
+    return {
+      isOpen: false,
+      focusedIndex: 0,
+      collections: [],
+      previousFocus: null,
+    };
+  }
 
   // ============================================
-  // AUTO-SCROLL STATE
+  // STATE OBJECTS
   // ============================================
 
-  const scrollState = {
-    animationId: null,
-    horizontalSpeed: 0,
-    verticalSpeed: 0,
-    boardContainer: null,
-    columnContainer: null,
-  };
+  const dragState = createDragState();
+  const scrollState = createScrollState();
+  const keyboardDragState = createKeyboardDragState();
+  const selectionState = createSelectionState();
+  const moveMenuState = createMoveMenuState();
 
   // ============================================
-  // KEYBOARD DRAG-AND-DROP STATE
+  // STATE RESET FUNCTIONS
   // ============================================
 
-  const keyboardDragState = {
-    isActive: false,
-    card: null,
-    originalColumn: null,
-    originalNextSibling: null,
-    originalIndex: null
-  };
+  function resetDragState() {
+    Object.assign(dragState, createDragState());
+  }
+
+  function resetScrollState() {
+    Object.assign(scrollState, createScrollState());
+  }
+
+  function resetKeyboardDragState() {
+    Object.assign(keyboardDragState, createKeyboardDragState());
+  }
+
+  function resetSelectionState() {
+    Object.assign(selectionState, createSelectionState());
+  }
+
+  function resetMoveMenuState() {
+    Object.assign(moveMenuState, createMoveMenuState());
+  }
 
   // ============================================
-  // MULTI-SELECT STATE
+  // UTILITY FUNCTIONS
   // ============================================
 
-  const selectionState = {
-    selectedIds: new Set(),   // Set of selected bookmark IDs
-    lastSelectedId: null,     // For Shift+Click range selection
-    columnId: null,           // Selection is per-column (null = unsorted)
-  };
+  /**
+   * Show error toast or fallback to alert
+   */
+  function showErrorToast(message) {
+    if (typeof window.showToast === "function") {
+      window.showToast(message, "error");
+    } else {
+      alert(message);
+    }
+  }
 
-  // ============================================
-  // MOVE MENU STATE (Keyboard-navigable)
-  // ============================================
+  /**
+   * Pluralize a word based on count
+   */
+  function pluralize(count, singular, plural) {
+    return count === 1 ? singular : (plural || singular + "s");
+  }
 
-  const moveMenuState = {
-    isOpen: false,
-    focusedIndex: 0,
-    collections: [],      // [{id, name, color, isCurrent}]
-    previousFocus: null,  // Element to return focus to when closing
-  };
+  /**
+   * Announce a count-based message
+   */
+  function announceCount(count, action, noun = "item") {
+    announce(`${count} ${pluralize(count, noun)} ${action}`);
+  }
+
+  /**
+   * Get a card element by bookmark ID
+   */
+  function getCardById(bookmarkId) {
+    return document.querySelector(`.kanban-card[data-bookmark-id="${bookmarkId}"]`);
+  }
+
+  /**
+   * Get the column content element containing a card
+   */
+  function getColumnContent(card) {
+    return card.closest(".kanban-column-content");
+  }
+
+  /**
+   * Get all cards in a column
+   */
+  function getColumnCards(columnContent) {
+    return Array.from(columnContent.querySelectorAll(".kanban-card"));
+  }
+
+  /**
+   * Get CSRF token from page (hx-headers or cookie)
+   */
+  function getCSRFToken() {
+    const body = document.body;
+    const headers = body.getAttribute("hx-headers");
+    
+    if (headers) {
+      try {
+        const parsed = JSON.parse(headers);
+        if (parsed["X-CSRF-Token"]) {
+          return parsed["X-CSRF-Token"];
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    
+    // Fallback: try to get from cookie
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf_token') {
+        return value;
+      }
+    }
+    
+    return "";
+  }
+
+  /**
+   * Bulk move bookmarks API call (consolidated)
+   * @param {number[]} bookmarkIds - Array of bookmark IDs to move
+   * @param {string} collectionId - Target collection ID (empty string for unsorted)
+   * @param {Object} options - Optional settings
+   * @param {string|null} options.afterBookmarkId - Insert after this bookmark ID
+   * @param {Function} options.onSuccess - Callback on success
+   * @param {Function} options.onError - Callback on error
+   * @returns {Promise}
+   */
+  function bulkMoveBookmarksAPI(bookmarkIds, collectionId, options = {}) {
+    const { afterBookmarkId = null, onSuccess = null, onError = null } = options;
+    const csrfToken = getCSRFToken();
+    
+    const payload = {
+      bookmark_ids: bookmarkIds,
+      collection_id: collectionId === "" ? null : parseInt(collectionId, 10),
+    };
+    
+    if (afterBookmarkId) {
+      payload.after_id = parseInt(afterBookmarkId, 10);
+    }
+
+    return fetch("/admin/htmx/bookmarks/bulk/move", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to move bookmarks: ${response.status}`);
+        }
+        if (onSuccess) onSuccess();
+        return response;
+      })
+      .catch((error) => {
+        console.error("[Kanban] Error moving bookmarks:", error);
+        if (onError) onError(error);
+        showErrorToast("Failed to move bookmarks. Please try again.");
+        throw error;
+      });
+  }
 
   // ============================================
   // SCREEN READER ANNOUNCEMENTS
@@ -90,7 +244,6 @@
     const liveRegion = document.getElementById("kanban-live-region");
     if (liveRegion) {
       liveRegion.textContent = "";
-      // Small delay to ensure re-announcement of same message
       requestAnimationFrame(() => {
         liveRegion.textContent = message;
       });
@@ -142,14 +295,14 @@
   function clearSelection() {
     // Remove visual state from all previously selected cards
     selectionState.selectedIds.forEach((id) => {
-      const card = document.querySelector(`.kanban-card[data-bookmark-id="${id}"]`);
+      const card = getCardById(id);
       if (card) {
         card.classList.remove("selected");
         card.setAttribute("aria-selected", "false");
       }
     });
 
-    selectionState.selectedIds.clear();
+    selectionState.selectedIds = new Set();
     selectionState.lastSelectedId = null;
     selectionState.columnId = null;
 
@@ -337,7 +490,7 @@
   function getSelectedCards() {
     const cards = [];
     selectionState.selectedIds.forEach((id) => {
-      const card = document.querySelector(`.kanban-card[data-bookmark-id="${id}"]`);
+      const card = getCardById(id);
       if (card) cards.push(card);
     });
     return cards;
@@ -713,36 +866,6 @@
     return cards.indexOf(card);
   }
 
-  /**
-   * Get CSRF token from page
-   */
-  function getCSRFToken() {
-    const body = document.body;
-    const headers = body.getAttribute("hx-headers");
-    
-    if (headers) {
-      try {
-        const parsed = JSON.parse(headers);
-        if (parsed["X-CSRF-Token"]) {
-          return parsed["X-CSRF-Token"];
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-    
-    // Fallback: try to get from cookie
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'csrf_token') {
-        return value;
-      }
-    }
-    
-    return "";
-  }
-
   // ============================================
   // AUTO-SCROLL DURING DRAG
   // ============================================
@@ -1046,22 +1169,11 @@
       c.classList.remove("multi-drag-secondary");
     });
 
-    // Remove multi-drag badge
     removeMultiDragBadge();
-
     removePlaceholder();
     removeAllDragOverClasses();
     stopAutoScroll();
-
-    // Reset state
-    dragState.isDragging = false;
-    dragState.draggedCard = null;
-    dragState.draggedCards = [];
-    dragState.sourceColumn = null;
-    dragState.sourceIndex = null;
-    dragState.sourcePositions = [];
-    dragState.placeholder = null;
-    dragState.isMultiDrag = false;
+    resetDragState();
   }
 
   /**
@@ -1195,37 +1307,16 @@
   /**
    * Bulk move bookmarks with position support (for multi-drag)
    */
-  function bulkMoveBookmarksWithPosition(bookmarkIds, collectionId, afterBookmarkId, cards, sourceColumn) {
-    const csrfToken = getCSRFToken();
-
-    fetch("/admin/htmx/bookmarks/bulk/move", {
-      method: "POST",
-      headers: {
-        "X-CSRF-Token": csrfToken,
-        "Content-Type": "application/json",
+  function bulkMoveBookmarksWithPosition(bookmarkIds, collectionId, afterBookmarkId) {
+    bulkMoveBookmarksAPI(bookmarkIds, collectionId, {
+      afterBookmarkId,
+      onSuccess: () => {
+        announceCount(bookmarkIds.length, "moved", "bookmark");
       },
-      body: JSON.stringify({
-        bookmark_ids: bookmarkIds,
-        collection_id: collectionId === "" ? null : parseInt(collectionId, 10),
-        after_id: afterBookmarkId ? parseInt(afterBookmarkId, 10) : null,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Failed to move bookmarks: ${response.status}`);
-        }
-        announce(`${bookmarkIds.length} bookmark${bookmarkIds.length !== 1 ? "s" : ""} moved`);
-      })
-      .catch((error) => {
-        console.error("[Kanban] Error moving bookmarks:", error);
-        // Revert cards to original positions
+      onError: () => {
         revertCardsToOriginalPositions();
-        if (typeof window.showToast === "function") {
-          window.showToast("Failed to move bookmarks. Please try again.", "error");
-        } else {
-          alert("Failed to move bookmarks. Please try again.");
-        }
-      });
+      }
+    });
   }
 
   /**
@@ -1327,14 +1418,7 @@
     // Update column counts
     updateColumnCounts();
 
-    // Reset state
-    keyboardDragState.isActive = false;
-    keyboardDragState.card = null;
-    keyboardDragState.originalColumn = null;
-    keyboardDragState.originalNextSibling = null;
-    keyboardDragState.originalIndex = null;
-
-    // Keep focus on card
+    resetKeyboardDragState();
     card.focus();
   }
 
@@ -1417,6 +1501,37 @@
     const position = getCardPosition(card);
     announce(`Moved to ${columnName}, position ${position.index} of ${position.total}`);
     card.focus();
+  }
+
+  /**
+   * Move card to top of its column
+   */
+  function moveCardToTop(card) {
+    const column = getColumnContent(card);
+    const firstCard = column.querySelector(".kanban-card");
+    if (firstCard && firstCard !== card) {
+      column.insertBefore(card, firstCard);
+      announcePosition(card, "Moved to top");
+      scrollCardIntoView(card);
+    }
+  }
+
+  /**
+   * Move card to bottom of its column
+   */
+  function moveCardToBottom(card) {
+    const column = getColumnContent(card);
+    column.appendChild(card);
+    announcePosition(card, "Moved to bottom");
+    scrollCardIntoView(card);
+  }
+
+  /**
+   * Announce card position with prefix
+   */
+  function announcePosition(card, prefix) {
+    const position = getCardPosition(card);
+    announce(`${prefix}, position ${position.index} of ${position.total}`);
   }
 
   // ============================================
@@ -1632,137 +1747,74 @@
     const card = e.target.closest(".kanban-card");
     if (!card) return;
 
-    // Don't interfere if focus is on interactive element inside the card
     const isOnCard = e.target === card;
     const isOnDragHandle = e.target.closest(".kanban-card-drag-handle");
     const isOnInteractiveElement = !isOnCard && !isOnDragHandle;
-
-    // Check if we're in grab mode
     const isGrabbed = keyboardDragState.isActive && keyboardDragState.card === card;
+    const hasModifier = e.metaKey || e.ctrlKey;
+    const hasMultiSelection = selectionState.selectedIds.size > 1;
 
     switch (e.key) {
       case " ":
       case "Enter":
-        // Only handle if focus is on the card itself (not buttons/links inside)
         if (isOnInteractiveElement) return;
-
         e.preventDefault();
-        if (isGrabbed) {
-          endKeyboardDrag(false); // Drop
-        } else {
-          startKeyboardDrag(card); // Pick up
-        }
+        isGrabbed ? endKeyboardDrag(false) : startKeyboardDrag(card);
         break;
 
       case "ArrowUp":
-        // Cmd+↑ on Mac = jump to first card / move to top
-        if (e.metaKey || e.ctrlKey) {
-          e.preventDefault();
-          if (isGrabbed) {
-            // Move card to top of current column
-            const column = card.closest(".kanban-column-content");
-            const firstCard = column.querySelector(".kanban-card");
-            if (firstCard && firstCard !== card) {
-              column.insertBefore(card, firstCard);
-              const position = getCardPosition(card);
-              announce(`Moved to top, position ${position.index} of ${position.total}`);
-              scrollCardIntoView(card);
-            }
-          } else {
-            focusFirstCard();
-          }
+        e.preventDefault();
+        if (hasModifier) {
+          isGrabbed ? moveCardToTop(card) : focusFirstCard();
         } else if (e.shiftKey && !isGrabbed) {
-          // Shift+↑ = extend selection upward
-          e.preventDefault();
           extendSelectionInDirection(card, -1);
+        } else if (isGrabbed) {
+          moveCardUp(card);
+          scrollCardIntoView(card);
         } else {
-          e.preventDefault();
-          if (isGrabbed) {
-            moveCardUp(card);
-            scrollCardIntoView(card);
-          } else {
-            focusCardInDirection(card, -1);
-          }
+          focusCardInDirection(card, -1);
         }
         break;
 
       case "ArrowDown":
-        // Cmd+↓ on Mac = jump to last card / move to bottom
-        if (e.metaKey || e.ctrlKey) {
-          e.preventDefault();
-          if (isGrabbed) {
-            // Move card to bottom of current column
-            const column = card.closest(".kanban-column-content");
-            column.appendChild(card);
-            const position = getCardPosition(card);
-            announce(`Moved to bottom, position ${position.index} of ${position.total}`);
-            scrollCardIntoView(card);
-          } else {
-            focusLastCard();
-          }
+        e.preventDefault();
+        if (hasModifier) {
+          isGrabbed ? moveCardToBottom(card) : focusLastCard();
         } else if (e.shiftKey && !isGrabbed) {
-          // Shift+↓ = extend selection downward
-          e.preventDefault();
           extendSelectionInDirection(card, 1);
+        } else if (isGrabbed) {
+          moveCardDown(card);
+          scrollCardIntoView(card);
         } else {
-          e.preventDefault();
-          if (isGrabbed) {
-            moveCardDown(card);
-            scrollCardIntoView(card);
-          } else {
-            focusCardInDirection(card, 1);
-          }
+          focusCardInDirection(card, 1);
         }
         break;
 
       case "ArrowLeft":
         e.preventDefault();
-        if (isGrabbed) {
-          moveCardToColumn(card, -1);
-          scrollCardIntoView(card);
-        } else {
-          focusCardInAdjacentColumn(card, -1);
-        }
+        isGrabbed ? moveCardToColumn(card, -1) : focusCardInAdjacentColumn(card, -1);
+        if (isGrabbed) scrollCardIntoView(card);
         break;
 
       case "ArrowRight":
         e.preventDefault();
-        if (isGrabbed) {
-          moveCardToColumn(card, 1);
-          scrollCardIntoView(card);
-        } else {
-          focusCardInAdjacentColumn(card, 1);
-        }
+        isGrabbed ? moveCardToColumn(card, 1) : focusCardInAdjacentColumn(card, 1);
+        if (isGrabbed) scrollCardIntoView(card);
         break;
 
       case "Home":
-        // Jump to first card (with Ctrl/Cmd, move grabbed card to top of column)
         e.preventDefault();
-        if (isGrabbed && (e.ctrlKey || e.metaKey)) {
-          // Move card to top of current column
-          const column = card.closest(".kanban-column-content");
-          const firstCard = column.querySelector(".kanban-card");
-          if (firstCard && firstCard !== card) {
-            column.insertBefore(card, firstCard);
-            const position = getCardPosition(card);
-            announce(`Moved to top, position ${position.index} of ${position.total}`);
-            scrollCardIntoView(card);
-          }
+        if (isGrabbed && hasModifier) {
+          moveCardToTop(card);
         } else if (!isGrabbed) {
           focusFirstCard();
         }
         break;
 
       case "End":
-        // Jump to last card (with Ctrl/Cmd, move grabbed card to bottom of column)
         e.preventDefault();
-        if (isGrabbed && (e.ctrlKey || e.metaKey)) {
-          // Move card to bottom of current column
-          const column = card.closest(".kanban-column-content");
-          column.appendChild(card);
-          const position = getCardPosition(card);
-          announce(`Moved to bottom, position ${position.index} of ${position.total}`);
-          scrollCardIntoView(card);
+        if (isGrabbed && hasModifier) {
+          moveCardToBottom(card);
         } else if (!isGrabbed) {
           focusLastCard();
         }
@@ -1771,25 +1823,22 @@
       case "Escape":
         if (isGrabbed) {
           e.preventDefault();
-          endKeyboardDrag(true); // Cancel
+          endKeyboardDrag(true);
         } else if (selectionState.selectedIds.size > 0) {
-          // Clear selection with Escape
           e.preventDefault();
           clearSelection();
           announce("Selection cleared");
         }
         break;
 
-      // Select all in column with Cmd/Ctrl+A
       case "a":
       case "A":
-        if ((e.metaKey || e.ctrlKey) && !isGrabbed && isOnCard) {
+        if (hasModifier && !isGrabbed && isOnCard) {
           e.preventDefault();
           selectAllInColumn(card);
         }
         break;
 
-      // Quick actions (only when not grabbed and focus is on card)
       case "e":
       case "E":
         if (!isGrabbed && isOnCard) {
@@ -1810,25 +1859,17 @@
       case "Backspace":
         if (!isGrabbed && isOnCard) {
           e.preventDefault();
-          // If multiple cards selected, do bulk delete
-          if (selectionState.selectedIds.size > 1) {
-            handleBulkDelete();
-          } else {
-            triggerDeleteAction(card);
-          }
+          hasMultiSelection ? handleBulkDelete() : triggerDeleteAction(card);
         }
         break;
 
-      // Move menu (M key) - only when multiple cards selected
       case "m":
       case "M":
-        if (!isGrabbed && selectionState.selectedIds.size > 1) {
+        if (!isGrabbed && hasMultiSelection) {
           e.preventDefault();
           openMoveMenu();
         }
         break;
-
-      // Note: "?" is handled by handleGlobalKeydown at document level
     }
   }
 
@@ -1881,12 +1922,9 @@
       })
       .catch((error) => {
         console.error("[Kanban] Error moving bookmark:", error);
-        // Revert the move
         revertMove(item, fromColumn, oldIndex);
-        // Update counts after revert
         updateColumnCounts();
-        // Show error toast
-        showMoveError();
+        showErrorToast("Failed to move bookmark. Please try again.");
       });
   }
 
@@ -1941,17 +1979,6 @@
     }, 500);
   }
 
-  /**
-   * Show error toast
-   */
-  function showMoveError() {
-    if (typeof window.showToast === "function") {
-      window.showToast("Failed to move bookmark. Please try again.", "error");
-    } else {
-      alert("Failed to move bookmark. Please try again.");
-    }
-  }
-
   // ============================================
   // BULK OPERATIONS
   // ============================================
@@ -1963,7 +1990,7 @@
     const count = selectionState.selectedIds.size;
     if (count === 0) return;
 
-    const confirmed = confirm(`Are you sure you want to delete ${count} bookmark${count !== 1 ? "s" : ""}?`);
+    const confirmed = confirm(`Are you sure you want to delete ${count} ${pluralize(count, "bookmark")}?`);
     if (!confirmed) return;
 
     const bookmarkIds = getSelectedBookmarkIds();
@@ -1983,23 +2010,16 @@
         }
         // Remove cards from DOM
         bookmarkIds.forEach((id) => {
-          const card = document.querySelector(`.kanban-card[data-bookmark-id="${id}"]`);
+          const card = getCardById(id);
           if (card) card.remove();
         });
-        // Clear selection
         clearSelection();
-        // Update column counts
         updateColumnCounts();
-        // Announce
-        announce(`${count} bookmark${count !== 1 ? "s" : ""} deleted`);
+        announceCount(count, "deleted", "bookmark");
       })
       .catch((error) => {
         console.error("[Kanban] Error deleting bookmarks:", error);
-        if (typeof window.showToast === "function") {
-          window.showToast("Failed to delete bookmarks. Please try again.", "error");
-        } else {
-          alert("Failed to delete bookmarks. Please try again.");
-        }
+        showErrorToast("Failed to delete bookmarks. Please try again.");
       });
   }
 
@@ -2011,23 +2031,9 @@
     if (count === 0) return;
 
     const bookmarkIds = getSelectedBookmarkIds();
-    const csrfToken = getCSRFToken();
 
-    fetch("/admin/htmx/bookmarks/bulk/move", {
-      method: "POST",
-      headers: {
-        "X-CSRF-Token": csrfToken,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        bookmark_ids: bookmarkIds,
-        collection_id: collectionId === "" ? null : parseInt(collectionId, 10),
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Failed to move bookmarks: ${response.status}`);
-        }
+    bulkMoveBookmarksAPI(bookmarkIds, collectionId, {
+      onSuccess: () => {
         // Move cards in DOM to target column
         const targetColumn = collectionId === ""
           ? document.querySelector('.kanban-column[data-unsorted="true"] .kanban-column-content')
@@ -2039,28 +2045,18 @@
           if (emptyState) emptyState.remove();
 
           bookmarkIds.forEach((id) => {
-            const card = document.querySelector(`.kanban-card[data-bookmark-id="${id}"]`);
+            const card = getCardById(id);
             if (card) {
               targetColumn.appendChild(card);
             }
           });
         }
 
-        // Clear selection
         clearSelection();
-        // Update column counts
         updateColumnCounts();
-        // Announce
-        announce(`${count} bookmark${count !== 1 ? "s" : ""} moved`);
-      })
-      .catch((error) => {
-        console.error("[Kanban] Error moving bookmarks:", error);
-        if (typeof window.showToast === "function") {
-          window.showToast("Failed to move bookmarks. Please try again.", "error");
-        } else {
-          alert("Failed to move bookmarks. Please try again.");
-        }
-      });
+        announceCount(count, "moved", "bookmark");
+      }
+    });
   }
 
   // ============================================
