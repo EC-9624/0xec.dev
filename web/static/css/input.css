@@ -219,7 +219,7 @@ html:not(.light):not(.dark) {
 @layer components {
   /* ===== 3-COLUMN LAYOUT ===== */
   .layout-container {
-    @apply flex min-h-screen;
+    @apply flex min-h-screen max-w-screen-2xl mx-auto;
   }
 
   /* Left Sidebar */
@@ -264,7 +264,7 @@ html:not(.light):not(.dark) {
   }
 
   .main-content-inner {
-    @apply p-8 lg:p-12;
+    @apply p-8 lg:p-12 max-w-4xl mx-auto;
   }
 
   /* ===== PROFILE CARD ===== */
