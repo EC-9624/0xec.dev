@@ -6,6 +6,16 @@
   "use strict";
 
   // ============================================
+  // CONFIGURATION
+  // ============================================
+
+  const SCROLL_CONFIG = {
+    edgeThreshold: 60,    // px from edge to start scrolling
+    maxScrollSpeed: 15,   // max px per frame
+    minScrollSpeed: 3,    // min px per frame
+  };
+
+  // ============================================
   // DRAG STATE
   // ============================================
 
@@ -15,6 +25,18 @@
     sourceColumn: null,
     sourceIndex: null,
     placeholder: null
+  };
+
+  // ============================================
+  // AUTO-SCROLL STATE
+  // ============================================
+
+  const scrollState = {
+    animationId: null,
+    horizontalSpeed: 0,
+    verticalSpeed: 0,
+    boardContainer: null,
+    columnContainer: null,
   };
 
   // ============================================
@@ -113,6 +135,124 @@
     }
     
     return "";
+  }
+
+  // ============================================
+  // AUTO-SCROLL DURING DRAG
+  // ============================================
+
+  /**
+   * Calculate scroll speed based on distance from edge
+   * Closer to edge = faster scroll
+   */
+  function calculateScrollSpeed(distanceFromEdge) {
+    const { edgeThreshold, maxScrollSpeed, minScrollSpeed } = SCROLL_CONFIG;
+    if (distanceFromEdge >= edgeThreshold) return 0;
+    
+    // Linear interpolation: closer to edge = faster
+    const ratio = 1 - (distanceFromEdge / edgeThreshold);
+    return minScrollSpeed + (maxScrollSpeed - minScrollSpeed) * ratio;
+  }
+
+  /**
+   * Update scroll direction based on cursor position
+   */
+  function updateScrollDirection(clientX, clientY) {
+    const board = document.getElementById("kanban-board");
+    if (!board) return;
+
+    const boardRect = board.getBoundingClientRect();
+    const { edgeThreshold } = SCROLL_CONFIG;
+
+    // Horizontal scroll (board level)
+    let horizontalSpeed = 0;
+    const distanceFromLeft = clientX - boardRect.left;
+    const distanceFromRight = boardRect.right - clientX;
+
+    if (distanceFromLeft < edgeThreshold && board.scrollLeft > 0) {
+      // Near left edge - scroll left
+      horizontalSpeed = -calculateScrollSpeed(distanceFromLeft);
+    } else if (distanceFromRight < edgeThreshold && 
+               board.scrollLeft < board.scrollWidth - board.clientWidth) {
+      // Near right edge - scroll right
+      horizontalSpeed = calculateScrollSpeed(distanceFromRight);
+    }
+
+    // Vertical scroll (column level)
+    let verticalSpeed = 0;
+    let columnContainer = null;
+    const column = document.elementFromPoint(clientX, clientY)?.closest(".kanban-column-content");
+    
+    if (column) {
+      const columnRect = column.getBoundingClientRect();
+      const distanceFromTop = clientY - columnRect.top;
+      const distanceFromBottom = columnRect.bottom - clientY;
+
+      if (distanceFromTop < edgeThreshold && column.scrollTop > 0) {
+        // Near top edge - scroll up
+        verticalSpeed = -calculateScrollSpeed(distanceFromTop);
+        columnContainer = column;
+      } else if (distanceFromBottom < edgeThreshold && 
+                 column.scrollTop < column.scrollHeight - column.clientHeight) {
+        // Near bottom edge - scroll down
+        verticalSpeed = calculateScrollSpeed(distanceFromBottom);
+        columnContainer = column;
+      }
+    }
+
+    scrollState.horizontalSpeed = horizontalSpeed;
+    scrollState.verticalSpeed = verticalSpeed;
+    scrollState.boardContainer = board;
+    scrollState.columnContainer = columnContainer;
+
+    // Start or stop animation based on whether we need to scroll
+    if (horizontalSpeed !== 0 || verticalSpeed !== 0) {
+      startAutoScroll();
+    } else {
+      stopAutoScroll();
+    }
+  }
+
+  /**
+   * Start the auto-scroll animation loop
+   */
+  function startAutoScroll() {
+    if (scrollState.animationId !== null) return; // Already running
+
+    function scrollFrame() {
+      const { horizontalSpeed, verticalSpeed, boardContainer, columnContainer } = scrollState;
+
+      if (boardContainer && horizontalSpeed !== 0) {
+        boardContainer.scrollLeft += horizontalSpeed;
+      }
+
+      if (columnContainer && verticalSpeed !== 0) {
+        columnContainer.scrollTop += verticalSpeed;
+      }
+
+      // Continue animation if still dragging and need to scroll
+      if (dragState.isDragging && (horizontalSpeed !== 0 || verticalSpeed !== 0)) {
+        scrollState.animationId = requestAnimationFrame(scrollFrame);
+      } else {
+        scrollState.animationId = null;
+      }
+    }
+
+    scrollState.animationId = requestAnimationFrame(scrollFrame);
+  }
+
+  /**
+   * Stop the auto-scroll animation
+   */
+  function stopAutoScroll() {
+    if (scrollState.animationId !== null) {
+      cancelAnimationFrame(scrollState.animationId);
+      scrollState.animationId = null;
+    }
+    scrollState.horizontalSpeed = 0;
+    scrollState.verticalSpeed = 0;
+    scrollState.boardContainer = null;
+    scrollState.columnContainer = null;
   }
 
   // ============================================
@@ -223,6 +363,7 @@
     card.classList.remove("dragging");
     removePlaceholder();
     removeAllDragOverClasses();
+    stopAutoScroll();
 
     // Reset state
     dragState.isDragging = false;
@@ -238,6 +379,11 @@
   function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+
+    // Update auto-scroll based on cursor position
+    if (dragState.isDragging) {
+      updateScrollDirection(e.clientX, e.clientY);
+    }
 
     const column = e.target.closest(".kanban-column-content");
     if (!column || !dragState.isDragging) return;
@@ -276,6 +422,7 @@
    */
   function handleDrop(e) {
     e.preventDefault();
+    stopAutoScroll();
 
     const column = e.target.closest(".kanban-column-content");
     if (!column || !dragState.draggedCard) return;
@@ -730,6 +877,9 @@
     if (keyboardDragState.isActive) {
       endKeyboardDrag(true);
     }
+
+    // Stop auto-scroll
+    stopAutoScroll();
 
     // Clean up drag state
     removePlaceholder();

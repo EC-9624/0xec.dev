@@ -229,37 +229,40 @@ templ KanbanCardDropdown(bookmark KanbanBookmark) {
 			@components.MoreHorizontalIcon(components.IconSM)
 		</button>
 		<div class="dropdown-menu kanban-dropdown-menu" data-dropdown-menu>
-			<button
-				type="button"
-				class="dropdown-option kanban-dropdown-option"
-				hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
-				hx-target="#drawer-content"
-				hx-swap="innerHTML"
-				onclick="window.drawerOpen('Edit Bookmark')"
-			>
-				@components.EditIcon(components.IconSM)
-				<span>Edit</span>
-			</button>
-			<a
-				href={ templ.URL(bookmark.URL) }
-				target="_blank"
-				rel="noopener noreferrer"
-				class="dropdown-option kanban-dropdown-option"
-			>
-				@components.ExternalLinkIcon(components.IconSM)
-				<span>Open URL</span>
-			</a>
-			<button
-				type="button"
-				class="dropdown-option kanban-dropdown-option text-destructive hover:text-destructive"
-				hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
-				hx-confirm="Are you sure you want to delete this bookmark?"
-				hx-target="closest .kanban-card"
-				hx-swap="outerHTML"
-			>
-				@components.TrashIcon(components.IconSM)
-				<span>Delete</span>
-			</button>
+		<button
+			type="button"
+			class="dropdown-option kanban-dropdown-option"
+			data-dropdown-option
+			hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
+			hx-target="#drawer-content"
+			hx-swap="innerHTML"
+			onclick="window.drawerOpen('Edit Bookmark')"
+		>
+			@components.EditIcon(components.IconSM)
+			<span>Edit</span>
+		</button>
+		<a
+			href={ templ.URL(bookmark.URL) }
+			target="_blank"
+			rel="noopener noreferrer"
+			class="dropdown-option kanban-dropdown-option"
+			data-dropdown-option
+		>
+			@components.ExternalLinkIcon(components.IconSM)
+			<span>Open URL</span>
+		</a>
+		<button
+			type="button"
+			class="dropdown-option kanban-dropdown-option text-destructive hover:text-destructive"
+			data-dropdown-option
+			hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
+			hx-confirm="Are you sure you want to delete this bookmark?"
+			hx-target="closest .kanban-card"
+			hx-swap="outerHTML"
+		>
+			@components.TrashIcon(components.IconSM)
+			<span>Delete</span>
+		</button>
 		</div>
 	</div>
 }
