@@ -95,14 +95,35 @@ UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 SELECT COUNT(*) FROM bookmarks WHERE collection_id IS NULL;
 
 -- name: ListRecentUnsortedBookmarks :many
-SELECT id, title, url, domain, is_favorite, is_public, created_at
+SELECT id, title, url, domain, is_favorite, is_public, updated_at
 FROM bookmarks
 WHERE collection_id IS NULL
-ORDER BY created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT ?;
 
 -- name: ListUnsortedBookmarks :many
 SELECT * FROM bookmarks
 WHERE collection_id IS NULL
-ORDER BY sort_order, created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT ? OFFSET ?;
+
+-- ============================================
+-- POSITION/SORT ORDER QUERIES
+-- ============================================
+
+-- name: GetCollectionBookmarkSortOrders :many
+SELECT id, COALESCE(sort_order, 999999) as sort_order
+FROM bookmarks
+WHERE collection_id = ?
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC;
+
+-- name: GetUnsortedBookmarkSortOrders :many
+SELECT id, COALESCE(sort_order, 999999) as sort_order
+FROM bookmarks
+WHERE collection_id IS NULL
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC;
+
+-- name: UpdateBookmarkPosition :exec
+UPDATE bookmarks 
+SET collection_id = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP 
+WHERE id = ?;

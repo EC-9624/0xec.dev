@@ -54,12 +54,12 @@ UPDATE collections SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 
 SELECT id, title, url, domain, is_public, is_favorite, created_at
 FROM bookmarks
 WHERE collection_id = ?
-ORDER BY sort_order, created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT 6;
 
 -- name: GetRecentBookmarksByCollectionID :many
-SELECT id, title, url, domain, is_favorite, is_public, created_at
+SELECT id, title, url, domain, is_favorite, is_public, updated_at
 FROM bookmarks
 WHERE collection_id = ?
-ORDER BY created_at DESC
+ORDER BY COALESCE(sort_order, 999999) ASC, updated_at DESC
 LIMIT ?;

@@ -92,18 +92,14 @@
     const body = document.body;
     const headers = body.getAttribute("hx-headers");
     
-    // DEBUG: Log raw headers value
-    console.log("[Kanban] Raw hx-headers:", headers);
-    
     if (headers) {
       try {
         const parsed = JSON.parse(headers);
-        console.log("[Kanban] Parsed headers:", parsed);
         if (parsed["X-CSRF-Token"]) {
           return parsed["X-CSRF-Token"];
         }
       } catch (e) {
-        console.error("[Kanban] Failed to parse hx-headers:", e);
+        // Ignore parse errors
       }
     }
     
@@ -112,12 +108,10 @@
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'csrf_token') {
-        console.log("[Kanban] Using CSRF from cookie:", value);
         return value;
       }
     }
     
-    console.warn("[Kanban] No CSRF token found!");
     return "";
   }
 
@@ -300,12 +294,18 @@
     removeAllDragOverClasses();
     draggedCard.classList.remove("dragging");
 
-    // If moved to different column, update backend
-    if (column !== sourceColumn) {
+    // Calculate the new position (after which bookmark)
+    const afterBookmarkId = getAfterBookmarkId(draggedCard);
+    const newIndex = getCardIndex(draggedCard);
+
+    // Check if position actually changed (different column OR different position in same column)
+    const positionChanged = column !== sourceColumn || newIndex !== sourceIndex;
+
+    if (positionChanged) {
       const bookmarkId = draggedCard.dataset.bookmarkId;
       const newCollectionId = column.dataset.collectionId || "";
 
-      moveBookmark(bookmarkId, newCollectionId, draggedCard, sourceColumn, sourceIndex);
+      moveBookmark(bookmarkId, newCollectionId, afterBookmarkId, draggedCard, sourceColumn, sourceIndex);
     }
 
     // Update counts
@@ -359,17 +359,23 @@
       }
       announce(`Move cancelled. ${title} returned to original position.`);
     } else {
-      // Commit the move - call the existing update logic if column changed
+      // Commit the move
       const columnName = getColumnName(currentColumn.closest(".kanban-column"));
       const position = getCardPosition(card);
+      const currentIndex = getCardIndex(card);
 
-      if (currentColumn !== originalColumn) {
+      // Check if position actually changed
+      const positionChanged = currentColumn !== originalColumn || currentIndex !== keyboardDragState.originalIndex;
+
+      if (positionChanged) {
         const bookmarkId = card.dataset.bookmarkId;
         const newCollectionId = currentColumn.dataset.collectionId || "";
+        const afterBookmarkId = getAfterBookmarkId(card);
 
         moveBookmark(
           bookmarkId,
           newCollectionId,
+          afterBookmarkId,
           card,
           originalColumn,
           keyboardDragState.originalIndex
@@ -550,46 +556,47 @@
   // ============================================
 
   /**
-   * Move a bookmark to a new collection
+   * Get the bookmark ID of the card before the given card (for position tracking)
+   * Returns empty string if card is at the beginning of the column
    */
-  function moveBookmark(bookmarkId, collectionId, item, fromColumn, oldIndex) {
+  function getAfterBookmarkId(card) {
+    const prevSibling = card.previousElementSibling;
+    if (prevSibling && prevSibling.classList.contains("kanban-card")) {
+      return prevSibling.dataset.bookmarkId || "";
+    }
+    return "";
+  }
+
+  /**
+   * Move a bookmark to a new position (possibly in a different collection)
+   * afterBookmarkId: ID of the bookmark to insert after (empty = insert at start)
+   */
+  function moveBookmark(bookmarkId, collectionId, afterBookmarkId, item, fromColumn, oldIndex) {
     const url = `/admin/htmx/bookmarks/${bookmarkId}/collection`;
     const csrfToken = getCSRFToken();
 
-    // Make the request with URL-encoded form data
-    // (FormData uses multipart/form-data which requires ParseMultipartForm on server)
+    // Build request body with collection_id and after_id
+    let body = `collection_id=${encodeURIComponent(collectionId)}`;
+    if (afterBookmarkId) {
+      body += `&after_id=${encodeURIComponent(afterBookmarkId)}`;
+    }
+
     fetch(url, {
       method: "POST",
       headers: {
         "X-CSRF-Token": csrfToken,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: `collection_id=${encodeURIComponent(collectionId)}`,
+      body: body,
     })
       .then((response) => {
-        // DEBUG: Log response
-        console.log("[Kanban] Response:", {
-          ok: response.ok,
-          status: response.status,
-          statusText: response.statusText,
-        });
-
-        // Always read the response body for debugging
-        return response.text().then((text) => {
-          console.log("[Kanban] Response body length:", text.length);
-          console.log("[Kanban] Response body preview:", text.substring(0, 200));
-          
-          if (!response.ok) {
-            console.error("[Kanban] Error response body:", text);
-            throw new Error(`Failed to move bookmark: ${response.status} ${text}`);
-          }
-          
-          // Update column counts
-          updateColumnCounts();
-          // Show success feedback
-          showMoveSuccess(item);
-          console.log("[Kanban] Move successful!");
-        });
+        if (!response.ok) {
+          throw new Error(`Failed to move bookmark: ${response.status}`);
+        }
+        // Update column counts
+        updateColumnCounts();
+        // Show success feedback
+        showMoveSuccess(item);
       })
       .catch((error) => {
         console.error("[Kanban] Error moving bookmark:", error);

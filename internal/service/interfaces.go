@@ -41,6 +41,7 @@ type BookmarkService interface {
 	UpdateBookmarkFavorite(ctx context.Context, id int64, isFavorite bool) error
 	UpdateBookmarkCollection(ctx context.Context, id int64, collectionID *int64) error
 	UpdateBookmarkTitle(ctx context.Context, id int64, title string) error
+	MoveBookmark(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error
 	RefreshBookmarkMetadata(ctx context.Context, id int64) error
 	RefreshAllMissingMetadataAsync(progressChan chan<- string)
 }
