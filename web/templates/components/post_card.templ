@@ -66,9 +66,9 @@ templ PostListItem(post models.Post, isActive bool) {
 
 func listItemClass(isActive bool) string {
 	if isActive {
-		return "list-item-active"
+		return "list-item-stacked-active"
 	}
-	return "list-item"
+	return "list-item-stacked"
 }
 
 // PostListColumn is the middle column content for posts pages

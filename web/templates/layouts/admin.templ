@@ -103,13 +103,13 @@ func adminNavClass(currentPath, targetPath string) string {
 }
 
 templ adminSidebar(currentPath string) {
-	<aside class="w-64 border-r border-border bg-background">
-		<div class="flex h-14 items-center border-b border-border px-6">
+	<aside class="w-64 border-r border-border bg-sidebar">
+		<div class="flex h-14 items-center border-b border-border px-3">
 			<a href="/admin" class="font-semibold text-foreground">
 				Admin
 			</a>
 		</div>
-		<nav class="flex flex-col gap-1 p-4">
+		<nav class="flex flex-col gap-1 p-3">
 			<a href="/admin" class={ adminNavClass(currentPath, "/admin") }>
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
 				Dashboard
@@ -131,7 +131,7 @@ templ adminSidebar(currentPath string) {
 				Tags
 			</a>
 		</nav>
-		<div class="mt-auto border-t border-border p-4">
+		<div class="mt-auto border-t border-border p-3">
 			<a href="/" class="sidebar-link mb-1">
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" x2="3" y1="12" y2="12"></line></svg>
 				View Site

@@ -17,10 +17,8 @@ templ CollectionListItem(collection models.Collection, isActive bool) {
 		hx-push-url={ "/bookmarks/" + collection.Slug }
 		hx-indicator="#main-content"
 	>
-		<span class="list-item-title">{ collection.Name }</span>
-		<span class="list-item-meta">
-			{ strconv.Itoa(collection.BookmarkCount) } bookmarks
-		</span>
+		<span>{ collection.Name }</span>
+		<span class="list-item-count">{ strconv.Itoa(collection.BookmarkCount) }</span>
 	</a>
 }
 
@@ -57,8 +55,8 @@ templ CollectionListColumn(collections []models.Collection, activeSlug string, t
 				hx-push-url="/bookmarks"
 				hx-indicator="#main-content"
 			>
-				<span class="list-item-title">All Bookmarks</span>
-				<span class="list-item-meta">{ strconv.Itoa(totalBookmarks) } bookmarks</span>
+				<span>All Bookmarks</span>
+				<span class="list-item-count">{ strconv.Itoa(totalBookmarks) }</span>
 			</a>
 			<!-- Collections -->
 			for _, collection := range collections {
