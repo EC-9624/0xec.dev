@@ -1565,4 +1565,85 @@ html:not(.light):not(.dark) {
            hover:text-foreground hover:bg-muted;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
+
+  /* Focus state for cards (navigation without grab) */
+  .kanban-card:focus {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-1 ring-offset-background;
+  }
+
+  /* Keyboard shortcuts help trigger button */
+  .kanban-help-trigger {
+    @apply absolute top-2 right-2 z-10 flex items-center justify-center
+           w-7 h-7 bg-muted/80 hover:bg-muted border border-border
+           text-muted-foreground hover:text-foreground cursor-pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .kanban-help-trigger kbd {
+    @apply text-xs font-mono;
+  }
+
+  /* ============================================
+     KEYBOARD HELP MODAL
+     ============================================ */
+
+  .kanban-help-modal {
+    @apply fixed inset-0 z-50 flex items-center justify-center;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  .kanban-help-modal.hidden {
+    @apply hidden;
+  }
+
+  .kanban-help-content {
+    @apply bg-card border border-border shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col;
+  }
+
+  .kanban-help-header {
+    @apply flex items-center justify-between px-4 py-3 border-b border-border;
+  }
+
+  .kanban-help-title {
+    @apply text-base font-semibold;
+  }
+
+  .kanban-help-close {
+    @apply p-1 text-muted-foreground hover:text-foreground hover:bg-muted;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .kanban-help-body {
+    @apply px-4 py-3 overflow-y-auto space-y-4;
+  }
+
+  .kanban-help-section {
+    @apply space-y-2;
+  }
+
+  .kanban-help-section-title {
+    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+
+  .kanban-help-list {
+    @apply space-y-1;
+  }
+
+  .kanban-help-item {
+    @apply flex items-center justify-between gap-4 py-1;
+  }
+
+  .kanban-help-keys {
+    @apply flex items-center gap-1 flex-shrink-0;
+  }
+
+  .kanban-help-keys kbd {
+    @apply inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5
+           bg-muted border border-border text-xs font-mono;
+  }
+
+  .kanban-help-desc {
+    @apply text-sm text-muted-foreground;
+  }
 }

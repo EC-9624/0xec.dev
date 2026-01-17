@@ -19,6 +19,16 @@ templ BookmarksBoard(data BookmarksBoardData) {
 	<div class="kanban-board-wrapper">
 		<!-- Live region for screen reader announcements (positioned absolute to not affect layout) -->
 		<div id="kanban-live-region" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+		<!-- Keyboard shortcuts help button -->
+		<button
+			type="button"
+			class="kanban-help-trigger"
+			onclick="window.kanban && document.getElementById('kanban-help-modal')?.classList.remove('hidden')"
+			title="Keyboard shortcuts (?)"
+			aria-label="Show keyboard shortcuts"
+		>
+			<kbd>?</kbd>
+		</button>
 		<div 
 			class="kanban-board" 
 			id="kanban-board"
@@ -49,6 +59,133 @@ templ BookmarksBoard(data BookmarksBoardData) {
 		}
 		<!-- New Collection Column -->
 		@KanbanNewColumn()
+		</div>
+		<!-- Keyboard Help Modal -->
+		@KanbanHelpModal()
+	</div>
+}
+
+// KanbanHelpModal renders the keyboard shortcuts help modal
+templ KanbanHelpModal() {
+	<div 
+		id="kanban-help-modal" 
+		class="kanban-help-modal hidden"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="kanban-help-title"
+	>
+		<div class="kanban-help-content">
+			<div class="kanban-help-header">
+				<h2 id="kanban-help-title" class="kanban-help-title">Keyboard Shortcuts</h2>
+				<button 
+					type="button" 
+					class="kanban-help-close"
+					data-close-modal
+					aria-label="Close"
+				>
+					@components.XIcon(components.IconMD)
+				</button>
+			</div>
+			<div class="kanban-help-body">
+				<div class="kanban-help-section">
+					<h3 class="kanban-help-section-title">Navigation</h3>
+					<dl class="kanban-help-list">
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>↑</kbd> <kbd>↓</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Move between cards in column</dd>
+						</div>
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>←</kbd> <kbd>→</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Move between columns</dd>
+						</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>⌘</kbd><kbd>↑</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Jump to first card</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>⌘</kbd><kbd>↓</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Jump to last card</dd>
+					</div>
+				</dl>
+			</div>
+			<div class="kanban-help-section">
+				<h3 class="kanban-help-section-title">Drag & Drop</h3>
+				<dl class="kanban-help-list">
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>Space</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Pick up or drop card</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Move card (when grabbed)</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>⌘</kbd><kbd>↑</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Move to top of column</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>⌘</kbd><kbd>↓</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Move to bottom of column</dd>
+					</div>
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>Esc</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Cancel move</dd>
+						</div>
+					</dl>
+				</div>
+				<div class="kanban-help-section">
+					<h3 class="kanban-help-section-title">Quick Actions</h3>
+					<dl class="kanban-help-list">
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>E</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Edit bookmark</dd>
+						</div>
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>O</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Open URL in new tab</dd>
+						</div>
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>Delete</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Delete bookmark</dd>
+						</div>
+					</dl>
+				</div>
+				<div class="kanban-help-section">
+					<h3 class="kanban-help-section-title">Help</h3>
+					<dl class="kanban-help-list">
+						<div class="kanban-help-item">
+							<dt class="kanban-help-keys">
+								<kbd>?</kbd>
+							</dt>
+							<dd class="kanban-help-desc">Show this help</dd>
+						</div>
+					</dl>
+				</div>
+			</div>
 		</div>
 	</div>
 }

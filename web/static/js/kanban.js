@@ -636,6 +636,212 @@
     card.focus();
   }
 
+  // ============================================
+  // KEYBOARD NAVIGATION (WITHOUT GRAB MODE)
+  // ============================================
+
+  /**
+   * Scroll a card into view smoothly
+   */
+  function scrollCardIntoView(card) {
+    if (!card) return;
+
+    // Scroll the card into view within its column
+    card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+
+    // Also ensure the column is visible in the board
+    const column = card.closest(".kanban-column");
+    if (column) {
+      const board = document.getElementById("kanban-board");
+      if (board) {
+        const columnRect = column.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
+
+        // If column is partially off-screen horizontally, scroll board
+        if (columnRect.left < boardRect.left) {
+          board.scrollLeft -= (boardRect.left - columnRect.left + 20);
+        } else if (columnRect.right > boardRect.right) {
+          board.scrollLeft += (columnRect.right - boardRect.right + 20);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get all columns (excluding the "new column" button)
+   */
+  function getAllColumns() {
+    return Array.from(
+      document.querySelectorAll(".kanban-column:not(.kanban-new-column)")
+    );
+  }
+
+  /**
+   * Get all cards in a column
+   */
+  function getCardsInColumn(column) {
+    const content = column.querySelector(".kanban-column-content");
+    if (!content) return [];
+    return Array.from(content.querySelectorAll(".kanban-card"));
+  }
+
+  /**
+   * Focus card in vertical direction (up/down within column)
+   */
+  function focusCardInDirection(card, direction) {
+    const column = card.closest(".kanban-column");
+    const cards = getCardsInColumn(column);
+    const currentIndex = cards.indexOf(card);
+    const targetIndex = currentIndex + direction;
+
+    if (targetIndex >= 0 && targetIndex < cards.length) {
+      const targetCard = cards[targetIndex];
+      targetCard.focus();
+      scrollCardIntoView(targetCard);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Focus card in adjacent column (left/right)
+   */
+  function focusCardInAdjacentColumn(card, direction) {
+    const columns = getAllColumns();
+    const currentColumn = card.closest(".kanban-column");
+    const currentColumnIndex = columns.indexOf(currentColumn);
+    const targetColumnIndex = currentColumnIndex + direction;
+
+    if (targetColumnIndex < 0 || targetColumnIndex >= columns.length) {
+      return false;
+    }
+
+    const targetColumn = columns[targetColumnIndex];
+    const currentCards = getCardsInColumn(currentColumn);
+    const targetCards = getCardsInColumn(targetColumn);
+
+    if (targetCards.length === 0) {
+      // No cards in target column, try next column in same direction
+      // Or just stay where we are
+      return false;
+    }
+
+    // Try to maintain same index, or go to last card if target has fewer
+    const currentIndex = currentCards.indexOf(card);
+    const targetIndex = Math.min(currentIndex, targetCards.length - 1);
+    const targetCard = targetCards[targetIndex];
+
+    targetCard.focus();
+    scrollCardIntoView(targetCard);
+    return true;
+  }
+
+  /**
+   * Focus first card in first column
+   */
+  function focusFirstCard() {
+    const columns = getAllColumns();
+    for (const column of columns) {
+      const cards = getCardsInColumn(column);
+      if (cards.length > 0) {
+        cards[0].focus();
+        scrollCardIntoView(cards[0]);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Focus last card in last column
+   */
+  function focusLastCard() {
+    const columns = getAllColumns();
+    for (let i = columns.length - 1; i >= 0; i--) {
+      const cards = getCardsInColumn(columns[i]);
+      if (cards.length > 0) {
+        const lastCard = cards[cards.length - 1];
+        lastCard.focus();
+        scrollCardIntoView(lastCard);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // ============================================
+  // QUICK ACTIONS
+  // ============================================
+
+  /**
+   * Trigger edit action for a card
+   */
+  function triggerEditAction(card) {
+    const editBtn = card.querySelector('[hx-get*="/edit-drawer"]');
+    if (editBtn) {
+      editBtn.click();
+    }
+  }
+
+  /**
+   * Open URL for a card
+   */
+  function triggerOpenUrl(card) {
+    // Get URL from card's data or find the link in the dropdown
+    const openUrlLink = card.querySelector('a[target="_blank"]');
+    if (openUrlLink) {
+      window.open(openUrlLink.href, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  /**
+   * Trigger delete action for a card
+   */
+  function triggerDeleteAction(card) {
+    const deleteBtn = card.querySelector('[hx-delete]');
+    if (deleteBtn) {
+      deleteBtn.click();
+    }
+  }
+
+  // ============================================
+  // HELP MODAL
+  // ============================================
+
+  /**
+   * Toggle help modal visibility
+   */
+  function toggleHelpModal() {
+    const modal = document.getElementById("kanban-help-modal");
+    if (!modal) return;
+
+    const isHidden = modal.classList.contains("hidden");
+    if (isHidden) {
+      modal.classList.remove("hidden");
+      // Focus the close button
+      const closeBtn = modal.querySelector("[data-close-modal]");
+      if (closeBtn) closeBtn.focus();
+    } else {
+      modal.classList.add("hidden");
+      // Return focus to the board
+      const firstCard = document.querySelector(".kanban-card");
+      if (firstCard) firstCard.focus();
+    }
+  }
+
+  /**
+   * Close help modal
+   */
+  function closeHelpModal() {
+    const modal = document.getElementById("kanban-help-modal");
+    if (modal && !modal.classList.contains("hidden")) {
+      modal.classList.add("hidden");
+      // Return focus to the board
+      const firstCard = document.querySelector(".kanban-card");
+      if (firstCard) firstCard.focus();
+    }
+  }
+
   /**
    * Handle keyboard events on cards
    */
@@ -646,55 +852,164 @@
     // Don't interfere if focus is on interactive element inside the card
     const isOnCard = e.target === card;
     const isOnDragHandle = e.target.closest(".kanban-card-drag-handle");
+    const isOnInteractiveElement = !isOnCard && !isOnDragHandle;
+
+    // Check if we're in grab mode
+    const isGrabbed = keyboardDragState.isActive && keyboardDragState.card === card;
 
     switch (e.key) {
       case " ":
       case "Enter":
         // Only handle if focus is on the card itself (not buttons/links inside)
-        if (!isOnCard && !isOnDragHandle) return;
+        if (isOnInteractiveElement) return;
 
         e.preventDefault();
-        if (keyboardDragState.isActive && keyboardDragState.card === card) {
+        if (isGrabbed) {
           endKeyboardDrag(false); // Drop
-        } else if (!keyboardDragState.isActive) {
+        } else {
           startKeyboardDrag(card); // Pick up
         }
         break;
 
       case "ArrowUp":
-        if (keyboardDragState.isActive && keyboardDragState.card === card) {
+        // Cmd+↑ on Mac = jump to first card / move to top
+        if (e.metaKey || e.ctrlKey) {
           e.preventDefault();
-          moveCardUp(card);
+          if (isGrabbed) {
+            // Move card to top of current column
+            const column = card.closest(".kanban-column-content");
+            const firstCard = column.querySelector(".kanban-card");
+            if (firstCard && firstCard !== card) {
+              column.insertBefore(card, firstCard);
+              const position = getCardPosition(card);
+              announce(`Moved to top, position ${position.index} of ${position.total}`);
+              scrollCardIntoView(card);
+            }
+          } else {
+            focusFirstCard();
+          }
+        } else {
+          e.preventDefault();
+          if (isGrabbed) {
+            moveCardUp(card);
+            scrollCardIntoView(card);
+          } else {
+            focusCardInDirection(card, -1);
+          }
         }
         break;
 
       case "ArrowDown":
-        if (keyboardDragState.isActive && keyboardDragState.card === card) {
+        // Cmd+↓ on Mac = jump to last card / move to bottom
+        if (e.metaKey || e.ctrlKey) {
           e.preventDefault();
-          moveCardDown(card);
+          if (isGrabbed) {
+            // Move card to bottom of current column
+            const column = card.closest(".kanban-column-content");
+            column.appendChild(card);
+            const position = getCardPosition(card);
+            announce(`Moved to bottom, position ${position.index} of ${position.total}`);
+            scrollCardIntoView(card);
+          } else {
+            focusLastCard();
+          }
+        } else {
+          e.preventDefault();
+          if (isGrabbed) {
+            moveCardDown(card);
+            scrollCardIntoView(card);
+          } else {
+            focusCardInDirection(card, 1);
+          }
         }
         break;
 
       case "ArrowLeft":
-        if (keyboardDragState.isActive && keyboardDragState.card === card) {
-          e.preventDefault();
+        e.preventDefault();
+        if (isGrabbed) {
           moveCardToColumn(card, -1);
+          scrollCardIntoView(card);
+        } else {
+          focusCardInAdjacentColumn(card, -1);
         }
         break;
 
       case "ArrowRight":
-        if (keyboardDragState.isActive && keyboardDragState.card === card) {
-          e.preventDefault();
+        e.preventDefault();
+        if (isGrabbed) {
           moveCardToColumn(card, 1);
+          scrollCardIntoView(card);
+        } else {
+          focusCardInAdjacentColumn(card, 1);
+        }
+        break;
+
+      case "Home":
+        // Jump to first card (with Ctrl/Cmd, move grabbed card to top of column)
+        e.preventDefault();
+        if (isGrabbed && (e.ctrlKey || e.metaKey)) {
+          // Move card to top of current column
+          const column = card.closest(".kanban-column-content");
+          const firstCard = column.querySelector(".kanban-card");
+          if (firstCard && firstCard !== card) {
+            column.insertBefore(card, firstCard);
+            const position = getCardPosition(card);
+            announce(`Moved to top, position ${position.index} of ${position.total}`);
+            scrollCardIntoView(card);
+          }
+        } else if (!isGrabbed) {
+          focusFirstCard();
+        }
+        break;
+
+      case "End":
+        // Jump to last card (with Ctrl/Cmd, move grabbed card to bottom of column)
+        e.preventDefault();
+        if (isGrabbed && (e.ctrlKey || e.metaKey)) {
+          // Move card to bottom of current column
+          const column = card.closest(".kanban-column-content");
+          column.appendChild(card);
+          const position = getCardPosition(card);
+          announce(`Moved to bottom, position ${position.index} of ${position.total}`);
+          scrollCardIntoView(card);
+        } else if (!isGrabbed) {
+          focusLastCard();
         }
         break;
 
       case "Escape":
-        if (keyboardDragState.isActive) {
+        if (isGrabbed) {
           e.preventDefault();
           endKeyboardDrag(true); // Cancel
         }
         break;
+
+      // Quick actions (only when not grabbed and focus is on card)
+      case "e":
+      case "E":
+        if (!isGrabbed && isOnCard) {
+          e.preventDefault();
+          triggerEditAction(card);
+        }
+        break;
+
+      case "o":
+      case "O":
+        if (!isGrabbed && isOnCard) {
+          e.preventDefault();
+          triggerOpenUrl(card);
+        }
+        break;
+
+      case "Delete":
+      case "Backspace":
+        if (!isGrabbed && isOnCard) {
+          e.preventDefault();
+          triggerDeleteAction(card);
+        }
+        break;
+
+      // Note: "?" is handled by handleGlobalKeydown at document level
     }
   }
 
@@ -823,6 +1138,28 @@
   // ============================================
 
   /**
+   * Handle global keyboard events (for help modal, etc.)
+   */
+  function handleGlobalKeydown(e) {
+    // Help modal toggle with ?
+    if (e.key === "?" && !e.target.closest("input, textarea, select")) {
+      e.preventDefault();
+      toggleHelpModal();
+      return;
+    }
+
+    // Close help modal with Escape
+    if (e.key === "Escape") {
+      const modal = document.getElementById("kanban-help-modal");
+      if (modal && !modal.classList.contains("hidden")) {
+        e.preventDefault();
+        closeHelpModal();
+        return;
+      }
+    }
+  }
+
+  /**
    * Initialize the Kanban board
    */
   function init() {
@@ -837,8 +1174,27 @@
     board.addEventListener("dragleave", handleDragLeave);
     board.addEventListener("drop", handleDrop);
 
-    // Keyboard navigation
+    // Keyboard navigation on cards
     board.addEventListener("keydown", handleCardKeydown);
+
+    // Global keyboard events (help modal, etc.)
+    document.addEventListener("keydown", handleGlobalKeydown);
+
+    // Help modal event handlers
+    const helpModal = document.getElementById("kanban-help-modal");
+    if (helpModal) {
+      // Close when clicking backdrop
+      helpModal.addEventListener("click", (e) => {
+        if (e.target === helpModal) {
+          closeHelpModal();
+        }
+      });
+      // Close button
+      const closeBtn = helpModal.querySelector("[data-close-modal]");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", closeHelpModal);
+      }
+    }
 
     // Listen for HTMX events to reinitialize after content changes
     document.body.addEventListener("htmx:afterSwap", handleAfterSwap);
@@ -872,6 +1228,12 @@
       board.removeEventListener("drop", handleDrop);
       board.removeEventListener("keydown", handleCardKeydown);
     }
+
+    // Remove global keyboard listener
+    document.removeEventListener("keydown", handleGlobalKeydown);
+
+    // Close help modal if open
+    closeHelpModal();
 
     // Cancel any active keyboard drag
     if (keyboardDragState.isActive) {
