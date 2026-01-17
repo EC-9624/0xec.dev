@@ -223,7 +223,7 @@ html:not(.light):not(.dark) {
 @layer components {
   /* ===== 3-COLUMN LAYOUT ===== */
   .layout-container {
-    @apply flex min-h-screen max-w-screen-2xl mx-auto;
+    @apply flex min-h-screen;
   }
 
   /* Left Sidebar */
