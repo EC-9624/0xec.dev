@@ -1530,6 +1530,20 @@ html:not(.light):not(.dark) {
     @apply opacity-50;
   }
 
+  /* Multi-drag: hide secondary dragged cards */
+  .kanban-card.multi-drag-secondary {
+    @apply hidden;
+  }
+
+  /* Multi-drag badge showing count */
+  .multi-drag-badge {
+    @apply absolute -top-2 -right-2 z-10;
+    @apply w-6 h-6 flex items-center justify-center;
+    @apply bg-primary text-primary-foreground;
+    @apply text-xs font-semibold rounded-full;
+    @apply shadow-md;
+  }
+
   /* Drop position indicator - line/bar */
   .kanban-drop-placeholder {
     @apply h-1 bg-primary my-1;

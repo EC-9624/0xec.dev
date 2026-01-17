@@ -280,8 +280,9 @@ func (h *Handlers) HTMXAdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Re
 
 // BulkMoveRequest represents the JSON request body for bulk move
 type BulkMoveRequest struct {
-	BookmarkIDs  []int64 `json:"bookmark_ids"`
-	CollectionID *int64  `json:"collection_id"`
+	BookmarkIDs     []int64 `json:"bookmark_ids"`
+	CollectionID    *int64  `json:"collection_id"`
+	AfterBookmarkID *int64  `json:"after_id"`
 }
 
 // BulkDeleteRequest represents the JSON request body for bulk delete
@@ -309,7 +310,7 @@ func (h *Handlers) AdminBulkMoveBookmarks(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err := h.service.BulkMoveBookmarks(ctx, req.BookmarkIDs, req.CollectionID)
+	err := h.service.BulkMoveBookmarks(ctx, req.BookmarkIDs, req.CollectionID, req.AfterBookmarkID)
 	if err != nil {
 		logger.Error(ctx, "failed to bulk move bookmarks", "error", err)
 		http.Error(w, "Failed to move bookmarks", http.StatusInternalServerError)

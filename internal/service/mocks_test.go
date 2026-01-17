@@ -37,7 +37,7 @@ type MockService struct {
 	UpdateBookmarkCollectionFunc       func(ctx context.Context, id int64, collectionID *int64) error
 	UpdateBookmarkTitleFunc            func(ctx context.Context, id int64, title string) error
 	MoveBookmarkFunc                   func(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error
-	BulkMoveBookmarksFunc              func(ctx context.Context, bookmarkIDs []int64, collectionID *int64) error
+	BulkMoveBookmarksFunc              func(ctx context.Context, bookmarkIDs []int64, collectionID *int64, afterBookmarkID *int64) error
 	BulkDeleteBookmarksFunc            func(ctx context.Context, bookmarkIDs []int64) error
 	RefreshBookmarkMetadataFunc        func(ctx context.Context, id int64) error
 	RefreshAllMissingMetadataAsyncFunc func(progressChan chan<- string)
@@ -263,9 +263,9 @@ func (m *MockService) MoveBookmark(ctx context.Context, bookmarkID int64, collec
 	return nil
 }
 
-func (m *MockService) BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64) error {
+func (m *MockService) BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64, afterBookmarkID *int64) error {
 	if m.BulkMoveBookmarksFunc != nil {
-		return m.BulkMoveBookmarksFunc(ctx, bookmarkIDs, collectionID)
+		return m.BulkMoveBookmarksFunc(ctx, bookmarkIDs, collectionID, afterBookmarkID)
 	}
 	return nil
 }

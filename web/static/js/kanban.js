@@ -25,10 +25,13 @@
 
   const dragState = {
     isDragging: false,
-    draggedCard: null,
+    draggedCard: null,       // Primary card being dragged
+    draggedCards: [],        // All cards being dragged (for multi-select)
     sourceColumn: null,
     sourceIndex: null,
-    placeholder: null
+    sourcePositions: [],     // Original positions for revert [{card, column, nextSibling}]
+    placeholder: null,
+    isMultiDrag: false       // True when dragging multiple selected cards
   };
 
   // ============================================
@@ -663,22 +666,96 @@
     const card = e.target.closest(".kanban-card");
     if (!card) return;
 
+    const bookmarkId = card.dataset.bookmarkId;
+    const isCardSelected = selectionState.selectedIds.has(bookmarkId);
+    const hasMultipleSelected = selectionState.selectedIds.size > 1;
+
+    // If dragging a card that's NOT selected, clear selection and do single drag
+    if (!isCardSelected) {
+      clearSelection();
+    }
+
     dragState.isDragging = true;
     dragState.draggedCard = card;
     dragState.sourceColumn = card.closest(".kanban-column-content");
     dragState.sourceIndex = getCardIndex(card);
 
-    // Set drag data
-    e.dataTransfer.setData("text/plain", card.dataset.bookmarkId);
-    e.dataTransfer.effectAllowed = "move";
+    // Check if this is a multi-drag scenario
+    if (isCardSelected && hasMultipleSelected) {
+      dragState.isMultiDrag = true;
+      
+      // Get all selected cards in DOM order (important for maintaining relative positions)
+      const column = card.closest(".kanban-column-content");
+      const allCardsInColumn = Array.from(column.querySelectorAll(".kanban-card"));
+      dragState.draggedCards = allCardsInColumn.filter((c) => 
+        selectionState.selectedIds.has(c.dataset.bookmarkId)
+      );
 
-    // Visual feedback (use timeout to avoid affecting drag image)
-    setTimeout(() => {
-      card.classList.add("dragging");
-    }, 0);
+      // Store original positions for potential revert
+      dragState.sourcePositions = dragState.draggedCards.map((c) => ({
+        card: c,
+        column: c.closest(".kanban-column-content"),
+        nextSibling: c.nextElementSibling
+      }));
+
+      // Add dragging class to all selected cards (with delay to not affect drag image)
+      setTimeout(() => {
+        dragState.draggedCards.forEach((c, i) => {
+          c.classList.add("dragging");
+          // Mark secondary cards for hiding
+          if (c !== card) {
+            c.classList.add("multi-drag-secondary");
+          }
+        });
+        // Add multi-drag badge to primary card
+        addMultiDragBadge(card, dragState.draggedCards.length);
+      }, 0);
+    } else {
+      dragState.isMultiDrag = false;
+      dragState.draggedCards = [card];
+      dragState.sourcePositions = [{
+        card: card,
+        column: card.closest(".kanban-column-content"),
+        nextSibling: card.nextElementSibling
+      }];
+
+      // Visual feedback (use timeout to avoid affecting drag image)
+      setTimeout(() => {
+        card.classList.add("dragging");
+      }, 0);
+    }
+
+    // Set drag data
+    e.dataTransfer.setData("text/plain", bookmarkId);
+    e.dataTransfer.effectAllowed = "move";
 
     // Create placeholder
     dragState.placeholder = createPlaceholder();
+  }
+
+  /**
+   * Add multi-drag badge showing count of cards being dragged
+   */
+  function addMultiDragBadge(card, count) {
+    // Remove any existing badge
+    removeMultiDragBadge();
+    
+    const badge = document.createElement("div");
+    badge.className = "multi-drag-badge";
+    badge.textContent = count;
+    badge.id = "multi-drag-badge";
+    card.style.position = "relative";
+    card.appendChild(badge);
+  }
+
+  /**
+   * Remove multi-drag badge from card
+   */
+  function removeMultiDragBadge() {
+    const badge = document.getElementById("multi-drag-badge");
+    if (badge) {
+      badge.remove();
+    }
   }
 
   /**
@@ -688,7 +765,15 @@
     const card = e.target.closest(".kanban-card");
     if (!card) return;
 
-    card.classList.remove("dragging");
+    // Clean up all dragged cards
+    dragState.draggedCards.forEach((c) => {
+      c.classList.remove("dragging");
+      c.classList.remove("multi-drag-secondary");
+    });
+
+    // Remove multi-drag badge
+    removeMultiDragBadge();
+
     removePlaceholder();
     removeAllDragOverClasses();
     stopAutoScroll();
@@ -696,9 +781,12 @@
     // Reset state
     dragState.isDragging = false;
     dragState.draggedCard = null;
+    dragState.draggedCards = [];
     dragState.sourceColumn = null;
     dragState.sourceIndex = null;
+    dragState.sourcePositions = [];
     dragState.placeholder = null;
+    dragState.isMultiDrag = false;
   }
 
   /**
@@ -755,35 +843,127 @@
     const column = e.target.closest(".kanban-column-content");
     if (!column || !dragState.draggedCard) return;
 
-    const { draggedCard, sourceColumn, sourceIndex, placeholder } = dragState;
+    const { draggedCard, draggedCards, sourceColumn, sourceIndex, placeholder, isMultiDrag } = dragState;
 
-    // Insert card at placeholder position
-    if (placeholder && placeholder.parentNode) {
-      placeholder.parentNode.insertBefore(draggedCard, placeholder);
-    } else {
-      column.appendChild(draggedCard);
-    }
+    // Get the insert position (the element to insert before)
+    const insertBefore = placeholder ? placeholder.nextElementSibling : null;
 
-    // Remove placeholder and visual feedback
+    // Remove placeholder first
     removePlaceholder();
     removeAllDragOverClasses();
-    draggedCard.classList.remove("dragging");
 
-    // Calculate the new position (after which bookmark)
-    const afterBookmarkId = getAfterBookmarkId(draggedCard);
-    const newIndex = getCardIndex(draggedCard);
+    if (isMultiDrag && draggedCards.length > 1) {
+      // Multi-drag: insert all cards at the drop position
+      // First, remove secondary cards from their hiding
+      draggedCards.forEach((c) => {
+        c.classList.remove("dragging");
+        c.classList.remove("multi-drag-secondary");
+      });
+      removeMultiDragBadge();
 
-    // Check if position actually changed (different column OR different position in same column)
-    const positionChanged = column !== sourceColumn || newIndex !== sourceIndex;
+      // Insert all cards at the position (in order)
+      draggedCards.forEach((c) => {
+        if (insertBefore) {
+          column.insertBefore(c, insertBefore);
+        } else {
+          column.appendChild(c);
+        }
+      });
 
-    if (positionChanged) {
-      const bookmarkId = draggedCard.dataset.bookmarkId;
+      // Calculate after_id (bookmark ID of card before our first inserted card)
+      const firstInsertedCard = draggedCards[0];
+      const afterBookmarkId = getAfterBookmarkId(firstInsertedCard);
       const newCollectionId = column.dataset.collectionId || "";
 
-      moveBookmark(bookmarkId, newCollectionId, afterBookmarkId, draggedCard, sourceColumn, sourceIndex);
+      // Check if position changed
+      const positionChanged = column !== sourceColumn || 
+        draggedCards.some((c, i) => getCardIndex(c) !== (sourceIndex + i));
+
+      if (positionChanged) {
+        // Call bulk move API with position
+        const bookmarkIds = draggedCards.map((c) => parseInt(c.dataset.bookmarkId, 10));
+        bulkMoveBookmarksWithPosition(bookmarkIds, newCollectionId, afterBookmarkId, draggedCards, sourceColumn);
+      }
+
+      // Clear selection after drop
+      clearSelection();
+    } else {
+      // Single card drag (existing behavior)
+      draggedCard.classList.remove("dragging");
+
+      // Insert card at placeholder position
+      if (insertBefore) {
+        column.insertBefore(draggedCard, insertBefore);
+      } else {
+        column.appendChild(draggedCard);
+      }
+
+      // Calculate the new position (after which bookmark)
+      const afterBookmarkId = getAfterBookmarkId(draggedCard);
+      const newIndex = getCardIndex(draggedCard);
+
+      // Check if position actually changed (different column OR different position in same column)
+      const positionChanged = column !== sourceColumn || newIndex !== sourceIndex;
+
+      if (positionChanged) {
+        const bookmarkId = draggedCard.dataset.bookmarkId;
+        const newCollectionId = column.dataset.collectionId || "";
+
+        moveBookmark(bookmarkId, newCollectionId, afterBookmarkId, draggedCard, sourceColumn, sourceIndex);
+      }
     }
 
     // Update counts
+    updateColumnCounts();
+  }
+
+  /**
+   * Bulk move bookmarks with position support (for multi-drag)
+   */
+  function bulkMoveBookmarksWithPosition(bookmarkIds, collectionId, afterBookmarkId, cards, sourceColumn) {
+    const csrfToken = getCSRFToken();
+
+    fetch("/admin/htmx/bookmarks/bulk/move", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bookmark_ids: bookmarkIds,
+        collection_id: collectionId === "" ? null : parseInt(collectionId, 10),
+        after_id: afterBookmarkId ? parseInt(afterBookmarkId, 10) : null,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to move bookmarks: ${response.status}`);
+        }
+        announce(`${bookmarkIds.length} bookmark${bookmarkIds.length !== 1 ? "s" : ""} moved`);
+      })
+      .catch((error) => {
+        console.error("[Kanban] Error moving bookmarks:", error);
+        // Revert cards to original positions
+        revertCardsToOriginalPositions();
+        if (typeof window.showToast === "function") {
+          window.showToast("Failed to move bookmarks. Please try again.", "error");
+        } else {
+          alert("Failed to move bookmarks. Please try again.");
+        }
+      });
+  }
+
+  /**
+   * Revert cards to their original positions (used on error)
+   */
+  function revertCardsToOriginalPositions() {
+    dragState.sourcePositions.forEach(({ card, column, nextSibling }) => {
+      if (nextSibling && nextSibling.parentNode === column) {
+        column.insertBefore(card, nextSibling);
+      } else {
+        column.appendChild(card);
+      }
+    });
     updateColumnCounts();
   }
 

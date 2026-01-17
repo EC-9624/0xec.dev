@@ -42,7 +42,7 @@ type BookmarkService interface {
 	UpdateBookmarkCollection(ctx context.Context, id int64, collectionID *int64) error
 	UpdateBookmarkTitle(ctx context.Context, id int64, title string) error
 	MoveBookmark(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error
-	BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64) error
+	BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64, afterBookmarkID *int64) error
 	BulkDeleteBookmarks(ctx context.Context, bookmarkIDs []int64) error
 	RefreshBookmarkMetadata(ctx context.Context, id int64) error
 	RefreshAllMissingMetadataAsync(progressChan chan<- string)
