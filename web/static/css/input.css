@@ -1748,4 +1748,120 @@ html:not(.light):not(.dark) {
   .selection-move-option-color {
     @apply w-3 h-3 shrink-0;
   }
+
+  /* ============================================
+     KEYBOARD MOVE MENU
+     ============================================ */
+
+  .kanban-move-menu-backdrop {
+    @apply fixed inset-0 z-40;
+    background: rgba(0, 0, 0, 0.3);
+    animation: backdrop-fade-in 0.15s ease-out;
+  }
+
+  .kanban-move-menu-backdrop.hidden {
+    @apply hidden;
+  }
+
+  @keyframes backdrop-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .kanban-move-menu {
+    @apply fixed z-50;
+    @apply flex flex-col;
+    @apply bg-card border border-border;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 280px;
+    max-width: 360px;
+    max-height: 400px;
+    box-shadow: var(--shadow-lg);
+    animation: move-menu-fade-in 0.15s ease-out;
+  }
+
+  .kanban-move-menu.hidden {
+    @apply hidden;
+  }
+
+  @keyframes move-menu-fade-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  .kanban-move-menu-header {
+    @apply px-4 py-3 border-b border-border;
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .kanban-move-menu-list {
+    @apply flex-1 overflow-y-auto py-2;
+  }
+
+  .kanban-move-menu-item {
+    @apply flex items-center gap-3 px-4 py-2;
+    @apply text-sm text-foreground cursor-pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .kanban-move-menu-item:hover:not(.current) {
+    @apply bg-muted;
+  }
+
+  .kanban-move-menu-item.focused {
+    @apply bg-muted;
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+  }
+
+  .kanban-move-menu-item.current {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .kanban-move-menu-item.current .kanban-move-menu-item-name::after {
+    content: " (current)";
+    @apply text-xs text-muted-foreground;
+  }
+
+  .kanban-move-menu-item-color {
+    @apply w-3 h-3 shrink-0;
+  }
+
+  .kanban-move-menu-item-icon {
+    @apply w-4 h-4 shrink-0 text-muted-foreground;
+  }
+
+  .kanban-move-menu-item-name {
+    @apply flex-1 truncate;
+  }
+
+  .kanban-move-menu-item-shortcut {
+    @apply text-xs text-muted-foreground font-mono;
+  }
+
+  .kanban-move-menu-footer {
+    @apply px-4 py-2 border-t border-border;
+    @apply text-center;
+  }
+
+  .kanban-move-menu-hint {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .kanban-move-menu-hint kbd {
+    @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1
+           bg-muted border border-border text-xs font-mono mx-0.5;
+  }
+
+  .kanban-move-menu-hint-sep {
+    @apply mx-1 text-border;
+  }
 }

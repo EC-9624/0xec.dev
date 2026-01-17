@@ -64,6 +64,8 @@ templ BookmarksBoard(data BookmarksBoardData) {
 		@KanbanHelpModal()
 		<!-- Selection Toolbar -->
 		@KanbanSelectionToolbar(data.BoardData.Collections)
+		<!-- Keyboard Move Menu -->
+		@KanbanMoveMenu()
 	</div>
 }
 
@@ -136,6 +138,43 @@ templ KanbanSelectionToolbar(collections []service.CollectionWithRecent) {
 		>
 			@components.XIcon(components.IconSM)
 		</button>
+	</div>
+}
+
+// KanbanMoveMenu renders the keyboard-navigable move menu
+templ KanbanMoveMenu() {
+	<!-- Backdrop -->
+	<div 
+		id="kanban-move-menu-backdrop" 
+		class="kanban-move-menu-backdrop hidden"
+		aria-hidden="true"
+	></div>
+	<!-- Menu -->
+	<div 
+		id="kanban-move-menu" 
+		class="kanban-move-menu hidden"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="move-menu-title"
+		tabindex="-1"
+	>
+		<div class="kanban-move-menu-header">
+			<span id="move-menu-title">Move <span id="move-menu-count">0</span> items to...</span>
+		</div>
+		<div class="kanban-move-menu-list" role="listbox" aria-label="Collections">
+			<!-- Dynamically populated by JavaScript -->
+		</div>
+		<div class="kanban-move-menu-footer">
+			<span class="kanban-move-menu-hint">
+				<kbd>↑</kbd><kbd>↓</kbd> Navigate
+				<span class="kanban-move-menu-hint-sep">•</span>
+				<kbd>Enter</kbd> Select
+				<span class="kanban-move-menu-hint-sep">•</span>
+				<kbd>Esc</kbd> Cancel
+				<span class="kanban-move-menu-hint-sep">•</span>
+				<kbd>1-9</kbd> Quick select
+			</span>
+		</div>
 	</div>
 }
 
@@ -263,6 +302,12 @@ templ KanbanHelpModal() {
 							<kbd>Esc</kbd>
 						</dt>
 						<dd class="kanban-help-desc">Clear selection</dd>
+					</div>
+					<div class="kanban-help-item">
+						<dt class="kanban-help-keys">
+							<kbd>M</kbd>
+						</dt>
+						<dd class="kanban-help-desc">Move selected to collection</dd>
 					</div>
 				</dl>
 			</div>

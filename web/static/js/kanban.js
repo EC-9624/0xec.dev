@@ -69,6 +69,17 @@
   };
 
   // ============================================
+  // MOVE MENU STATE (Keyboard-navigable)
+  // ============================================
+
+  const moveMenuState = {
+    isOpen: false,
+    focusedIndex: 0,
+    collections: [],      // [{id, name, color, isCurrent}]
+    previousFocus: null,  // Element to return focus to when closing
+  };
+
+  // ============================================
   // SCREEN READER ANNOUNCEMENTS
   // ============================================
 
@@ -395,8 +406,272 @@
    */
   function handleBoardClick(e) {
     // If click was on empty space (not on a card), clear selection
-    if (!e.target.closest(".kanban-card") && !e.target.closest("#kanban-selection-toolbar")) {
+    if (!e.target.closest(".kanban-card") && 
+        !e.target.closest("#kanban-selection-toolbar") &&
+        !e.target.closest("#kanban-move-menu")) {
       clearSelection();
+    }
+  }
+
+  // ============================================
+  // KEYBOARD MOVE MENU
+  // ============================================
+
+  /**
+   * Open the keyboard-navigable move menu
+   */
+  function openMoveMenu() {
+    if (selectionState.selectedIds.size < 2) return;
+
+    // Store current focus to return to later
+    moveMenuState.previousFocus = document.activeElement;
+
+    // Build collections list from existing selection toolbar dropdown
+    const collections = [];
+    const currentColumnId = selectionState.columnId;
+
+    // Add Unsorted first
+    collections.push({
+      id: "",
+      name: "Unsorted",
+      color: null,
+      isCurrent: currentColumnId === null || currentColumnId === "",
+    });
+
+    // Get collections from existing dropdown
+    document.querySelectorAll("[data-selection-move-menu] [data-move-collection-id]").forEach((el) => {
+      const id = el.dataset.moveCollectionId;
+      if (id !== "") {
+        const colorEl = el.querySelector(".selection-move-option-color");
+        collections.push({
+          id: id,
+          name: el.querySelector("span:last-child")?.textContent.trim() || "Collection",
+          color: colorEl ? colorEl.style.backgroundColor : null,
+          isCurrent: id === currentColumnId,
+        });
+      }
+    });
+
+    moveMenuState.collections = collections;
+    // Set initial focus to first non-current item, or first item
+    moveMenuState.focusedIndex = collections.findIndex((c) => !c.isCurrent);
+    if (moveMenuState.focusedIndex === -1) moveMenuState.focusedIndex = 0;
+
+    // Render and show menu
+    renderMoveMenu();
+    
+    const menu = document.getElementById("kanban-move-menu");
+    const backdrop = document.getElementById("kanban-move-menu-backdrop");
+    if (menu) {
+      menu.classList.remove("hidden");
+      moveMenuState.isOpen = true;
+      // Focus the menu for keyboard events
+      menu.focus();
+    }
+    if (backdrop) {
+      backdrop.classList.remove("hidden");
+    }
+
+    // Update count in header
+    const countEl = document.getElementById("move-menu-count");
+    if (countEl) {
+      countEl.textContent = selectionState.selectedIds.size;
+    }
+
+    announce(`Move menu opened. ${collections.length} options. Use arrow keys to navigate.`);
+  }
+
+  /**
+   * Close the move menu
+   */
+  function closeMoveMenu() {
+    const menu = document.getElementById("kanban-move-menu");
+    const backdrop = document.getElementById("kanban-move-menu-backdrop");
+    
+    if (menu) {
+      menu.classList.add("hidden");
+    }
+    if (backdrop) {
+      backdrop.classList.add("hidden");
+    }
+    
+    moveMenuState.isOpen = false;
+
+    // Return focus to previous element
+    if (moveMenuState.previousFocus && moveMenuState.previousFocus.focus) {
+      moveMenuState.previousFocus.focus();
+    }
+    moveMenuState.previousFocus = null;
+  }
+
+  /**
+   * Render the move menu items
+   */
+  function renderMoveMenu() {
+    const list = document.querySelector(".kanban-move-menu-list");
+    if (!list) return;
+
+    list.innerHTML = moveMenuState.collections
+      .map((item, index) => {
+        const isFocused = index === moveMenuState.focusedIndex;
+        const shortcut = index < 9 ? index + 1 : null;
+
+        return `
+          <div class="kanban-move-menu-item ${item.isCurrent ? "current" : ""} ${isFocused ? "focused" : ""}"
+               role="option"
+               data-index="${index}"
+               data-collection-id="${item.id}"
+               aria-selected="${isFocused}"
+               ${item.isCurrent ? 'aria-disabled="true"' : ""}>
+            ${
+              item.color
+                ? `<span class="kanban-move-menu-item-color" style="background-color: ${item.color}"></span>`
+                : `<svg class="kanban-move-menu-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>`
+            }
+            <span class="kanban-move-menu-item-name">${item.name}</span>
+            ${shortcut ? `<span class="kanban-move-menu-item-shortcut">${shortcut}</span>` : ""}
+          </div>
+        `;
+      })
+      .join("");
+
+    // Add click handlers to items
+    list.querySelectorAll(".kanban-move-menu-item:not(.current)").forEach((el) => {
+      el.addEventListener("click", () => {
+        const index = parseInt(el.dataset.index, 10);
+        moveMenuState.focusedIndex = index;
+        selectMoveMenuItem();
+      });
+    });
+  }
+
+  /**
+   * Navigate the move menu (up/down)
+   */
+  function navigateMoveMenu(direction) {
+    const { collections, focusedIndex } = moveMenuState;
+    let newIndex = focusedIndex;
+
+    // Find next non-current item in direction
+    let attempts = 0;
+    do {
+      newIndex = newIndex + direction;
+      // Wrap around
+      if (newIndex < 0) newIndex = collections.length - 1;
+      if (newIndex >= collections.length) newIndex = 0;
+      attempts++;
+    } while (collections[newIndex].isCurrent && attempts < collections.length);
+
+    moveMenuState.focusedIndex = newIndex;
+    updateMoveMenuFocus();
+
+    const item = collections[newIndex];
+    announce(`${item.name}${item.isCurrent ? " (current)" : ""}`);
+  }
+
+  /**
+   * Update visual focus indicator in move menu
+   */
+  function updateMoveMenuFocus() {
+    const list = document.querySelector(".kanban-move-menu-list");
+    if (!list) return;
+
+    list.querySelectorAll(".kanban-move-menu-item").forEach((el, index) => {
+      const isFocused = index === moveMenuState.focusedIndex;
+      el.classList.toggle("focused", isFocused);
+      el.setAttribute("aria-selected", isFocused);
+    });
+
+    // Scroll focused item into view
+    const focusedEl = list.querySelector(".kanban-move-menu-item.focused");
+    if (focusedEl) {
+      focusedEl.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  /**
+   * Select the currently focused menu item and move bookmarks
+   */
+  function selectMoveMenuItem() {
+    const item = moveMenuState.collections[moveMenuState.focusedIndex];
+    if (!item || item.isCurrent) return;
+
+    closeMoveMenu();
+    handleBulkMove(item.id);
+  }
+
+  /**
+   * Handle quick select by number (1-9)
+   */
+  function quickSelectMoveItem(number) {
+    const index = number - 1; // 1 = index 0
+    if (index < 0 || index >= moveMenuState.collections.length) return;
+
+    const item = moveMenuState.collections[index];
+    if (item.isCurrent) {
+      announce(`${item.name} is the current column`);
+      return;
+    }
+
+    moveMenuState.focusedIndex = index;
+    selectMoveMenuItem();
+  }
+
+  /**
+   * Handle keyboard events for move menu
+   */
+  function handleMoveMenuKeydown(e) {
+    if (!moveMenuState.isOpen) return;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        navigateMoveMenu(-1);
+        break;
+
+      case "ArrowDown":
+        e.preventDefault();
+        navigateMoveMenu(1);
+        break;
+
+      case "Enter":
+        e.preventDefault();
+        selectMoveMenuItem();
+        break;
+
+      case "Escape":
+        e.preventDefault();
+        closeMoveMenu();
+        announce("Move menu closed");
+        break;
+
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
+        e.preventDefault();
+        quickSelectMoveItem(parseInt(e.key, 10));
+        break;
+
+      case "Tab":
+        // Trap focus within menu
+        e.preventDefault();
+        break;
+    }
+  }
+
+  /**
+   * Handle backdrop click to close menu
+   */
+  function handleMoveMenuBackdropClick() {
+    if (moveMenuState.isOpen) {
+      closeMoveMenu();
+      announce("Move menu closed");
     }
   }
 
@@ -1544,6 +1819,15 @@
         }
         break;
 
+      // Move menu (M key) - only when multiple cards selected
+      case "m":
+      case "M":
+        if (!isGrabbed && selectionState.selectedIds.size > 1) {
+          e.preventDefault();
+          openMoveMenu();
+        }
+        break;
+
       // Note: "?" is handled by handleGlobalKeydown at document level
     }
   }
@@ -1784,9 +2068,15 @@
   // ============================================
 
   /**
-   * Handle global keyboard events (for help modal, etc.)
+   * Handle global keyboard events (for help modal, move menu, etc.)
    */
   function handleGlobalKeydown(e) {
+    // Move menu keyboard handling (highest priority when open)
+    if (moveMenuState.isOpen) {
+      handleMoveMenuKeydown(e);
+      return;
+    }
+
     // Help modal toggle with ?
     if (e.key === "?" && !e.target.closest("input, textarea, select")) {
       e.preventDefault();
@@ -1850,6 +2140,12 @@
 
     // Selection toolbar event handlers
     initSelectionToolbar();
+
+    // Move menu backdrop click handler
+    const moveMenuBackdrop = document.getElementById("kanban-move-menu-backdrop");
+    if (moveMenuBackdrop) {
+      moveMenuBackdrop.addEventListener("click", handleMoveMenuBackdropClick);
+    }
 
     // Listen for HTMX events to reinitialize after content changes
     document.body.addEventListener("htmx:afterSwap", handleAfterSwap);
