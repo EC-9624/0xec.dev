@@ -38,6 +38,7 @@ templ BookmarkCard(bookmark models.Bookmark) {
 					width="16"
 					height="16"
 					loading="lazy"
+					onerror="this.style.display='none'"
 				/>
 				{ bookmark.GetDomain() }
 			</p>
