@@ -223,15 +223,7 @@ html:not(.light):not(.dark) {
 @layer components {
   /* ===== 3-COLUMN LAYOUT ===== */
   .layout-container {
-    @apply flex flex-1 overflow-hidden;
-    /* Account for fixed mobile header */
-    padding-top: 52px;
-  }
-
-  @media (min-width: 1024px) {
-    .layout-container {
-      padding-top: 0;
-    }
+    @apply flex flex-1 overflow-hidden bg-background;
   }
 
   /* Left Sidebar */
@@ -278,32 +270,38 @@ html:not(.light):not(.dark) {
     @apply p-4 sm:p-6 lg:p-12 max-w-4xl mx-auto pb-20 lg:pb-12;
   }
 
-  /* ===== MOBILE HEADER ===== */
-  .mobile-header {
-    @apply fixed top-0 left-0 right-0 z-40 flex lg:hidden items-center justify-between px-4 py-3 bg-sidebar border-b border-border;
-    transition: transform 0.3s ease;
+  /* ===== MOBILE BOTTOM BAR ===== */
+  .mobile-bottom-bar {
+    @apply fixed bottom-0 left-0 right-0 z-40 lg:hidden;
+    @apply flex items-center justify-between px-2 h-12;
+    @apply bg-sidebar border-t border-border;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  .mobile-header.scroll-hidden {
-    transform: translateY(-100%);
-  }
-
-  .mobile-header-logo {
-    @apply flex items-center gap-2;
-  }
-
-  .mobile-header-avatar {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center border border-border bg-background text-xs font-medium;
-  }
-
-  .mobile-header-title {
-    @apply font-semibold text-foreground;
-  }
-
-  .mobile-theme-toggle {
-    @apply flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-foreground hover:bg-muted;
-    transition-property: background-color, color;
+  .mobile-bar-btn {
+    @apply flex items-center justify-center w-10 h-10 text-muted-foreground;
+    transition-property: color;
     transition-duration: var(--transition-duration);
+  }
+
+  .mobile-bar-btn:active {
+    @apply text-foreground;
+  }
+
+  .mobile-bar-title {
+    @apply flex items-center gap-1.5 text-sm font-medium text-foreground;
+  }
+
+  .mobile-bar-logo {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center border border-border bg-background text-[10px] font-medium;
+  }
+
+  .mobile-bar-separator {
+    @apply text-muted-foreground;
+  }
+
+  .mobile-bar-page {
+    @apply text-muted-foreground;
   }
 
   /* Theme icon visibility based on current theme */
@@ -323,36 +321,100 @@ html:not(.light):not(.dark) {
     @apply hidden;
   }
 
-  /* ===== BOTTOM NAVIGATION ===== */
-  .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 z-40 flex lg:hidden bg-sidebar border-t border-border;
-    /* Safe area padding for notched devices */
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    transition: transform 0.3s ease;
+  /* ===== NAV DRAWER ===== */
+  .nav-drawer-backdrop {
+    @apply fixed inset-0 z-40 lg:hidden;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms ease-out, visibility 200ms ease-out;
   }
 
-  .bottom-nav.scroll-hidden {
+  body.nav-drawer-open .nav-drawer-backdrop {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .nav-drawer {
+    @apply fixed inset-x-0 bottom-0 z-50 lg:hidden;
+    @apply bg-sidebar rounded-t-2xl;
     transform: translateY(100%);
+    transition: transform 200ms ease-out;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  .bottom-nav-item {
-    @apply flex-1 flex flex-col items-center justify-center gap-1 py-3 text-muted-foreground;
-    transition-property: color;
+  .nav-drawer.open {
+    transform: translateY(0);
+  }
+
+  .nav-drawer-handle {
+    @apply flex justify-center py-3;
+  }
+
+  .nav-drawer-handle::before {
+    content: '';
+    @apply w-10 h-1 bg-border rounded-full;
+  }
+
+  .nav-drawer-section {
+    @apply px-4 pb-4;
+  }
+
+  .nav-drawer-section-secondary {
+    @apply border-t border-border pt-4;
+  }
+
+  .nav-drawer-label {
+    @apply block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-3;
+  }
+
+  .nav-drawer-item {
+    @apply flex items-center gap-3 px-3 py-3 text-base font-medium text-muted-foreground rounded-lg;
+    transition-property: background-color, color;
     transition-duration: var(--transition-duration);
-    /* Minimum touch target size */
-    min-height: 56px;
   }
 
-  .bottom-nav-item:hover {
-    @apply text-foreground;
+  .nav-drawer-item:active {
+    @apply bg-muted;
   }
 
-  .bottom-nav-item-active {
-    @apply text-primary;
+  .nav-drawer-item-active {
+    @apply text-foreground bg-muted;
   }
 
-  .bottom-nav-label {
-    @apply text-[10px] font-medium;
+  .nav-drawer-link {
+    @apply flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground rounded-lg;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
+  }
+
+  .nav-drawer-link:active {
+    @apply bg-muted;
+  }
+
+  .nav-drawer-link span {
+    @apply flex-1;
+  }
+
+  .nav-drawer-external {
+    @apply text-muted-foreground/50;
+  }
+
+  /* Scale effect on layout when drawer is open */
+  .layout-container {
+    transition: transform 200ms ease-out, border-radius 200ms ease-out;
+    transform-origin: center bottom;
+  }
+
+  body.nav-drawer-open .layout-container {
+    transform: scale(0.94) translateY(-2%);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* Prevent interaction with scaled content */
+  body.nav-drawer-open .layout-container * {
+    pointer-events: none;
   }
 
   /* ===== MOBILE COLLECTION BAR ===== */
@@ -2119,123 +2181,16 @@ html:not(.light):not(.dark) {
 /* Provides smooth native-like page transitions on supported browsers */
 /* Progressive enhancement - browsers without support simply ignore these rules */
 
-/* Disable view transitions on desktop */
-@media (min-width: 768px) {
-  .main-content,
-  .middle-column,
-  .mobile-header,
-  .bottom-nav,
-  .mobile-collection-bar {
-    view-transition-name: none;
-  }
-
-  /* Disable root crossfade on desktop */
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
+/* Disable view transitions globally */
+.main-content,
+.middle-column,
+.mobile-collection-bar,
+.nav-drawer,
+.mobile-bottom-bar {
+  view-transition-name: none;
 }
 
-@media (max-width: 767px) {
-  @view-transition {
-    navigation: auto;
-  }
-
-  /* Named view transitions - only animate content, not nav */
-  .main-content {
-    view-transition-name: main-content;
-  }
-
-  .middle-column {
-    view-transition-name: middle-column;
-  }
-
-  /* Give header/nav their own transition names to isolate them from root */
-  .mobile-header {
-    view-transition-name: mobile-header;
-  }
-
-  .bottom-nav {
-    view-transition-name: bottom-nav;
-  }
-
-  /* Exclude collection bar from view transitions - avoids flicker when navigating to/from bookmarks */
-  .mobile-collection-bar {
-    view-transition-name: none;
-  }
-
-  /* Instant crossfade for root (no animation) */
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-
-  /* Keep header and nav completely static - no animation */
-  ::view-transition-old(mobile-header),
-  ::view-transition-new(mobile-header),
-  ::view-transition-old(bottom-nav),
-  ::view-transition-new(bottom-nav) {
-    animation: none;
-    mix-blend-mode: normal;
-  }
-
-  /* Ensure header/nav stay on top during transition */
-  ::view-transition-group(mobile-header) {
-    z-index: 100;
-  }
-
-  ::view-transition-group(bottom-nav) {
-    z-index: 100;
-  }
-
-  /* iOS-style slide transition for main content */
-  ::view-transition-old(main-content),
-  ::view-transition-old(middle-column) {
-    animation: slide-out-left 250ms ease-out;
-  }
-
-  ::view-transition-new(main-content),
-  ::view-transition-new(middle-column) {
-    animation: slide-in-right 250ms ease-out;
-  }
-
-  @keyframes slide-out-left {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(-30%);
-      opacity: 0;
-    }
-  }
-
-  @keyframes slide-in-right {
-    from {
-      transform: translateX(30%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-out {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }
