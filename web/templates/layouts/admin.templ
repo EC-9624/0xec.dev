@@ -57,16 +57,16 @@ templ adminBase(title string) {
 			<title>{ title } | Admin</title>
 			<link rel="stylesheet" href="/static/css/output.css"/>
 			<script src="/static/js/theme.js"></script>
-			<script src="/static/js/htmx.min.js"></script>
-			<script src="/static/js/utils.js"></script>
-			<script src="/static/js/toast.js"></script>
-			<script src="/static/js/dropdown.js"></script>
-			<script src="/static/js/filter.js"></script>
-			<script src="/static/js/validation.js"></script>
-			<script src="/static/js/tag-select.js"></script>
-			<script src="/static/js/expandable-row.js"></script>
-			<script src="/static/js/drawer.js"></script>
-			<script src="/static/js/kanban.js"></script>
+			<script src="/static/js/htmx.min.js" defer></script>
+			<script src="/static/js/utils.js" defer></script>
+			<script src="/static/js/toast.js" defer></script>
+			<script src="/static/js/dropdown.js" defer></script>
+			<script src="/static/js/filter.js" defer></script>
+			<script src="/static/js/validation.js" defer></script>
+			<script src="/static/js/tag-select.js" defer></script>
+			<script src="/static/js/expandable-row.js" defer></script>
+			<script src="/static/js/drawer.js" defer></script>
+			<script src="/static/js/kanban.js" defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }

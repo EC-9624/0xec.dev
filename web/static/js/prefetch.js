@@ -54,42 +54,9 @@
    * @param {string} source - The source that triggered the prefetch (viewport, touch, hover)
    */
   function prefetch(url, source) {
-    // Log skip reasons for debugging
-    if (typeof url !== 'string') {
-      console.log('[Prefetch] skip: invalid url type');
-      return;
-    }
-    if (prefetched.has(url)) {
-      console.log('[Prefetch] skip (already prefetched):', url);
-      return;
-    }
-    if (!url.startsWith('/')) {
-      console.log('[Prefetch] skip (external):', url);
-      return;
-    }
-    if (url.startsWith('/static/')) {
-      console.log('[Prefetch] skip (static asset):', url);
-      return;
-    }
-    if (url.startsWith('/admin')) {
-      console.log('[Prefetch] skip (admin route):', url);
-      return;
-    }
-    if (url.endsWith('.xml')) {
-      console.log('[Prefetch] skip (xml file):', url);
-      return;
-    }
-    if (url.includes('#')) {
-      console.log('[Prefetch] skip (hash link):', url);
-      return;
-    }
-    if (url === window.location.pathname) {
-      console.log('[Prefetch] skip (current page):', url);
-      return;
-    }
+    if (!shouldPrefetch(url)) return;
     
     prefetched.add(url);
-    console.log('[Prefetch] ' + source + ':', url);
     
     // Use <link rel="prefetch"> for browser-optimized caching
     var link = document.createElement('link');
