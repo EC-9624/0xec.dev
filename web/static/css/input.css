@@ -2118,6 +2118,24 @@ html:not(.light):not(.dark) {
 /* ===== VIEW TRANSITIONS (Mobile only) ===== */
 /* Provides smooth native-like page transitions on supported browsers */
 /* Progressive enhancement - browsers without support simply ignore these rules */
+
+/* Disable view transitions on desktop */
+@media (min-width: 768px) {
+  .main-content,
+  .middle-column,
+  .mobile-header,
+  .bottom-nav,
+  .mobile-collection-bar {
+    view-transition-name: none;
+  }
+
+  /* Disable root crossfade on desktop */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 @media (max-width: 767px) {
   @view-transition {
     navigation: auto;
