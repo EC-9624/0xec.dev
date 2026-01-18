@@ -1,33 +1,24 @@
 package components
 
-// InlineError shows an inline error state (no retry)
+// InlineError displays a simple inline error message
 templ InlineError(message string) {
-	<div class="flex items-center justify-center gap-2 py-4 text-sm text-destructive">
-		@AlertCircleIcon(IconSM)
-		<span>{ message }</span>
+	<div class="p-4 text-center text-muted-foreground">
+		<p>{ message }</p>
 	</div>
 }
 
-// InlineErrorWithRetry shows an inline error state with a retry button
-// retryURL is the URL to retry the request
-// Uses data-retry-url attribute - JS handles the retry with timeout logic
+// InlineErrorWithRetry displays an error message with a retry button
 templ InlineErrorWithRetry(message string, retryURL string) {
-	<div class="flex items-center justify-center gap-2 py-4 text-sm text-destructive" data-inline-error>
-		@AlertCircleIcon(IconSM)
-		<span>{ message }</span>
+	<div class="p-4 text-center">
+		<p class="text-muted-foreground mb-2">{ message }</p>
 		<button
 			type="button"
 			class="btn-ghost btn-sm"
-			data-retry-url={ retryURL }
+			hx-get={ retryURL }
+			hx-target="closest div"
+			hx-swap="outerHTML"
 		>
-			@RefreshIcon(IconSM)
+			Try again
 		</button>
-	</div>
-}
-
-// InlineSpinner shows a centered spinner for loading states
-templ InlineSpinner() {
-	<div class="flex items-center justify-center py-4 text-muted-foreground">
-		@SpinnerIcon(IconSM)
 	</div>
 }

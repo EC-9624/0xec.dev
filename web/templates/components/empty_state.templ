@@ -55,13 +55,4 @@ templ NoResults(entityName string, clearFn string) {
 	</div>
 }
 
-// NoResultsVisible is the same as NoResults but visible by default
-// Useful when you want to show it conditionally via server-side rendering
-templ NoResultsVisible(entityName string, clearFn string) {
-	<div class="card py-12 text-center">
-		<p class="text-muted-foreground">No { entityName } match your filters</p>
-		<button type="button" class="btn-ghost btn-sm mt-2" { noResultsClickAttrs(clearFn)... }>
-			Clear filters
-		</button>
-	</div>
-}
+

@@ -5,42 +5,6 @@ import (
 	"time"
 )
 
-// PostCard for home page (larger, with excerpt)
-templ PostCard(post models.Post) {
-	<article class="group">
-		<a href={ templ.URL("/posts/" + post.Slug) } class="post-card">
-			<h2 class="post-card-title">{ post.Title }</h2>
-			if post.GetExcerpt() != "" {
-				<p class="post-card-excerpt">{ post.GetExcerpt() }</p>
-			}
-			<div class="post-card-meta">
-				if post.PublishedAt.Valid {
-					<time datetime={ post.PublishedAt.Time.Format(time.RFC3339) }>
-						{ post.PublishedAt.Time.Format("Jan 2, 2006") }
-					</time>
-				}
-				if len(post.Tags) > 0 {
-					<span class="text-border">&bull;</span>
-					<div class="flex items-center gap-1.5">
-						for _, tag := range post.Tags {
-							<span class="badge-secondary">{ tag.Name }</span>
-						}
-					</div>
-				}
-			</div>
-		</a>
-	</article>
-}
-
-// PostList for home page
-templ PostList(posts []models.Post) {
-	<div class="space-y-1">
-		for _, post := range posts {
-			@PostCard(post)
-		}
-	</div>
-}
-
 // PostListItem for middle column (compact: title + date only)
 // Uses HTMX to load post content without full page reload
 templ PostListItem(post models.Post, isActive bool) {

@@ -73,7 +73,6 @@ templ adminBase(title string) {
 			@toastContainer()
 			@dropdownPortal()
 			@components.Drawer()
-			@htmxErrorHandler()
 		</body>
 	</html>
 }
@@ -88,10 +87,7 @@ templ dropdownPortal() {
 	<div id="dropdown-portal"></div>
 }
 
-// htmxErrorHandler is deprecated - toast.js now handles HTMX errors
-// Kept as empty templ for backward compatibility
-templ htmxErrorHandler() {
-}
+
 
 // csrfHeaderJSON returns the JSON string for hx-headers with CSRF token
 func csrfHeaderJSON(ctx context.Context) string {

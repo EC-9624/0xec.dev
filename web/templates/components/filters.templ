@@ -127,16 +127,6 @@ func clickAttrs(handler string) templ.Attributes {
 	return templ.Attributes{"onclick": handler}
 }
 
-// NoResultsMessage renders a hidden no-results message for client-side filtering
-templ NoResultsMessage(clearFn string) {
-	<div id="no-results" class="hidden card py-12 text-center">
-		<p class="text-muted-foreground">No items match your filters</p>
-		<button type="button" class="btn-ghost btn-sm mt-2" { clickAttrs(clearFn)... }>
-			Clear filters
-		</button>
-	</div>
-}
-
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -164,15 +154,6 @@ func getSelectedLabel(options []FilterDropdownOption, defaultLabel string) strin
 // ============================================
 // PRESET OPTIONS
 // ============================================
-
-// StatusOptions returns common public/private status options
-func StatusOptions() []FilterDropdownOption {
-	return []FilterDropdownOption{
-		{Value: "", Label: "All Status", Selected: true},
-		{Value: "public", Label: "Public"},
-		{Value: "private", Label: "Private"},
-	}
-}
 
 // PublishStatusOptions returns draft/published status options
 func PublishStatusOptions() []FilterDropdownOption {
