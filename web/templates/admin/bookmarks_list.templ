@@ -87,35 +87,84 @@ templ BookmarksList(data BookmarksListData) {
 		</div>
 		<!-- Client-side filtering script -->
 		@bookmarksFilterScript()
+		<!-- Metadata refresh script (shared with board view) -->
+		@metadataRefreshScript()
 	}
 }
 
 templ bookmarksFilterScript() {
 	<script>
-		// Initialize table filter using the reusable TableFilter class
-		const bookmarksFilter = new TableFilter({
-			tableBodyId: 'bookmarks-tbody',
-			searchId: 'bookmark-search',
-			filters: [
-				{ id: 'collection-filter', match: TableFilter.collectionMatcher },
-				{ id: 'status-filter', match: TableFilter.bookmarkStatusMatcher }
-			],
-			searchFields: ['title', 'url', 'domain'],
-			storageKey: 'bookmarkFilters',
-			tableCardSelector: '.card:has(#bookmarks-table)'
-		});
-
-		// Initialize on DOM ready
+		// Wait for DOMContentLoaded to ensure deferred scripts (filter.js) are loaded
 		document.addEventListener('DOMContentLoaded', () => {
-			bookmarksFilter.init();
+			// Initialize table filter using the reusable TableFilter class
+			window.bookmarksFilter = new TableFilter({
+				tableBodyId: 'bookmarks-tbody',
+				searchId: 'bookmark-search',
+				filters: [
+					{ id: 'collection-filter', match: TableFilter.collectionMatcher },
+					{ id: 'status-filter', match: TableFilter.bookmarkStatusMatcher }
+				],
+				searchFields: ['title', 'url', 'domain'],
+				storageKey: 'bookmarkFilters',
+				tableCardSelector: '.card:has(#bookmarks-table)'
+			});
+
+			window.bookmarksFilter.init();
+			
 			// Apply preselected collection filter if set
 			const collectionFilter = document.getElementById('collection-filter');
 			if (collectionFilter && collectionFilter.value) {
-				bookmarksFilter.apply();
+				window.bookmarksFilter.apply();
 			}
-		});
 
-		// Metadata refresh with SSE progress
+			// Listen for HX-Trigger events to update row data attributes for filtering
+			document.body.addEventListener('updateRowData', (e) => {
+				const data = e.detail;
+				if (!data || !data.id) return;
+
+				// Find the row by iterating through rows
+				const rows = document.querySelectorAll('#bookmarks-tbody tr');
+				let targetRow = null;
+				for (const r of rows) {
+					// Check if this row contains an element with matching bookmark id
+					const dropdown = r.querySelector(`[data-bookmark-id="${data.id}"]`);
+					const titleEdit = r.querySelector(`[hx-get*="/admin/htmx/bookmarks/${data.id}/"]`);
+					const publicBtn = r.querySelector(`[hx-post*="/admin/htmx/bookmarks/${data.id}/"]`);
+					if (dropdown || titleEdit || publicBtn) {
+						targetRow = r;
+						break;
+					}
+				}
+
+				if (!targetRow) return;
+
+				// Update the relevant data attributes
+				if ('title' in data) {
+					targetRow.dataset.title = data.title;
+				}
+				if ('collectionId' in data) {
+					targetRow.dataset.collectionId = data.collectionId;
+				}
+				if ('isPublic' in data) {
+					targetRow.dataset.isPublic = String(data.isPublic);
+				}
+				if ('isFavorite' in data) {
+					targetRow.dataset.isFavorite = String(data.isFavorite);
+				}
+
+				// Re-run filter to update visibility based on new data
+				if (window.bookmarksFilter) {
+					window.bookmarksFilter.apply();
+				}
+			});
+		});
+	</script>
+}
+
+// metadataRefreshScript contains the startMetadataRefresh function for SSE-based metadata refresh
+// Used by both table view and board view
+templ metadataRefreshScript() {
+	<script>
 		function startMetadataRefresh() {
 			const btn = document.getElementById('refresh-btn');
 			const btnText = document.getElementById('refresh-btn-text');
@@ -166,7 +215,7 @@ templ bookmarksFilterScript() {
 					btn.classList.remove('opacity-50');
 					btnText.textContent = 'Refresh Metadata';
 
-					// Hide progress after 3 seconds and reload
+					// Hide progress after 2 seconds and reload
 					setTimeout(() => {
 						progress.classList.add('hidden');
 						window.location.reload();
@@ -189,50 +238,22 @@ templ bookmarksFilterScript() {
 				btnText.textContent = 'Refresh Metadata';
 			};
 		}
-
-		// Listen for HX-Trigger events to update row data attributes for filtering
-		document.body.addEventListener('updateRowData', (e) => {
-			const data = e.detail;
-			if (!data || !data.id) return;
-
-			// Find the row by looking for any element with data-bookmark-id or the tr itself
-			const row = document.querySelector(`#bookmarks-tbody tr[data-title]`)?.closest('tbody')
-				?.querySelector(`tr:has([data-bookmark-id="${data.id}"])`) 
-				|| document.querySelector(`#bookmarks-tbody tr`)?.closest('tbody')
-				?.querySelector(`tr`);
-			
-			// Alternative: find by iterating through rows
-			const rows = document.querySelectorAll('#bookmarks-tbody tr');
-			let targetRow = null;
-			for (const r of rows) {
-				// Check if this row contains an element with matching bookmark id
-				const dropdown = r.querySelector(`[data-bookmark-id="${data.id}"]`);
-				const titleEdit = r.querySelector(`[hx-get*="/admin/htmx/bookmarks/${data.id}/"]`);
-				const publicBtn = r.querySelector(`[hx-post*="/admin/htmx/bookmarks/${data.id}/"]`);
-				if (dropdown || titleEdit || publicBtn) {
-					targetRow = r;
-					break;
-				}
-			}
-
-			if (!targetRow) return;
-
-			// Update the relevant data attributes
-			if ('title' in data) {
-				targetRow.dataset.title = data.title;
-			}
-			if ('collectionId' in data) {
-				targetRow.dataset.collectionId = data.collectionId;
-			}
-			if ('isPublic' in data) {
-				targetRow.dataset.isPublic = String(data.isPublic);
-			}
-			if ('isFavorite' in data) {
-				targetRow.dataset.isFavorite = String(data.isFavorite);
-			}
-
-			// Re-run filter to update visibility based on new data
-			bookmarksFilter.apply();
-		});
 	</script>
+}
+
+// refreshProgressBanner renders the floating progress banner for metadata refresh
+// Used by both table view and board view
+templ refreshProgressBanner() {
+	<div id="refresh-progress" class="hidden fixed bottom-4 right-4 w-96 z-50">
+		<div class="bg-card border border-border p-4 space-y-2 shadow-lg">
+			<div class="flex items-center justify-between">
+				<span id="refresh-status" class="text-sm font-medium">Preparing...</span>
+				<span id="refresh-count" class="text-sm text-muted-foreground"></span>
+			</div>
+			<div class="w-full bg-border h-2">
+				<div id="refresh-bar" class="bg-primary h-2 transition-[width] duration-300 w-0"></div>
+			</div>
+			<p id="refresh-current" class="text-xs text-muted-foreground truncate"></p>
+		</div>
+	</div>
 }

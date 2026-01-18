@@ -40,6 +40,10 @@ templ BookmarksPage(data BookmarksPageData) {
 				}
 			</div>
 		</div>
+		<!-- Metadata refresh script (shared by both views) -->
+		@metadataRefreshScript()
+		<!-- Refresh Progress Banner (hidden by default) -->
+		@refreshProgressBanner()
 	}
 }
 
@@ -208,19 +212,6 @@ templ bookmarksTableView(data BookmarksPageData) {
 	</div>
 	<!-- Client-side filtering script -->
 	@bookmarksFilterScript()
-	<!-- Refresh Progress Banner (hidden by default) -->
-	<div id="refresh-progress" class="hidden fixed bottom-4 right-4 w-96 z-50">
-		<div class="bg-card border border-border p-4 space-y-2 shadow-lg">
-			<div class="flex items-center justify-between">
-				<span id="refresh-status" class="text-sm font-medium">Preparing...</span>
-				<span id="refresh-count" class="text-sm text-muted-foreground"></span>
-			</div>
-			<div class="w-full bg-border h-2">
-				<div id="refresh-bar" class="bg-primary h-2 transition-[width] duration-300 w-0"></div>
-			</div>
-			<p id="refresh-current" class="text-xs text-muted-foreground truncate"></p>
-		</div>
-	</div>
 }
 
 // Helper functions for empty states

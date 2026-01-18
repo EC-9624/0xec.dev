@@ -70,19 +70,21 @@ templ PostsList(posts []models.Post) {
 
 templ postsFilterScript() {
 	<script>
-		// Initialize table filter using the reusable TableFilter class
-		const postsFilter = new TableFilter({
-			tableBodyId: 'posts-tbody',
-			searchId: 'post-search',
-			filters: [
-				{ id: 'status-filter', match: TableFilter.draftPublishedMatcher }
-			],
-			searchFields: ['title', 'slug', 'excerpt'],
-			storageKey: 'postFilters',
-			tableCardSelector: '.card:has(#posts-table)'
-		});
+		// Wait for DOMContentLoaded to ensure deferred scripts (filter.js) are loaded
+		document.addEventListener('DOMContentLoaded', () => {
+			// Initialize table filter using the reusable TableFilter class
+			window.postsFilter = new TableFilter({
+				tableBodyId: 'posts-tbody',
+				searchId: 'post-search',
+				filters: [
+					{ id: 'status-filter', match: TableFilter.draftPublishedMatcher }
+				],
+				searchFields: ['title', 'slug', 'excerpt'],
+				storageKey: 'postFilters',
+				tableCardSelector: '.card:has(#posts-table)'
+			});
 
-		// Initialize on DOM ready
-		document.addEventListener('DOMContentLoaded', () => postsFilter.init());
+			window.postsFilter.init();
+		});
 	</script>
 }
