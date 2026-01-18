@@ -299,3 +299,12 @@ func derefInt64(p *int64) int64 {
 	}
 	return *p
 }
+
+// boolToInt64Ptr converts a boolean to *int64 (0 or 1) for SQLite storage
+func boolToInt64Ptr(b bool) *int64 {
+	var val int64
+	if b {
+		val = 1
+	}
+	return &val
+}

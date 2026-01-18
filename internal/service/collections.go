@@ -11,11 +11,6 @@ import (
 
 // CreateCollection creates a new collection
 func (s *Service) CreateCollection(ctx context.Context, input models.CreateCollectionInput) (*models.Collection, error) {
-	var isPublic int64 = 0
-	if input.IsPublic {
-		isPublic = 1
-	}
-
 	collection, err := s.queries.CreateCollection(ctx, db.CreateCollectionParams{
 		Name:        input.Name,
 		Slug:        input.Slug,
@@ -23,7 +18,7 @@ func (s *Service) CreateCollection(ctx context.Context, input models.CreateColle
 		Color:       strPtr(input.Color),
 		ParentID:    input.ParentID,
 		SortOrder:   nil,
-		IsPublic:    &isPublic,
+		IsPublic:    boolToInt64Ptr(input.IsPublic),
 	})
 	if err != nil {
 		return nil, err
@@ -37,10 +32,6 @@ func (s *Service) CreateCollection(ctx context.Context, input models.CreateColle
 
 // UpdateCollection updates an existing collection
 func (s *Service) UpdateCollection(ctx context.Context, id int64, input models.UpdateCollectionInput) (*models.Collection, error) {
-	var isPublic int64 = 0
-	if input.IsPublic {
-		isPublic = 1
-	}
 	sortOrder := int64(input.SortOrder)
 
 	err := s.queries.UpdateCollection(ctx, db.UpdateCollectionParams{
@@ -50,7 +41,7 @@ func (s *Service) UpdateCollection(ctx context.Context, id int64, input models.U
 		Color:       strPtr(input.Color),
 		ParentID:    input.ParentID,
 		SortOrder:   &sortOrder,
-		IsPublic:    &isPublic,
+		IsPublic:    boolToInt64Ptr(input.IsPublic),
 		ID:          id,
 	})
 	if err != nil {
@@ -189,20 +180,10 @@ func (s *Service) UpdateCollectionName(ctx context.Context, id int64, name strin
 
 // UpdateCollectionPublic updates only the public status of a collection
 func (s *Service) UpdateCollectionPublic(ctx context.Context, id int64, isPublic bool) error {
-	var val int64 = 0
-	if isPublic {
-		val = 1
-	}
-
-	err := s.queries.UpdateCollectionPublic(ctx, db.UpdateCollectionPublicParams{
-		IsPublic: &val,
+	return s.queries.UpdateCollectionPublic(ctx, db.UpdateCollectionPublicParams{
+		IsPublic: boolToInt64Ptr(isPublic),
 		ID:       id,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // CollectionBookmark represents a minimal bookmark for collection preview

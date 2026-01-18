@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
@@ -84,8 +83,8 @@ func (h *Handlers) AdminCollectionCreate(w http.ResponseWriter, r *http.Request)
 func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
@@ -178,8 +177,8 @@ func (h *Handlers) AdminCollectionUpdate(w http.ResponseWriter, r *http.Request)
 
 // AdminCollectionDelete handles deleting a collection
 func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
@@ -204,8 +203,8 @@ func (h *Handlers) AdminCollectionDelete(w http.ResponseWriter, r *http.Request)
 
 // AdminCollectionBookmarks returns the bookmarks for a collection as an HTMX partial
 func (h *Handlers) AdminCollectionBookmarks(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		render(w, r, components.InlineError("Collection not found"))
 		return
@@ -231,8 +230,8 @@ func (h *Handlers) AdminCollectionBookmarks(w http.ResponseWriter, r *http.Reque
 
 // AdminToggleCollectionPublic toggles the public/private status of a collection
 func (h *Handlers) AdminToggleCollectionPublic(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
 		return
 	}
@@ -267,8 +266,8 @@ func (h *Handlers) HTMXAdminCollectionNewDrawer(w http.ResponseWriter, r *http.R
 
 // HTMXAdminCollectionEditDrawer returns the edit collection form for the drawer
 func (h *Handlers) HTMXAdminCollectionEditDrawer(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}

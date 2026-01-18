@@ -22,15 +22,6 @@ type BookmarkListOptions struct {
 func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmarkInput) (*models.Bookmark, error) {
 	domain := extractDomain(input.URL)
 
-	var isPublic int64 = 0
-	if input.IsPublic {
-		isPublic = 1
-	}
-	var isFavorite int64 = 0
-	if input.IsFavorite {
-		isFavorite = 1
-	}
-
 	bookmark, err := s.queries.CreateBookmark(ctx, db.CreateBookmarkParams{
 		Url:          input.URL,
 		Title:        input.Title,
@@ -39,8 +30,8 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 		Favicon:      strPtr(input.Favicon),
 		Domain:       strPtr(domain),
 		CollectionID: input.CollectionID,
-		IsPublic:     &isPublic,
-		IsFavorite:   &isFavorite,
+		IsPublic:     boolToInt64Ptr(input.IsPublic),
+		IsFavorite:   boolToInt64Ptr(input.IsFavorite),
 		SortOrder:    nil,
 	})
 	if err != nil {
@@ -57,15 +48,6 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 func (s *Service) UpdateBookmark(ctx context.Context, id int64, input models.UpdateBookmarkInput) (*models.Bookmark, error) {
 	domain := extractDomain(input.URL)
 
-	var isPublic int64 = 0
-	if input.IsPublic {
-		isPublic = 1
-	}
-	var isFavorite int64 = 0
-	if input.IsFavorite {
-		isFavorite = 1
-	}
-
 	err := s.queries.UpdateBookmark(ctx, db.UpdateBookmarkParams{
 		Url:          input.URL,
 		Title:        input.Title,
@@ -74,8 +56,8 @@ func (s *Service) UpdateBookmark(ctx context.Context, id int64, input models.Upd
 		Favicon:      strPtr(input.Favicon),
 		Domain:       strPtr(domain),
 		CollectionID: input.CollectionID,
-		IsPublic:     &isPublic,
-		IsFavorite:   &isFavorite,
+		IsPublic:     boolToInt64Ptr(input.IsPublic),
+		IsFavorite:   boolToInt64Ptr(input.IsFavorite),
 		ID:           id,
 	})
 	if err != nil {
@@ -254,24 +236,16 @@ func extractDomain(rawURL string) string {
 
 // UpdateBookmarkPublic updates only the public status of a bookmark
 func (s *Service) UpdateBookmarkPublic(ctx context.Context, id int64, isPublic bool) error {
-	var val int64 = 0
-	if isPublic {
-		val = 1
-	}
 	return s.queries.UpdateBookmarkPublic(ctx, db.UpdateBookmarkPublicParams{
-		IsPublic: &val,
+		IsPublic: boolToInt64Ptr(isPublic),
 		ID:       id,
 	})
 }
 
 // UpdateBookmarkFavorite updates only the favorite status of a bookmark
 func (s *Service) UpdateBookmarkFavorite(ctx context.Context, id int64, isFavorite bool) error {
-	var val int64 = 0
-	if isFavorite {
-		val = 1
-	}
 	return s.queries.UpdateBookmarkFavorite(ctx, db.UpdateBookmarkFavoriteParams{
-		IsFavorite: &val,
+		IsFavorite: boolToInt64Ptr(isFavorite),
 		ID:         id,
 	})
 }
