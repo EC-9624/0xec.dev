@@ -60,28 +60,38 @@ func main() {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
 	// ============================================
-	// PUBLIC ROUTES
+	// PUBLIC ROUTES (with caching for prefetch + hx-boost)
 	// ============================================
 
-	mux.HandleFunc("GET /{$}", h.Home)
-	mux.HandleFunc("GET /posts", h.PostsIndex)
-	mux.HandleFunc("GET /posts/{slug}", h.PostShow)
-	mux.HandleFunc("GET /bookmarks", h.BookmarksIndex)
-	mux.HandleFunc("GET /bookmarks/{slug}", h.BookmarksByCollection)
+	// Cache middleware for public pages (60 second TTL)
+	// This allows prefetched content to be reused by hx-boost requests
+	publicCache := middleware.CacheControl(60 * time.Second)
+
+	// Helper to wrap a handler with cache middleware
+	cached := func(h http.HandlerFunc) http.Handler {
+		return publicCache(h)
+	}
+
+	// Public page routes
+	mux.Handle("GET /{$}", cached(h.Home))
+	mux.Handle("GET /posts", cached(h.PostsIndex))
+	mux.Handle("GET /posts/{slug}", cached(h.PostShow))
+	mux.Handle("GET /bookmarks", cached(h.BookmarksIndex))
+	mux.Handle("GET /bookmarks/{slug}", cached(h.BookmarksByCollection))
 
 	// HTMX partial routes
-	mux.HandleFunc("GET /htmx/posts/{slug}", h.HTMXPostContent)
-	mux.HandleFunc("GET /htmx/bookmarks", h.HTMXBookmarksContent)
-	mux.HandleFunc("GET /htmx/bookmarks/more", h.HTMXBookmarksMore)
-	mux.HandleFunc("GET /htmx/bookmarks/more/{slug}", h.HTMXBookmarksMore)
-	mux.HandleFunc("GET /htmx/bookmarks/{slug}", h.HTMXBookmarksCollectionContent)
+	mux.Handle("GET /htmx/posts/{slug}", cached(h.HTMXPostContent))
+	mux.Handle("GET /htmx/bookmarks", cached(h.HTMXBookmarksContent))
+	mux.Handle("GET /htmx/bookmarks/more", cached(h.HTMXBookmarksMore))
+	mux.Handle("GET /htmx/bookmarks/more/{slug}", cached(h.HTMXBookmarksMore))
+	mux.Handle("GET /htmx/bookmarks/{slug}", cached(h.HTMXBookmarksCollectionContent))
 
-	// RSS feeds
+	// RSS feeds (no cache - should be fresh)
 	mux.HandleFunc("GET /feed.xml", h.PostsFeed)
 	mux.HandleFunc("GET /posts/feed.xml", h.PostsFeed)
 	mux.HandleFunc("GET /bookmarks/feed.xml", h.BookmarksFeed)
 
-	// Health check endpoint
+	// Health check endpoint (no cache - must be real-time)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		// Check database connectivity
 		if err := db.Ping(); err != nil {

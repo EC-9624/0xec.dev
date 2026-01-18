@@ -3,7 +3,7 @@ package components
 // BottomNav renders a fixed bottom navigation bar for mobile devices
 // Hidden on lg+ screens where the sidebar is visible
 templ BottomNav(currentPath string) {
-	<nav class="bottom-nav" aria-label="Mobile navigation">
+	<nav class="bottom-nav" hx-boost="true" aria-label="Mobile navigation">
 		<a href="/" class={ bottomNavItemClass(currentPath, "/") }>
 			@iconHome()
 			<span class="bottom-nav-label">Home</span>

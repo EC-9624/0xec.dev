@@ -101,8 +101,8 @@
   // HTMX Integration
   function initHTMXListeners() {
     document.body.addEventListener('htmx:beforeRequest', function(e) {
-      // Only show for navigation requests, not small updates
-      if (e.detail.elt.hasAttribute('hx-indicator')) {
+      // Show for boosted navigation or elements with hx-indicator
+      if (e.detail.boosted || e.detail.elt.hasAttribute('hx-indicator')) {
         start();
       }
     });

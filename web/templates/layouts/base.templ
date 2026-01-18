@@ -80,7 +80,7 @@ templ leftSidebar(currentPath string) {
 					</div>
 				</a>
 				<!-- Navigation -->
-				<nav class="flex flex-col gap-1">
+				<nav class="flex flex-col gap-1" hx-boost="true">
 					<a href="/" class={ navItemClass(currentPath, "/") }>
 						<span class="nav-item-icon">
 							@iconSparkles()
