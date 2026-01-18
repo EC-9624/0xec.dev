@@ -11,10 +11,13 @@ import (
 // ============================================
 
 // PostsIndex shows the post list in middle column with empty state in main
+// On mobile: shows full post list instead of empty state
 templ PostsIndex(posts []models.Post) {
 	@layouts.ThreeColumn("Writing", "/posts", components.PostListColumn(posts, "")) {
-		@components.MobilePostBar(posts, "")
-		<div class="main-content-inner">
+		// Mobile: show full post list
+		@components.MobilePostList(posts)
+		// Desktop: show empty state (user selects from middle column)
+		<div class="main-content-inner hidden lg:block">
 			@PostsEmptyState()
 		</div>
 	}
@@ -23,29 +26,26 @@ templ PostsIndex(posts []models.Post) {
 // PostShow shows the post list in middle column with article content in main
 templ PostShow(post models.Post, allPosts []models.Post, contentHTML string) {
 	@layouts.ThreeColumn(post.Title, "/posts", components.PostListColumn(allPosts, post.Slug)) {
-		@components.MobilePostBar(allPosts, post.Slug)
 		<div class="main-content-inner">
+			// Mobile: show back link
+			@components.MobileBackLink("/posts", "Back to Writing")
 			@PostArticle(post, contentHTML)
 		</div>
 	}
 }
 
-// PostContentPartial is the partial template for HTMX requests
-// It returns the main content area + OOB swap for middle column and mobile bar
+// PostContentPartial is the partial template for HTMX requests (desktop only)
+// It returns the main content area + OOB swap for middle column
 templ PostContentPartial(post models.Post, contentHTML string, allPosts []models.Post) {
 	<div class="main-content-scroll scrollable-area">
-		@components.MobilePostBar(allPosts, post.Slug)
 		<div class="main-content-inner">
+			@components.MobileBackLink("/posts", "Back to Writing")
 			@PostArticle(post, contentHTML)
 		</div>
 	</div>
 	<!-- OOB swap for middle column to update active state -->
 	<div id="middle-column" hx-swap-oob="innerHTML">
 		@components.PostListColumn(allPosts, post.Slug)
-	</div>
-	<!-- OOB swap for mobile post bar -->
-	<div id="mobile-post-bar" hx-swap-oob="outerHTML">
-		@components.MobilePostBar(allPosts, post.Slug)
 	</div>
 }
 
