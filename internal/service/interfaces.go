@@ -39,8 +39,6 @@ type BookmarkService interface {
 	CountBookmarks(ctx context.Context, opts BookmarkListOptions) (int, error)
 	UpdateBookmarkPublic(ctx context.Context, id int64, isPublic bool) error
 	UpdateBookmarkFavorite(ctx context.Context, id int64, isFavorite bool) error
-	UpdateBookmarkCollection(ctx context.Context, id int64, collectionID *int64) error
-	UpdateBookmarkTitle(ctx context.Context, id int64, title string) error
 	MoveBookmark(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error
 	BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64, afterBookmarkID *int64) error
 	BulkDeleteBookmarks(ctx context.Context, bookmarkIDs []int64) error
@@ -61,7 +59,6 @@ type PostService interface {
 	GetPostByID(ctx context.Context, id int64) (*models.Post, error)
 	GetPostBySlug(ctx context.Context, slug string) (*models.Post, error)
 	ListPosts(ctx context.Context, publishedOnly bool, limit, offset int) ([]models.Post, error)
-	CountPosts(ctx context.Context, publishedOnly bool) (int, error)
 	UpdatePostDraft(ctx context.Context, id int64, isDraft bool) error
 }
 
@@ -73,7 +70,6 @@ type CollectionService interface {
 	GetCollectionByID(ctx context.Context, id int64) (*models.Collection, error)
 	GetCollectionBySlug(ctx context.Context, slug string) (*models.Collection, error)
 	ListCollections(ctx context.Context, publicOnly bool) ([]models.Collection, error)
-	UpdateCollectionName(ctx context.Context, id int64, name string) error
 	UpdateCollectionPublic(ctx context.Context, id int64, isPublic bool) error
 	GetBookmarksByCollectionID(ctx context.Context, collectionID int64) ([]CollectionBookmark, error)
 	GetBoardViewData(ctx context.Context, recentLimit int) (*BoardViewData, error)
@@ -82,12 +78,9 @@ type CollectionService interface {
 // TagService defines tag management operations
 type TagService interface {
 	CreateTag(ctx context.Context, input models.CreateTagInput) (*models.Tag, error)
-	UpdateTag(ctx context.Context, id int64, input models.CreateTagInput) (*models.Tag, error)
 	DeleteTag(ctx context.Context, id int64) error
-	GetTagByID(ctx context.Context, id int64) (*models.Tag, error)
 	GetTagBySlug(ctx context.Context, slug string) (*models.Tag, error)
 	ListTags(ctx context.Context) ([]models.Tag, error)
-	GetOrCreateTag(ctx context.Context, name, slug string) (*models.Tag, error)
 	GetTagsWithCounts(ctx context.Context) ([]TagWithCount, error)
 	GetPostsByTagID(ctx context.Context, tagID int64) ([]TagPost, error)
 }
@@ -101,8 +94,6 @@ type StatsService interface {
 type ActivityService interface {
 	LogActivity(ctx context.Context, action, entityType string, entityID int64, title string, metadata map[string]interface{}) (*Activity, error)
 	ListRecentActivities(ctx context.Context, limit, offset int) ([]Activity, error)
-	CountActivities(ctx context.Context) (int, error)
-	DeleteActivitiesForEntity(ctx context.Context, entityType string, entityID int64) error
 }
 
 // MetadataService defines URL metadata fetching operations

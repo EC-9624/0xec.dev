@@ -250,22 +250,6 @@ func (s *Service) UpdateBookmarkFavorite(ctx context.Context, id int64, isFavori
 	})
 }
 
-// UpdateBookmarkCollection updates only the collection of a bookmark
-func (s *Service) UpdateBookmarkCollection(ctx context.Context, id int64, collectionID *int64) error {
-	return s.queries.UpdateBookmarkCollection(ctx, db.UpdateBookmarkCollectionParams{
-		CollectionID: collectionID,
-		ID:           id,
-	})
-}
-
-// UpdateBookmarkTitle updates only the title of a bookmark
-func (s *Service) UpdateBookmarkTitle(ctx context.Context, id int64, title string) error {
-	return s.queries.UpdateBookmarkTitle(ctx, db.UpdateBookmarkTitleParams{
-		Title: title,
-		ID:    id,
-	})
-}
-
 // MoveBookmark moves a bookmark to a new position within a collection (or unsorted).
 // collectionID: target collection (nil = unsorted column)
 // afterBookmarkID: bookmark ID to insert after (nil = insert at the beginning)

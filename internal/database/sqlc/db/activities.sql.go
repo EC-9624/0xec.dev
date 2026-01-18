@@ -10,17 +10,6 @@ import (
 	"time"
 )
 
-const countActivities = `-- name: CountActivities :one
-SELECT COUNT(*) FROM activities
-`
-
-func (q *Queries) CountActivities(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countActivities)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createActivity = `-- name: CreateActivity :one
 INSERT INTO activities (action, entity_type, entity_id, entity_title, metadata, created_at)
 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -56,21 +45,6 @@ func (q *Queries) CreateActivity(ctx context.Context, arg CreateActivityParams) 
 	return i, err
 }
 
-const deleteActivitiesByEntity = `-- name: DeleteActivitiesByEntity :exec
-DELETE FROM activities
-WHERE entity_type = ? AND entity_id = ?
-`
-
-type DeleteActivitiesByEntityParams struct {
-	EntityType string `json:"entity_type"`
-	EntityID   *int64 `json:"entity_id"`
-}
-
-func (q *Queries) DeleteActivitiesByEntity(ctx context.Context, arg DeleteActivitiesByEntityParams) error {
-	_, err := q.db.ExecContext(ctx, deleteActivitiesByEntity, arg.EntityType, arg.EntityID)
-	return err
-}
-
 const deleteOldActivities = `-- name: DeleteOldActivities :exec
 DELETE FROM activities
 WHERE created_at < ?
@@ -79,50 +53,6 @@ WHERE created_at < ?
 func (q *Queries) DeleteOldActivities(ctx context.Context, createdAt *time.Time) error {
 	_, err := q.db.ExecContext(ctx, deleteOldActivities, createdAt)
 	return err
-}
-
-const listActivitiesByEntity = `-- name: ListActivitiesByEntity :many
-SELECT id, "action", entity_type, entity_id, entity_title, metadata, created_at FROM activities
-WHERE entity_type = ? AND entity_id = ?
-ORDER BY created_at DESC
-LIMIT ?
-`
-
-type ListActivitiesByEntityParams struct {
-	EntityType string `json:"entity_type"`
-	EntityID   *int64 `json:"entity_id"`
-	Limit      int64  `json:"limit"`
-}
-
-func (q *Queries) ListActivitiesByEntity(ctx context.Context, arg ListActivitiesByEntityParams) ([]Activity, error) {
-	rows, err := q.db.QueryContext(ctx, listActivitiesByEntity, arg.EntityType, arg.EntityID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Activity{}
-	for rows.Next() {
-		var i Activity
-		if err := rows.Scan(
-			&i.ID,
-			&i.Action,
-			&i.EntityType,
-			&i.EntityID,
-			&i.EntityTitle,
-			&i.Metadata,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const listRecentActivities = `-- name: ListRecentActivities :many

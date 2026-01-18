@@ -42,8 +42,6 @@ type mockService struct {
 	countBookmarksFunc                 func(ctx context.Context, opts service.BookmarkListOptions) (int, error)
 	updateBookmarkPublicFunc           func(ctx context.Context, id int64, isPublic bool) error
 	updateBookmarkFavoriteFunc         func(ctx context.Context, id int64, isFavorite bool) error
-	updateBookmarkCollectionFunc       func(ctx context.Context, id int64, collectionID *int64) error
-	updateBookmarkTitleFunc            func(ctx context.Context, id int64, title string) error
 	moveBookmarkFunc                   func(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error
 	bulkMoveBookmarksFunc              func(ctx context.Context, bookmarkIDs []int64, collectionID *int64, afterBookmarkID *int64) error
 	bulkDeleteBookmarksFunc            func(ctx context.Context, bookmarkIDs []int64) error
@@ -57,7 +55,6 @@ type mockService struct {
 	getPostByIDFunc     func(ctx context.Context, id int64) (*models.Post, error)
 	getPostBySlugFunc   func(ctx context.Context, slug string) (*models.Post, error)
 	listPostsFunc       func(ctx context.Context, publishedOnly bool, limit, offset int) ([]models.Post, error)
-	countPostsFunc      func(ctx context.Context, publishedOnly bool) (int, error)
 	updatePostDraftFunc func(ctx context.Context, id int64, isDraft bool) error
 
 	// Collection methods
@@ -67,19 +64,15 @@ type mockService struct {
 	getCollectionByIDFunc          func(ctx context.Context, id int64) (*models.Collection, error)
 	getCollectionBySlugFunc        func(ctx context.Context, slug string) (*models.Collection, error)
 	listCollectionsFunc            func(ctx context.Context, publicOnly bool) ([]models.Collection, error)
-	updateCollectionNameFunc       func(ctx context.Context, id int64, name string) error
 	updateCollectionPublicFunc     func(ctx context.Context, id int64, isPublic bool) error
 	getBookmarksByCollectionIDFunc func(ctx context.Context, collectionID int64) ([]service.CollectionBookmark, error)
 	getBoardViewDataFunc           func(ctx context.Context, recentLimit int) (*service.BoardViewData, error)
 
 	// Tag methods
 	createTagFunc         func(ctx context.Context, input models.CreateTagInput) (*models.Tag, error)
-	updateTagFunc         func(ctx context.Context, id int64, input models.CreateTagInput) (*models.Tag, error)
 	deleteTagFunc         func(ctx context.Context, id int64) error
-	getTagByIDFunc        func(ctx context.Context, id int64) (*models.Tag, error)
 	getTagBySlugFunc      func(ctx context.Context, slug string) (*models.Tag, error)
 	listTagsFunc          func(ctx context.Context) ([]models.Tag, error)
-	getOrCreateTagFunc    func(ctx context.Context, name, slug string) (*models.Tag, error)
 	getTagsWithCountsFunc func(ctx context.Context) ([]service.TagWithCount, error)
 	getPostsByTagIDFunc   func(ctx context.Context, tagID int64) ([]service.TagPost, error)
 
@@ -87,10 +80,8 @@ type mockService struct {
 	getDashboardStatsFunc func(ctx context.Context) (*service.DashboardStats, error)
 
 	// Activity methods
-	logActivityFunc               func(ctx context.Context, action, entityType string, entityID int64, title string, metadata map[string]interface{}) (*service.Activity, error)
-	listRecentActivitiesFunc      func(ctx context.Context, limit, offset int) ([]service.Activity, error)
-	countActivitiesFunc           func(ctx context.Context) (int, error)
-	deleteActivitiesForEntityFunc func(ctx context.Context, entityType string, entityID int64) error
+	logActivityFunc          func(ctx context.Context, action, entityType string, entityID int64, title string, metadata map[string]interface{}) (*service.Activity, error)
+	listRecentActivitiesFunc func(ctx context.Context, limit, offset int) ([]service.Activity, error)
 
 	// Metadata methods
 	fetchPageMetadataFunc func(ctx context.Context, url string) (*service.PageMetadata, error)
@@ -334,20 +325,6 @@ func (m *mockService) UpdateBookmarkFavorite(ctx context.Context, id int64, isFa
 	return nil
 }
 
-func (m *mockService) UpdateBookmarkCollection(ctx context.Context, id int64, collectionID *int64) error {
-	if m.updateBookmarkCollectionFunc != nil {
-		return m.updateBookmarkCollectionFunc(ctx, id, collectionID)
-	}
-	return nil
-}
-
-func (m *mockService) UpdateBookmarkTitle(ctx context.Context, id int64, title string) error {
-	if m.updateBookmarkTitleFunc != nil {
-		return m.updateBookmarkTitleFunc(ctx, id, title)
-	}
-	return nil
-}
-
 func (m *mockService) MoveBookmark(ctx context.Context, bookmarkID int64, collectionID *int64, afterBookmarkID *int64) error {
 	if m.moveBookmarkFunc != nil {
 		return m.moveBookmarkFunc(ctx, bookmarkID, collectionID, afterBookmarkID)
@@ -424,13 +401,6 @@ func (m *mockService) ListPosts(ctx context.Context, publishedOnly bool, limit, 
 	return nil, nil
 }
 
-func (m *mockService) CountPosts(ctx context.Context, publishedOnly bool) (int, error) {
-	if m.countPostsFunc != nil {
-		return m.countPostsFunc(ctx, publishedOnly)
-	}
-	return 0, nil
-}
-
 func (m *mockService) UpdatePostDraft(ctx context.Context, id int64, isDraft bool) error {
 	if m.updatePostDraftFunc != nil {
 		return m.updatePostDraftFunc(ctx, id, isDraft)
@@ -480,13 +450,6 @@ func (m *mockService) ListCollections(ctx context.Context, publicOnly bool) ([]m
 	return nil, nil
 }
 
-func (m *mockService) UpdateCollectionName(ctx context.Context, id int64, name string) error {
-	if m.updateCollectionNameFunc != nil {
-		return m.updateCollectionNameFunc(ctx, id, name)
-	}
-	return nil
-}
-
 func (m *mockService) UpdateCollectionPublic(ctx context.Context, id int64, isPublic bool) error {
 	if m.updateCollectionPublicFunc != nil {
 		return m.updateCollectionPublicFunc(ctx, id, isPublic)
@@ -515,25 +478,11 @@ func (m *mockService) CreateTag(ctx context.Context, input models.CreateTagInput
 	return nil, nil
 }
 
-func (m *mockService) UpdateTag(ctx context.Context, id int64, input models.CreateTagInput) (*models.Tag, error) {
-	if m.updateTagFunc != nil {
-		return m.updateTagFunc(ctx, id, input)
-	}
-	return nil, nil
-}
-
 func (m *mockService) DeleteTag(ctx context.Context, id int64) error {
 	if m.deleteTagFunc != nil {
 		return m.deleteTagFunc(ctx, id)
 	}
 	return nil
-}
-
-func (m *mockService) GetTagByID(ctx context.Context, id int64) (*models.Tag, error) {
-	if m.getTagByIDFunc != nil {
-		return m.getTagByIDFunc(ctx, id)
-	}
-	return nil, nil
 }
 
 func (m *mockService) GetTagBySlug(ctx context.Context, slug string) (*models.Tag, error) {
@@ -546,13 +495,6 @@ func (m *mockService) GetTagBySlug(ctx context.Context, slug string) (*models.Ta
 func (m *mockService) ListTags(ctx context.Context) ([]models.Tag, error) {
 	if m.listTagsFunc != nil {
 		return m.listTagsFunc(ctx)
-	}
-	return nil, nil
-}
-
-func (m *mockService) GetOrCreateTag(ctx context.Context, name, slug string) (*models.Tag, error) {
-	if m.getOrCreateTagFunc != nil {
-		return m.getOrCreateTagFunc(ctx, name, slug)
 	}
 	return nil, nil
 }
@@ -590,20 +532,6 @@ func (m *mockService) ListRecentActivities(ctx context.Context, limit, offset in
 		return m.listRecentActivitiesFunc(ctx, limit, offset)
 	}
 	return nil, nil
-}
-
-func (m *mockService) CountActivities(ctx context.Context) (int, error) {
-	if m.countActivitiesFunc != nil {
-		return m.countActivitiesFunc(ctx)
-	}
-	return 0, nil
-}
-
-func (m *mockService) DeleteActivitiesForEntity(ctx context.Context, entityType string, entityID int64) error {
-	if m.deleteActivitiesForEntityFunc != nil {
-		return m.deleteActivitiesForEntityFunc(ctx, entityType, entityID)
-	}
-	return nil
 }
 
 func (m *mockService) FetchPageMetadata(ctx context.Context, url string) (*service.PageMetadata, error) {

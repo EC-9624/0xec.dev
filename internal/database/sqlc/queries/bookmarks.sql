@@ -81,12 +81,6 @@ UPDATE bookmarks SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 -- name: UpdateBookmarkFavorite :exec
 UPDATE bookmarks SET is_favorite = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 
--- name: UpdateBookmarkCollection :exec
-UPDATE bookmarks SET collection_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
-
--- name: UpdateBookmarkTitle :exec
-UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
-
 -- ============================================
 -- BOARD VIEW QUERIES
 -- ============================================

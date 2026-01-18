@@ -3,14 +3,8 @@ INSERT INTO tags (name, slug, created_at)
 VALUES (?, ?, CURRENT_TIMESTAMP)
 RETURNING *;
 
--- name: UpdateTag :exec
-UPDATE tags SET name = ?, slug = ? WHERE id = ?;
-
 -- name: DeleteTag :exec
 DELETE FROM tags WHERE id = ?;
-
--- name: GetTagByID :one
-SELECT * FROM tags WHERE id = ?;
 
 -- name: GetTagBySlug :one
 SELECT * FROM tags WHERE slug = ?;

@@ -178,20 +178,6 @@ func (s *Service) ListPosts(ctx context.Context, publishedOnly bool, limit, offs
 	return result, nil
 }
 
-// CountPosts returns the total number of posts
-func (s *Service) CountPosts(ctx context.Context, publishedOnly bool) (int, error) {
-	var count int64
-	var err error
-
-	if publishedOnly {
-		count, err = s.queries.CountPublishedPosts(ctx)
-	} else {
-		count, err = s.queries.CountAllPosts(ctx)
-	}
-
-	return int(count), err
-}
-
 // setPostTags replaces all tags for a post
 func (s *Service) setPostTags(ctx context.Context, postID int64, tagIDs []int64) error {
 	if err := s.queries.DeletePostTags(ctx, postID); err != nil {

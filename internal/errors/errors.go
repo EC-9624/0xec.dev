@@ -10,11 +10,9 @@ import (
 
 // Common sentinel errors
 var (
-	ErrNotFound     = errors.New("not found")
-	ErrUnauthorized = errors.New("unauthorized")
-	ErrForbidden    = errors.New("forbidden")
-	ErrBadRequest   = errors.New("bad request")
-	ErrInternal     = errors.New("internal error")
+	ErrNotFound   = errors.New("not found")
+	ErrBadRequest = errors.New("bad request")
+	ErrInternal   = errors.New("internal error")
 )
 
 // AppError represents an application error with context
@@ -69,26 +67,6 @@ func Internal(message string, err error) *AppError {
 		Message: message,
 		Status:  http.StatusInternalServerError,
 		Err:     err,
-	}
-}
-
-// Unauthorized creates a 401 error
-func Unauthorized(message string) *AppError {
-	return &AppError{
-		Code:    "UNAUTHORIZED",
-		Message: message,
-		Status:  http.StatusUnauthorized,
-		Err:     ErrUnauthorized,
-	}
-}
-
-// Forbidden creates a 403 error
-func Forbidden(message string) *AppError {
-	return &AppError{
-		Code:    "FORBIDDEN",
-		Message: message,
-		Status:  http.StatusForbidden,
-		Err:     ErrForbidden,
 	}
 }
 
@@ -147,18 +125,4 @@ func WriteInternalError(w http.ResponseWriter, r *http.Request, message string, 
 // WriteBadRequest is a convenience helper for 400 errors
 func WriteBadRequest(w http.ResponseWriter, r *http.Request, message string) {
 	WriteError(w, r, BadRequest(message))
-}
-
-// HandleError handles an error based on its type.
-// If it's an AppError, it uses the appropriate status.
-// Otherwise, it treats it as an internal error.
-func HandleError(w http.ResponseWriter, r *http.Request, err error, fallbackMessage string) {
-	var appErr *AppError
-	if errors.As(err, &appErr) {
-		WriteError(w, r, appErr)
-		return
-	}
-
-	// Wrap unknown errors as internal errors
-	WriteError(w, r, Internal(fallbackMessage, err))
 }

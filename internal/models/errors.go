@@ -3,7 +3,6 @@ package models
 import (
 	"net/url"
 	"regexp"
-	"strings"
 )
 
 // FormErrors holds validation errors for forms
@@ -82,22 +81,4 @@ func IsValidHexColor(s string) bool {
 		return true // Empty is valid (optional field)
 	}
 	return hexColorPattern.MatchString(s)
-}
-
-// ValidateRequired checks if a string is non-empty after trimming
-func ValidateRequired(value, fieldName string, errors *FormErrors) bool {
-	if strings.TrimSpace(value) == "" {
-		errors.AddField(fieldName, fieldName+" is required")
-		return false
-	}
-	return true
-}
-
-// ValidateMaxLength checks if a string doesn't exceed max length
-func ValidateMaxLength(value, fieldName string, maxLen int, errors *FormErrors) bool {
-	if len(value) > maxLen {
-		errors.AddField(fieldName, fieldName+" cannot exceed "+string(rune(maxLen))+" characters")
-		return false
-	}
-	return true
 }

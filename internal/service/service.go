@@ -19,13 +19,3 @@ func New(database *sql.DB) *Service {
 		db:      database,
 	}
 }
-
-// Queries returns the underlying sqlc Queries for direct access
-func (s *Service) Queries() *db.Queries {
-	return s.queries
-}
-
-// DB returns the underlying database connection
-func (s *Service) DB() *sql.DB {
-	return s.db
-}

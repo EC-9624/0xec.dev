@@ -32,8 +32,6 @@ const (
 	EntityBookmark   = "bookmark"
 	EntityPost       = "post"
 	EntityCollection = "collection"
-	EntityTag        = "tag"
-	EntityImport     = "import"
 )
 
 // Activity represents an activity log entry
@@ -100,20 +98,6 @@ func (s *Service) ListRecentActivities(ctx context.Context, limit, offset int) (
 	return result, nil
 }
 
-// CountActivities returns total number of activities
-func (s *Service) CountActivities(ctx context.Context) (int, error) {
-	count, err := s.queries.CountActivities(ctx)
-	return int(count), err
-}
-
-// DeleteActivitiesForEntity deletes all activities for a specific entity
-func (s *Service) DeleteActivitiesForEntity(ctx context.Context, entityType string, entityID int64) error {
-	return s.queries.DeleteActivitiesByEntity(ctx, db.DeleteActivitiesByEntityParams{
-		EntityType: entityType,
-		EntityID:   &entityID,
-	})
-}
-
 // Helper to convert db.Activity to Activity model
 func dbActivityToModel(a db.Activity) *Activity {
 	activity := &Activity{
@@ -137,40 +121,6 @@ func dbActivityToModel(a db.Activity) *Activity {
 	}
 
 	return activity
-}
-
-// GetActivityIcon returns an icon for the activity action
-func GetActivityIcon(action string) string {
-	switch action {
-	case ActionBookmarkCreated:
-		return "+"
-	case ActionBookmarkUpdated:
-		return "~"
-	case ActionBookmarkDeleted:
-		return "-"
-	case ActionPostCreated:
-		return "+"
-	case ActionPostUpdated:
-		return "~"
-	case ActionPostDeleted:
-		return "-"
-	case ActionPostPublished:
-		return "!"
-	case ActionCollectionCreated:
-		return "+"
-	case ActionCollectionUpdated:
-		return "~"
-	case ActionCollectionDeleted:
-		return "-"
-	case ActionImportStarted:
-		return ">"
-	case ActionImportCompleted:
-		return "v"
-	case ActionMetadataFetched:
-		return "i"
-	default:
-		return "●"
-	}
 }
 
 // GetActivityVerb returns a human-readable verb for the action

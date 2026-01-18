@@ -54,12 +54,3 @@ func Auth(svc AuthService) func(http.Handler) http.Handler {
 		})
 	}
 }
-
-// GetUser retrieves the authenticated user from context
-func GetUser(r *http.Request) *models.User {
-	user, ok := r.Context().Value(UserContextKey).(*models.User)
-	if !ok {
-		return nil
-	}
-	return user
-}

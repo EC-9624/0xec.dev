@@ -22,32 +22,9 @@ func (s *Service) CreateTag(ctx context.Context, input models.CreateTagInput) (*
 	return dbTagToModel(tag), nil
 }
 
-// UpdateTag updates an existing tag
-func (s *Service) UpdateTag(ctx context.Context, id int64, input models.CreateTagInput) (*models.Tag, error) {
-	err := s.queries.UpdateTag(ctx, db.UpdateTagParams{
-		Name: input.Name,
-		Slug: input.Slug,
-		ID:   id,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return s.GetTagByID(ctx, id)
-}
-
 // DeleteTag deletes a tag
 func (s *Service) DeleteTag(ctx context.Context, id int64) error {
 	return s.queries.DeleteTag(ctx, id)
-}
-
-// GetTagByID retrieves a tag by ID
-func (s *Service) GetTagByID(ctx context.Context, id int64) (*models.Tag, error) {
-	tag, err := s.queries.GetTagByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return dbTagToModel(tag), nil
 }
 
 // GetTagBySlug retrieves a tag by slug
@@ -72,21 +49,6 @@ func (s *Service) ListTags(ctx context.Context) ([]models.Tag, error) {
 	}
 
 	return result, nil
-}
-
-// GetOrCreateTag gets a tag by name or creates it if it doesn't exist
-func (s *Service) GetOrCreateTag(ctx context.Context, name, slug string) (*models.Tag, error) {
-	tag, err := s.GetTagBySlug(ctx, slug)
-	if err == sql.ErrNoRows {
-		return s.CreateTag(ctx, models.CreateTagInput{
-			Name: name,
-			Slug: slug,
-		})
-	}
-	if err != nil {
-		return nil, err
-	}
-	return tag, nil
 }
 
 // TagWithCount represents a tag with its usage count

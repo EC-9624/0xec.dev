@@ -162,22 +162,6 @@ func dbCollectionToModel(c db.Collection, bookmarkCount int) *models.Collection 
 // INLINE EDITING METHODS
 // ============================================
 
-// UpdateCollectionName updates only the name of a collection
-func (s *Service) UpdateCollectionName(ctx context.Context, id int64, name string) error {
-	err := s.queries.UpdateCollectionName(ctx, db.UpdateCollectionNameParams{
-		Name: name,
-		ID:   id,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Log activity
-	s.LogActivity(ctx, ActionCollectionUpdated, EntityCollection, id, name, nil)
-
-	return nil
-}
-
 // UpdateCollectionPublic updates only the public status of a collection
 func (s *Service) UpdateCollectionPublic(ctx context.Context, id int64, isPublic bool) error {
 	return s.queries.UpdateCollectionPublic(ctx, db.UpdateCollectionPublicParams{

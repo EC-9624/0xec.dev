@@ -2,49 +2,6 @@ package service
 
 import "testing"
 
-func TestGetActivityIcon(t *testing.T) {
-	tests := []struct {
-		action string
-		want   string
-	}{
-		// Bookmark actions
-		{ActionBookmarkCreated, "+"},
-		{ActionBookmarkUpdated, "~"},
-		{ActionBookmarkDeleted, "-"},
-
-		// Post actions
-		{ActionPostCreated, "+"},
-		{ActionPostUpdated, "~"},
-		{ActionPostDeleted, "-"},
-		{ActionPostPublished, "!"},
-
-		// Collection actions
-		{ActionCollectionCreated, "+"},
-		{ActionCollectionUpdated, "~"},
-		{ActionCollectionDeleted, "-"},
-
-		// Import actions
-		{ActionImportStarted, ">"},
-		{ActionImportCompleted, "v"},
-
-		// Metadata action
-		{ActionMetadataFetched, "i"},
-
-		// Unknown action
-		{"unknown.action", "●"},
-		{"", "●"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.action, func(t *testing.T) {
-			got := GetActivityIcon(tt.action)
-			if got != tt.want {
-				t.Errorf("GetActivityIcon(%q) = %q, want %q", tt.action, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestGetActivityVerb(t *testing.T) {
 	tests := []struct {
 		action string
@@ -138,8 +95,6 @@ func TestEntityConstants(t *testing.T) {
 		{"EntityBookmark", EntityBookmark},
 		{"EntityPost", EntityPost},
 		{"EntityCollection", EntityCollection},
-		{"EntityTag", EntityTag},
-		{"EntityImport", EntityImport},
 	}
 
 	for _, tt := range entities {

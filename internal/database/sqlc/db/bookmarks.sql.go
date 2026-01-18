@@ -704,20 +704,6 @@ func (q *Queries) UpdateBookmark(ctx context.Context, arg UpdateBookmarkParams) 
 	return err
 }
 
-const updateBookmarkCollection = `-- name: UpdateBookmarkCollection :exec
-UPDATE bookmarks SET collection_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-`
-
-type UpdateBookmarkCollectionParams struct {
-	CollectionID *int64 `json:"collection_id"`
-	ID           int64  `json:"id"`
-}
-
-func (q *Queries) UpdateBookmarkCollection(ctx context.Context, arg UpdateBookmarkCollectionParams) error {
-	_, err := q.db.ExecContext(ctx, updateBookmarkCollection, arg.CollectionID, arg.ID)
-	return err
-}
-
 const updateBookmarkFavorite = `-- name: UpdateBookmarkFavorite :exec
 UPDATE bookmarks SET is_favorite = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
 `
@@ -764,19 +750,5 @@ type UpdateBookmarkPublicParams struct {
 // ============================================
 func (q *Queries) UpdateBookmarkPublic(ctx context.Context, arg UpdateBookmarkPublicParams) error {
 	_, err := q.db.ExecContext(ctx, updateBookmarkPublic, arg.IsPublic, arg.ID)
-	return err
-}
-
-const updateBookmarkTitle = `-- name: UpdateBookmarkTitle :exec
-UPDATE bookmarks SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-`
-
-type UpdateBookmarkTitleParams struct {
-	Title string `json:"title"`
-	ID    int64  `json:"id"`
-}
-
-func (q *Queries) UpdateBookmarkTitle(ctx context.Context, arg UpdateBookmarkTitleParams) error {
-	_, err := q.db.ExecContext(ctx, updateBookmarkTitle, arg.Title, arg.ID)
 	return err
 }

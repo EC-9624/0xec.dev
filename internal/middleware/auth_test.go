@@ -180,7 +180,10 @@ func TestAuth_ValidSession(t *testing.T) {
 
 	var capturedUser *models.User
 	handler := Auth(mock)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedUser = GetUser(r)
+		user, ok := r.Context().Value(UserContextKey).(*models.User)
+		if ok {
+			capturedUser = user
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -273,28 +276,28 @@ func TestAuth_UserIDPassedCorrectly(t *testing.T) {
 	}
 }
 
-func TestGetUser_NoUserInContext(t *testing.T) {
+func TestUserContextKey_NoUserInContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	user := GetUser(req)
+	user, ok := req.Context().Value(UserContextKey).(*models.User)
 
-	if user != nil {
-		t.Errorf("GetUser without context should return nil, got %+v", user)
+	if ok || user != nil {
+		t.Errorf("Context without user should return nil, got %+v", user)
 	}
 }
 
-func TestGetUser_WrongTypeInContext(t *testing.T) {
+func TestUserContextKey_WrongTypeInContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(req.Context(), UserContextKey, "not a user")
 	req = req.WithContext(ctx)
 
-	user := GetUser(req)
+	user, ok := req.Context().Value(UserContextKey).(*models.User)
 
-	if user != nil {
-		t.Errorf("GetUser with wrong type should return nil, got %+v", user)
+	if ok || user != nil {
+		t.Errorf("Context with wrong type should return nil, got %+v", user)
 	}
 }
 
-func TestGetUser_ValidUser(t *testing.T) {
+func TestUserContextKey_ValidUser(t *testing.T) {
 	testUser := &models.User{
 		ID:       123,
 		Username: "testuser",
@@ -304,10 +307,10 @@ func TestGetUser_ValidUser(t *testing.T) {
 	ctx := context.WithValue(req.Context(), UserContextKey, testUser)
 	req = req.WithContext(ctx)
 
-	user := GetUser(req)
+	user, ok := req.Context().Value(UserContextKey).(*models.User)
 
-	if user == nil {
-		t.Fatal("GetUser should return user from context")
+	if !ok || user == nil {
+		t.Fatal("Context should return user")
 	}
 
 	if user.ID != testUser.ID {

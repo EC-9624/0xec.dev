@@ -6,7 +6,7 @@ tmp_dir = "tmp"
 
 [build]
 # Command to build the application
-cmd = "templ generate && go build -o ./tmp/main ./cmd/server"
+cmd = "templ generate && go build -tags dev -o ./tmp/main ./cmd/server"
 # Binary file to run
 bin = "./tmp/main"
 # Watch these file extensions

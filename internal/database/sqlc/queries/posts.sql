@@ -29,12 +29,6 @@ WHERE is_draft = 0
 ORDER BY COALESCE(published_at, created_at) DESC 
 LIMIT ? OFFSET ?;
 
--- name: CountAllPosts :one
-SELECT COUNT(*) FROM posts;
-
--- name: CountPublishedPosts :one
-SELECT COUNT(*) FROM posts WHERE is_draft = 0;
-
 -- name: GetPostTags :many
 SELECT t.id, t.name, t.slug, t.created_at
 FROM tags t

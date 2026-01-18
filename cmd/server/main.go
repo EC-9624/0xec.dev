@@ -259,8 +259,26 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
+	// Start periodic session cleanup (every hour)
 	quit := make(chan os.Signal, 1)
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := h.CleanupExpiredSessions(context.Background()); err != nil {
+					slog.Warn("failed to cleanup expired sessions", "error", err)
+				} else {
+					slog.Debug("cleaned up expired sessions")
+				}
+			case <-quit:
+				return
+			}
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 

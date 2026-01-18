@@ -27,9 +27,6 @@ func TestPostsIndex(t *testing.T) {
 			}
 			return testPosts, nil
 		},
-		countPostsFunc: func(ctx context.Context, publishedOnly bool) (int, error) {
-			return len(testPosts), nil
-		},
 	}
 	h := newTestHandlers(mock)
 
@@ -47,9 +44,6 @@ func TestPostsIndex_Empty(t *testing.T) {
 	mock := &mockService{
 		listPostsFunc: func(ctx context.Context, publishedOnly bool, limit, offset int) ([]models.Post, error) {
 			return []models.Post{}, nil
-		},
-		countPostsFunc: func(ctx context.Context, publishedOnly bool) (int, error) {
-			return 0, nil
 		},
 	}
 	h := newTestHandlers(mock)
@@ -151,9 +145,6 @@ func TestAdminPostsList(t *testing.T) {
 				t.Error("Admin list should show all posts including drafts")
 			}
 			return testPosts, nil
-		},
-		countPostsFunc: func(ctx context.Context, publishedOnly bool) (int, error) {
-			return len(testPosts), nil
 		},
 	}
 	h := newTestHandlers(mock)

@@ -46,6 +46,12 @@ func (h *Handlers) EnsureAdminExists(ctx context.Context, username, password str
 	return h.service.EnsureAdminExists(ctx, username, password)
 }
 
+// CleanupExpiredSessions removes expired sessions from the database.
+// This is a convenience method for periodic cleanup.
+func (h *Handlers) CleanupExpiredSessions(ctx context.Context) error {
+	return h.service.CleanupExpiredSessions(ctx)
+}
+
 // render is a helper to render templ components
 func render(w http.ResponseWriter, r *http.Request, component templ.Component) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

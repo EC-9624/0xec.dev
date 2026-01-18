@@ -37,14 +37,6 @@ func (p *Post) GetCoverImage() string {
 	return ""
 }
 
-// GetPublishedAt returns the published date or nil
-func (p *Post) GetPublishedAt() *time.Time {
-	if p.PublishedAt.Valid {
-		return &p.PublishedAt.Time
-	}
-	return nil
-}
-
 // CreatePostInput represents input for creating a post
 type CreatePostInput struct {
 	Title      string  `json:"title"`

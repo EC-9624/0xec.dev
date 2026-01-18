@@ -24,28 +24,6 @@ func (q *Queries) AddPostTag(ctx context.Context, arg AddPostTagParams) error {
 	return err
 }
 
-const countAllPosts = `-- name: CountAllPosts :one
-SELECT COUNT(*) FROM posts
-`
-
-func (q *Queries) CountAllPosts(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countAllPosts)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const countPublishedPosts = `-- name: CountPublishedPosts :one
-SELECT COUNT(*) FROM posts WHERE is_draft = 0
-`
-
-func (q *Queries) CountPublishedPosts(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countPublishedPosts)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (title, slug, content, excerpt, cover_image, is_draft, published_at, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)

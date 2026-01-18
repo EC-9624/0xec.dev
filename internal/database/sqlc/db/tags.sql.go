@@ -89,22 +89,6 @@ func (q *Queries) GetPostsByTagID(ctx context.Context, tagID int64) ([]GetPostsB
 	return items, nil
 }
 
-const getTagByID = `-- name: GetTagByID :one
-SELECT id, name, slug, created_at FROM tags WHERE id = ?
-`
-
-func (q *Queries) GetTagByID(ctx context.Context, id int64) (Tag, error) {
-	row := q.db.QueryRowContext(ctx, getTagByID, id)
-	var i Tag
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Slug,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const getTagByName = `-- name: GetTagByName :one
 SELECT id, name, slug, created_at FROM tags WHERE name = ?
 `
@@ -211,19 +195,4 @@ func (q *Queries) ListTagsWithCounts(ctx context.Context) ([]ListTagsWithCountsR
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateTag = `-- name: UpdateTag :exec
-UPDATE tags SET name = ?, slug = ? WHERE id = ?
-`
-
-type UpdateTagParams struct {
-	Name string `json:"name"`
-	Slug string `json:"slug"`
-	ID   int64  `json:"id"`
-}
-
-func (q *Queries) UpdateTag(ctx context.Context, arg UpdateTagParams) error {
-	_, err := q.db.ExecContext(ctx, updateTag, arg.Name, arg.Slug, arg.ID)
-	return err
 }

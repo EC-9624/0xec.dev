@@ -209,52 +209,6 @@ func (s *Service) RefreshBookmarkMetadata(ctx context.Context, id int64) error {
 	return err
 }
 
-// RefreshResult contains the result of a metadata refresh operation
-type RefreshResult struct {
-	Total     int
-	Processed int
-	Updated   int
-	Failed    int
-}
-
-// RefreshAllMissingMetadata refreshes metadata for all bookmarks missing cover images
-// Returns the result after completion
-func (s *Service) RefreshAllMissingMetadata(ctx context.Context) (*RefreshResult, error) {
-	result := &RefreshResult{}
-
-	// Get all bookmarks
-	bookmarks, err := s.ListBookmarks(ctx, BookmarkListOptions{
-		Limit:      1000,
-		PublicOnly: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Count bookmarks needing refresh
-	var toRefresh []models.Bookmark
-	for _, bookmark := range bookmarks {
-		if bookmark.GetCoverImage() == "" {
-			toRefresh = append(toRefresh, bookmark)
-		}
-	}
-	result.Total = len(toRefresh)
-
-	for _, bookmark := range toRefresh {
-		err := s.RefreshBookmarkMetadata(ctx, bookmark.ID)
-		result.Processed++
-		if err != nil {
-			result.Failed++
-		} else {
-			result.Updated++
-		}
-		// Small delay to avoid hammering servers
-		time.Sleep(300 * time.Millisecond)
-	}
-
-	return result, nil
-}
-
 // RefreshAllMissingMetadataAsync refreshes metadata in background with progress callback
 func (s *Service) RefreshAllMissingMetadataAsync(progressChan chan<- string) {
 	go func() {
