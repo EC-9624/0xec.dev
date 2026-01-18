@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -79,8 +80,8 @@ func (h *Handlers) AdminRefreshAllMetadata(w http.ResponseWriter, r *http.Reques
 
 // AdminRefreshBookmarkMetadata refreshes metadata for a single bookmark
 func (h *Handlers) AdminRefreshBookmarkMetadata(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -100,8 +101,8 @@ func (h *Handlers) AdminRefreshBookmarkMetadata(w http.ResponseWriter, r *http.R
 
 // AdminToggleBookmarkPublic toggles the public/private status of a bookmark
 func (h *Handlers) AdminToggleBookmarkPublic(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -130,8 +131,8 @@ func (h *Handlers) AdminToggleBookmarkPublic(w http.ResponseWriter, r *http.Requ
 
 // AdminToggleBookmarkFavorite toggles the favorite status of a bookmark
 func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -160,8 +161,8 @@ func (h *Handlers) AdminToggleBookmarkFavorite(w http.ResponseWriter, r *http.Re
 
 // AdminUpdateBookmarkCollection updates the collection and position of a bookmark
 func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.Error(w, "Invalid bookmark ID", http.StatusBadRequest)
 		return
 	}
@@ -196,8 +197,7 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	}
 
 	// Use MoveBookmark which handles both collection and position
-	err = h.service.MoveBookmark(ctx, id, collectionID, afterBookmarkID)
-	if err != nil {
+	if err := h.service.MoveBookmark(ctx, id, collectionID, afterBookmarkID); err != nil {
 		logger.Error(ctx, "failed to move bookmark", "error", err, "bookmark_id", id)
 		http.Error(w, "Failed to move bookmark", http.StatusInternalServerError)
 		return
@@ -254,8 +254,8 @@ func (h *Handlers) HTMXAdminBookmarkNewDrawer(w http.ResponseWriter, r *http.Req
 // HTMXAdminBookmarkEditDrawer returns the edit bookmark form for the drawer
 func (h *Handlers) HTMXAdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
@@ -271,4 +271,80 @@ func (h *Handlers) HTMXAdminBookmarkEditDrawer(w http.ResponseWriter, r *http.Re
 		logger.Error(ctx, "failed to load collections for bookmark edit drawer", "error", err)
 	}
 	render(w, r, admin.BookmarkFormDrawer(bookmark, collections, false, nil, nil))
+}
+
+// ============================================
+// BULK OPERATIONS (HTMX)
+// ============================================
+
+// BulkMoveRequest represents the JSON request body for bulk move
+type BulkMoveRequest struct {
+	BookmarkIDs     []int64 `json:"bookmark_ids"`
+	CollectionID    *int64  `json:"collection_id"`
+	AfterBookmarkID *int64  `json:"after_id"`
+}
+
+// BulkDeleteRequest represents the JSON request body for bulk delete
+type BulkDeleteRequest struct {
+	BookmarkIDs []int64 `json:"bookmark_ids"`
+}
+
+// AdminBulkMoveBookmarks handles moving multiple bookmarks to a collection
+func (h *Handlers) AdminBulkMoveBookmarks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req BulkMoveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) == 0 {
+		http.Error(w, "No bookmarks specified", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) > 50 {
+		http.Error(w, "Too many bookmarks (max 50)", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.BulkMoveBookmarks(ctx, req.BookmarkIDs, req.CollectionID, req.AfterBookmarkID)
+	if err != nil {
+		logger.Error(ctx, "failed to bulk move bookmarks", "error", err)
+		http.Error(w, "Failed to move bookmarks", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// AdminBulkDeleteBookmarks handles deleting multiple bookmarks
+func (h *Handlers) AdminBulkDeleteBookmarks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req BulkDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) == 0 {
+		http.Error(w, "No bookmarks specified", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.BookmarkIDs) > 50 {
+		http.Error(w, "Too many bookmarks (max 50)", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.BulkDeleteBookmarks(ctx, req.BookmarkIDs)
+	if err != nil {
+		logger.Error(ctx, "failed to bulk delete bookmarks", "error", err)
+		http.Error(w, "Failed to delete bookmarks", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

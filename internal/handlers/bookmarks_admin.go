@@ -197,8 +197,8 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 // AdminBookmarkEdit handles the edit bookmark form
 func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		errors.WriteBadRequest(w, r, "Invalid bookmark ID")
 		return
 	}
@@ -220,8 +220,8 @@ func (h *Handlers) AdminBookmarkEdit(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		errors.WriteBadRequest(w, r, "Invalid bookmark ID")
 		return
 	}
@@ -332,8 +332,8 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 
 // AdminBookmarkDelete handles deleting a bookmark
 func (h *Handlers) AdminBookmarkDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
+	id, ok := parsePathID(r, "id")
+	if !ok {
 		errors.WriteBadRequest(w, r, "Invalid bookmark ID")
 		return
 	}

@@ -22,15 +22,6 @@ type BookmarkListOptions struct {
 func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmarkInput) (*models.Bookmark, error) {
 	domain := extractDomain(input.URL)
 
-	var isPublic int64 = 0
-	if input.IsPublic {
-		isPublic = 1
-	}
-	var isFavorite int64 = 0
-	if input.IsFavorite {
-		isFavorite = 1
-	}
-
 	bookmark, err := s.queries.CreateBookmark(ctx, db.CreateBookmarkParams{
 		Url:          input.URL,
 		Title:        input.Title,
@@ -39,8 +30,8 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 		Favicon:      strPtr(input.Favicon),
 		Domain:       strPtr(domain),
 		CollectionID: input.CollectionID,
-		IsPublic:     &isPublic,
-		IsFavorite:   &isFavorite,
+		IsPublic:     boolToInt64Ptr(input.IsPublic),
+		IsFavorite:   boolToInt64Ptr(input.IsFavorite),
 		SortOrder:    nil,
 	})
 	if err != nil {
@@ -57,15 +48,6 @@ func (s *Service) CreateBookmark(ctx context.Context, input models.CreateBookmar
 func (s *Service) UpdateBookmark(ctx context.Context, id int64, input models.UpdateBookmarkInput) (*models.Bookmark, error) {
 	domain := extractDomain(input.URL)
 
-	var isPublic int64 = 0
-	if input.IsPublic {
-		isPublic = 1
-	}
-	var isFavorite int64 = 0
-	if input.IsFavorite {
-		isFavorite = 1
-	}
-
 	err := s.queries.UpdateBookmark(ctx, db.UpdateBookmarkParams{
 		Url:          input.URL,
 		Title:        input.Title,
@@ -74,8 +56,8 @@ func (s *Service) UpdateBookmark(ctx context.Context, id int64, input models.Upd
 		Favicon:      strPtr(input.Favicon),
 		Domain:       strPtr(domain),
 		CollectionID: input.CollectionID,
-		IsPublic:     &isPublic,
-		IsFavorite:   &isFavorite,
+		IsPublic:     boolToInt64Ptr(input.IsPublic),
+		IsFavorite:   boolToInt64Ptr(input.IsFavorite),
 		ID:           id,
 	})
 	if err != nil {
@@ -254,24 +236,16 @@ func extractDomain(rawURL string) string {
 
 // UpdateBookmarkPublic updates only the public status of a bookmark
 func (s *Service) UpdateBookmarkPublic(ctx context.Context, id int64, isPublic bool) error {
-	var val int64 = 0
-	if isPublic {
-		val = 1
-	}
 	return s.queries.UpdateBookmarkPublic(ctx, db.UpdateBookmarkPublicParams{
-		IsPublic: &val,
+		IsPublic: boolToInt64Ptr(isPublic),
 		ID:       id,
 	})
 }
 
 // UpdateBookmarkFavorite updates only the favorite status of a bookmark
 func (s *Service) UpdateBookmarkFavorite(ctx context.Context, id int64, isFavorite bool) error {
-	var val int64 = 0
-	if isFavorite {
-		val = 1
-	}
 	return s.queries.UpdateBookmarkFavorite(ctx, db.UpdateBookmarkFavoriteParams{
-		IsFavorite: &val,
+		IsFavorite: boolToInt64Ptr(isFavorite),
 		ID:         id,
 	})
 }
@@ -429,6 +403,179 @@ func (s *Service) rebalanceBookmarks(ctx context.Context, collectionID *int64, s
 			return err
 		}
 	}
+	return nil
+}
+
+// BulkMoveBookmarks moves multiple bookmarks to a collection with position support.
+// collectionID: target collection (nil = unsorted column)
+// afterBookmarkID: bookmark ID to insert after (nil = insert at the beginning)
+// Bookmarks are inserted in the order provided, maintaining their relative positions.
+func (s *Service) BulkMoveBookmarks(ctx context.Context, bookmarkIDs []int64, collectionID *int64, afterBookmarkID *int64) error {
+	if len(bookmarkIDs) == 0 {
+		return nil
+	}
+
+	const (
+		defaultGap    = 1000
+		minGap        = 1
+		rebalanceGap  = 1000
+		firstPosition = 1000
+	)
+
+	// Get all bookmark sort orders in the target column (excluding the ones we're moving)
+	var sortOrders []struct {
+		ID        int64
+		SortOrder int64
+	}
+
+	if collectionID != nil {
+		rows, err := s.queries.GetCollectionBookmarkSortOrders(ctx, collectionID)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			sortOrders = append(sortOrders, struct {
+				ID        int64
+				SortOrder int64
+			}{ID: r.ID, SortOrder: r.SortOrder})
+		}
+	} else {
+		rows, err := s.queries.GetUnsortedBookmarkSortOrders(ctx)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			sortOrders = append(sortOrders, struct {
+				ID        int64
+				SortOrder int64
+			}{ID: r.ID, SortOrder: r.SortOrder})
+		}
+	}
+
+	// Create a set of bookmark IDs we're moving for fast lookup
+	movingSet := make(map[int64]bool)
+	for _, id := range bookmarkIDs {
+		movingSet[id] = true
+	}
+
+	// Filter out the bookmarks being moved
+	filtered := make([]struct {
+		ID        int64
+		SortOrder int64
+	}, 0, len(sortOrders))
+	for _, so := range sortOrders {
+		if !movingSet[so.ID] {
+			filtered = append(filtered, so)
+		}
+	}
+	sortOrders = filtered
+
+	// Calculate starting sort_order based on afterBookmarkID
+	var startSortOrder int64
+
+	if afterBookmarkID == nil {
+		// Insert at the beginning
+		if len(sortOrders) == 0 {
+			startSortOrder = firstPosition
+		} else {
+			firstOrder := sortOrders[0].SortOrder
+			// Need enough room for all bookmarks
+			neededSpace := int64(len(bookmarkIDs)) * defaultGap
+			if firstOrder > neededSpace {
+				startSortOrder = firstOrder - neededSpace
+			} else {
+				// Rebalance existing bookmarks to make room
+				startSortOrder = firstPosition
+				startOffset := firstPosition + int64(len(bookmarkIDs))*defaultGap
+				if err := s.rebalanceBookmarks(ctx, collectionID, sortOrders, rebalanceGap, startOffset); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		// Find the position of afterBookmarkID
+		afterIndex := -1
+		for i, so := range sortOrders {
+			if so.ID == *afterBookmarkID {
+				afterIndex = i
+				break
+			}
+		}
+
+		if afterIndex == -1 {
+			// afterBookmarkID not found, insert at end
+			if len(sortOrders) == 0 {
+				startSortOrder = firstPosition
+			} else {
+				startSortOrder = sortOrders[len(sortOrders)-1].SortOrder + defaultGap
+			}
+		} else if afterIndex == len(sortOrders)-1 {
+			// Insert after the last item
+			startSortOrder = sortOrders[afterIndex].SortOrder + defaultGap
+		} else {
+			// Insert between afterIndex and afterIndex+1
+			prevOrder := sortOrders[afterIndex].SortOrder
+			nextOrder := sortOrders[afterIndex+1].SortOrder
+			gap := nextOrder - prevOrder
+			neededSpace := int64(len(bookmarkIDs)) * minGap
+
+			if gap > neededSpace {
+				// Enough space, distribute evenly
+				startSortOrder = prevOrder + gap/int64(len(bookmarkIDs)+1)
+			} else {
+				// Need to rebalance
+				startSortOrder = prevOrder + defaultGap
+				// Rebalance items after the insertion point
+				itemsToRebalance := sortOrders[afterIndex+1:]
+				startOffset := startSortOrder + int64(len(bookmarkIDs))*defaultGap
+				if err := s.rebalanceBookmarks(ctx, collectionID, itemsToRebalance, rebalanceGap, startOffset); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Update each bookmark with new collection and sort_order
+	for i, id := range bookmarkIDs {
+		sortOrder := startSortOrder + int64(i)*defaultGap
+		err := s.queries.UpdateBookmarkPosition(ctx, db.UpdateBookmarkPositionParams{
+			CollectionID: collectionID,
+			SortOrder:    &sortOrder,
+			ID:           id,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Log activity for bulk move
+	count := len(bookmarkIDs)
+	s.LogActivity(ctx, ActionBookmarkUpdated, EntityBookmark, 0, "", map[string]interface{}{
+		"action":       "bulk_move",
+		"count":        count,
+		"bookmark_ids": bookmarkIDs,
+	})
+
+	return nil
+}
+
+// BulkDeleteBookmarks deletes multiple bookmarks
+func (s *Service) BulkDeleteBookmarks(ctx context.Context, bookmarkIDs []int64) error {
+	for _, id := range bookmarkIDs {
+		err := s.queries.DeleteBookmark(ctx, id)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Log activity for bulk delete
+	count := len(bookmarkIDs)
+	s.LogActivity(ctx, ActionBookmarkDeleted, EntityBookmark, 0, "", map[string]interface{}{
+		"action":       "bulk_delete",
+		"count":        count,
+		"bookmark_ids": bookmarkIDs,
+	})
+
 	return nil
 }
 

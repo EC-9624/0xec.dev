@@ -15,41 +15,223 @@
     minScrollSpeed: 3,    // min px per frame
   };
 
-  // ============================================
-  // DRAG STATE
-  // ============================================
-
-  const dragState = {
-    isDragging: false,
-    draggedCard: null,
-    sourceColumn: null,
-    sourceIndex: null,
-    placeholder: null
+  const SELECTION_CONFIG = {
+    maxSelection: 50,     // Maximum cards that can be selected
   };
 
   // ============================================
-  // AUTO-SCROLL STATE
+  // STATE FACTORY FUNCTIONS
   // ============================================
 
-  const scrollState = {
-    animationId: null,
-    horizontalSpeed: 0,
-    verticalSpeed: 0,
-    boardContainer: null,
-    columnContainer: null,
-  };
+  function createDragState() {
+    return {
+      isDragging: false,
+      draggedCard: null,
+      draggedCards: [],
+      sourceColumn: null,
+      sourceIndex: null,
+      sourcePositions: [],
+      placeholder: null,
+      isMultiDrag: false
+    };
+  }
+
+  function createScrollState() {
+    return {
+      animationId: null,
+      horizontalSpeed: 0,
+      verticalSpeed: 0,
+      boardContainer: null,
+      columnContainer: null,
+    };
+  }
+
+  function createKeyboardDragState() {
+    return {
+      isActive: false,
+      card: null,
+      originalColumn: null,
+      originalNextSibling: null,
+      originalIndex: null
+    };
+  }
+
+  function createSelectionState() {
+    return {
+      selectedIds: new Set(),
+      lastSelectedId: null,
+      columnId: null,
+    };
+  }
+
+  function createMoveMenuState() {
+    return {
+      isOpen: false,
+      focusedIndex: 0,
+      collections: [],
+      previousFocus: null,
+    };
+  }
 
   // ============================================
-  // KEYBOARD DRAG-AND-DROP STATE
+  // STATE OBJECTS
   // ============================================
 
-  const keyboardDragState = {
-    isActive: false,
-    card: null,
-    originalColumn: null,
-    originalNextSibling: null,
-    originalIndex: null
-  };
+  const dragState = createDragState();
+  const scrollState = createScrollState();
+  const keyboardDragState = createKeyboardDragState();
+  const selectionState = createSelectionState();
+  const moveMenuState = createMoveMenuState();
+
+  // ============================================
+  // STATE RESET FUNCTIONS
+  // ============================================
+
+  function resetDragState() {
+    Object.assign(dragState, createDragState());
+  }
+
+  function resetScrollState() {
+    Object.assign(scrollState, createScrollState());
+  }
+
+  function resetKeyboardDragState() {
+    Object.assign(keyboardDragState, createKeyboardDragState());
+  }
+
+  function resetSelectionState() {
+    Object.assign(selectionState, createSelectionState());
+  }
+
+  function resetMoveMenuState() {
+    Object.assign(moveMenuState, createMoveMenuState());
+  }
+
+  // ============================================
+  // UTILITY FUNCTIONS
+  // ============================================
+
+  /**
+   * Show error toast or fallback to alert
+   */
+  function showErrorToast(message) {
+    if (typeof window.showToast === "function") {
+      window.showToast(message, "error");
+    } else {
+      alert(message);
+    }
+  }
+
+  /**
+   * Pluralize a word based on count
+   */
+  function pluralize(count, singular, plural) {
+    return count === 1 ? singular : (plural || singular + "s");
+  }
+
+  /**
+   * Announce a count-based message
+   */
+  function announceCount(count, action, noun = "item") {
+    announce(`${count} ${pluralize(count, noun)} ${action}`);
+  }
+
+  /**
+   * Get a card element by bookmark ID
+   */
+  function getCardById(bookmarkId) {
+    return document.querySelector(`.kanban-card[data-bookmark-id="${bookmarkId}"]`);
+  }
+
+  /**
+   * Get the column content element containing a card
+   */
+  function getColumnContent(card) {
+    return card.closest(".kanban-column-content");
+  }
+
+  /**
+   * Get all cards in a column
+   */
+  function getColumnCards(columnContent) {
+    return Array.from(columnContent.querySelectorAll(".kanban-card"));
+  }
+
+  /**
+   * Get CSRF token from page (hx-headers or cookie)
+   */
+  function getCSRFToken() {
+    const body = document.body;
+    const headers = body.getAttribute("hx-headers");
+    
+    if (headers) {
+      try {
+        const parsed = JSON.parse(headers);
+        if (parsed["X-CSRF-Token"]) {
+          return parsed["X-CSRF-Token"];
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    
+    // Fallback: try to get from cookie
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf_token') {
+        return value;
+      }
+    }
+    
+    return "";
+  }
+
+  /**
+   * Bulk move bookmarks API call (consolidated)
+   * @param {number[]} bookmarkIds - Array of bookmark IDs to move
+   * @param {string} collectionId - Target collection ID (empty string for unsorted)
+   * @param {Object} options - Optional settings
+   * @param {string|null} options.afterBookmarkId - Insert after this bookmark ID
+   * @param {Function} options.onSuccess - Callback on success
+   * @param {Function} options.onError - Callback on error
+   * @returns {Promise}
+   */
+  function bulkMoveBookmarksAPI(bookmarkIds, collectionId, options = {}) {
+    const { afterBookmarkId = null, onSuccess = null, onError = null } = options;
+    const csrfToken = getCSRFToken();
+    
+    const payload = {
+      bookmark_ids: bookmarkIds,
+      collection_id: collectionId === "" ? null : parseInt(collectionId, 10),
+    };
+    
+    if (afterBookmarkId) {
+      payload.after_id = parseInt(afterBookmarkId, 10);
+    }
+
+    return fetch("/admin/htmx/bookmarks/bulk/move", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to move bookmarks: ${response.status}`);
+        }
+        if (onSuccess) onSuccess();
+        return response;
+      })
+      .catch((error) => {
+        console.error("[Kanban] Error moving bookmarks:", error);
+        if (onError) onError(error);
+        showErrorToast("Failed to move bookmarks. Please try again.");
+        throw error;
+      });
+  }
 
   // ============================================
   // SCREEN READER ANNOUNCEMENTS
@@ -62,10 +244,587 @@
     const liveRegion = document.getElementById("kanban-live-region");
     if (liveRegion) {
       liveRegion.textContent = "";
-      // Small delay to ensure re-announcement of same message
       requestAnimationFrame(() => {
         liveRegion.textContent = message;
       });
+    }
+  }
+
+  // ============================================
+  // MULTI-SELECT FUNCTIONS
+  // ============================================
+
+  /**
+   * Get the column ID from a card or column element
+   */
+  function getColumnId(element) {
+    const column = element.closest(".kanban-column");
+    return column ? (column.dataset.collectionId || null) : null;
+  }
+
+  /**
+   * Get bookmark ID from a card element
+   */
+  function getBookmarkId(card) {
+    return card.dataset.bookmarkId;
+  }
+
+  /**
+   * Check if a card is selected
+   */
+  function isSelected(card) {
+    return selectionState.selectedIds.has(getBookmarkId(card));
+  }
+
+  /**
+   * Update visual selection state on a card
+   */
+  function updateCardSelectionVisual(card) {
+    if (isSelected(card)) {
+      card.classList.add("selected");
+      card.setAttribute("aria-selected", "true");
+    } else {
+      card.classList.remove("selected");
+      card.setAttribute("aria-selected", "false");
+    }
+  }
+
+  /**
+   * Clear all selections
+   */
+  function clearSelection() {
+    // Remove visual state from all previously selected cards
+    selectionState.selectedIds.forEach((id) => {
+      const card = getCardById(id);
+      if (card) {
+        card.classList.remove("selected");
+        card.setAttribute("aria-selected", "false");
+      }
+    });
+
+    selectionState.selectedIds = new Set();
+    selectionState.lastSelectedId = null;
+    selectionState.columnId = null;
+
+    updateSelectionToolbar();
+  }
+
+  /**
+   * Select a single card (optionally clearing others)
+   */
+  function selectCard(card, options = {}) {
+    const { toggle = false, addToSelection = false } = options;
+    const bookmarkId = getBookmarkId(card);
+    const columnId = getColumnId(card);
+
+    // If clicking in a different column, clear selection first
+    if (selectionState.columnId !== null && selectionState.columnId !== columnId && selectionState.selectedIds.size > 0) {
+      clearSelection();
+    }
+
+    if (toggle) {
+      // Toggle mode (Cmd/Ctrl+Click)
+      if (selectionState.selectedIds.has(bookmarkId)) {
+        selectionState.selectedIds.delete(bookmarkId);
+        if (selectionState.selectedIds.size === 0) {
+          selectionState.columnId = null;
+          selectionState.lastSelectedId = null;
+        }
+      } else {
+        if (selectionState.selectedIds.size < SELECTION_CONFIG.maxSelection) {
+          selectionState.selectedIds.add(bookmarkId);
+          selectionState.lastSelectedId = bookmarkId;
+          selectionState.columnId = columnId;
+        }
+      }
+    } else if (addToSelection) {
+      // Add to selection (used by range select)
+      if (selectionState.selectedIds.size < SELECTION_CONFIG.maxSelection) {
+        selectionState.selectedIds.add(bookmarkId);
+        selectionState.columnId = columnId;
+      }
+    } else {
+      // Exclusive selection (plain click)
+      clearSelection();
+      selectionState.selectedIds.add(bookmarkId);
+      selectionState.lastSelectedId = bookmarkId;
+      selectionState.columnId = columnId;
+    }
+
+    updateCardSelectionVisual(card);
+    updateSelectionToolbar();
+  }
+
+  /**
+   * Select a range of cards between lastSelectedId and the target card
+   */
+  function selectRange(targetCard) {
+    const columnId = getColumnId(targetCard);
+
+    // If no previous selection or different column, just select the target
+    if (!selectionState.lastSelectedId || selectionState.columnId !== columnId) {
+      selectCard(targetCard);
+      return;
+    }
+
+    const column = targetCard.closest(".kanban-column-content");
+    const cards = Array.from(column.querySelectorAll(".kanban-card"));
+    const targetId = getBookmarkId(targetCard);
+
+    // Find indices
+    const lastIndex = cards.findIndex((c) => getBookmarkId(c) === selectionState.lastSelectedId);
+    const targetIndex = cards.findIndex((c) => getBookmarkId(c) === targetId);
+
+    if (lastIndex === -1 || targetIndex === -1) {
+      selectCard(targetCard);
+      return;
+    }
+
+    // Select all cards in range
+    const startIndex = Math.min(lastIndex, targetIndex);
+    const endIndex = Math.max(lastIndex, targetIndex);
+
+    for (let i = startIndex; i <= endIndex && selectionState.selectedIds.size < SELECTION_CONFIG.maxSelection; i++) {
+      const card = cards[i];
+      selectionState.selectedIds.add(getBookmarkId(card));
+      updateCardSelectionVisual(card);
+    }
+
+    selectionState.columnId = columnId;
+    updateSelectionToolbar();
+
+    const count = selectionState.selectedIds.size;
+    announce(`${count} item${count !== 1 ? "s" : ""} selected`);
+  }
+
+  /**
+   * Extend selection in a direction (for Shift+Arrow keys)
+   * direction: -1 for up, 1 for down
+   */
+  function extendSelectionInDirection(card, direction) {
+    const column = card.closest(".kanban-column-content");
+    const columnId = getColumnId(card);
+    const cards = Array.from(column.querySelectorAll(".kanban-card"));
+    const currentIndex = cards.indexOf(card);
+    const targetIndex = currentIndex + direction;
+
+    if (targetIndex < 0 || targetIndex >= cards.length) {
+      announce(direction < 0 ? "At top of column" : "At bottom of column");
+      return;
+    }
+
+    const targetCard = cards[targetIndex];
+    const targetId = getBookmarkId(targetCard);
+
+    // If selecting in a different column, clear and start fresh
+    if (selectionState.columnId !== null && selectionState.columnId !== columnId) {
+      clearSelection();
+    }
+
+    // Ensure current card is selected
+    if (!selectionState.selectedIds.has(getBookmarkId(card))) {
+      selectionState.selectedIds.add(getBookmarkId(card));
+      selectionState.lastSelectedId = getBookmarkId(card);
+      selectionState.columnId = columnId;
+      updateCardSelectionVisual(card);
+    }
+
+    // Toggle or add target card to selection
+    if (selectionState.selectedIds.has(targetId)) {
+      // If target already selected, we might be contracting selection
+      // Check if current card should be deselected (contracting)
+      const currentId = getBookmarkId(card);
+      // Only deselect current if we're moving back toward anchor
+      // For simplicity, just move focus without deselecting
+      selectionState.selectedIds.delete(currentId);
+      updateCardSelectionVisual(card);
+    } else {
+      // Extend selection to include target
+      if (selectionState.selectedIds.size < SELECTION_CONFIG.maxSelection) {
+        selectionState.selectedIds.add(targetId);
+        updateCardSelectionVisual(targetCard);
+      }
+    }
+
+    selectionState.lastSelectedId = targetId;
+    updateSelectionToolbar();
+
+    // Move focus to target
+    targetCard.focus();
+    scrollCardIntoView(targetCard);
+
+    const count = selectionState.selectedIds.size;
+    announce(`${count} item${count !== 1 ? "s" : ""} selected`);
+  }
+
+  /**
+   * Select all cards in the current column
+   */
+  function selectAllInColumn(card) {
+    const column = card.closest(".kanban-column-content");
+    const columnId = getColumnId(card);
+    const cards = Array.from(column.querySelectorAll(".kanban-card"));
+
+    clearSelection();
+
+    const maxToSelect = Math.min(cards.length, SELECTION_CONFIG.maxSelection);
+    for (let i = 0; i < maxToSelect; i++) {
+      selectionState.selectedIds.add(getBookmarkId(cards[i]));
+      updateCardSelectionVisual(cards[i]);
+    }
+
+    selectionState.columnId = columnId;
+    if (cards.length > 0) {
+      selectionState.lastSelectedId = getBookmarkId(cards[maxToSelect - 1]);
+    }
+
+    updateSelectionToolbar();
+
+    const count = selectionState.selectedIds.size;
+    announce(`${count} item${count !== 1 ? "s" : ""} selected`);
+  }
+
+  /**
+   * Get all selected card elements
+   */
+  function getSelectedCards() {
+    const cards = [];
+    selectionState.selectedIds.forEach((id) => {
+      const card = getCardById(id);
+      if (card) cards.push(card);
+    });
+    return cards;
+  }
+
+  /**
+   * Get selected bookmark IDs as array of integers
+   */
+  function getSelectedBookmarkIds() {
+    return Array.from(selectionState.selectedIds).map((id) => parseInt(id, 10));
+  }
+
+  /**
+   * Update the selection toolbar visibility and count
+   */
+  function updateSelectionToolbar() {
+    const toolbar = document.getElementById("kanban-selection-toolbar");
+    if (!toolbar) return;
+
+    const count = selectionState.selectedIds.size;
+
+    if (count === 0) {
+      toolbar.classList.add("hidden");
+    } else {
+      toolbar.classList.remove("hidden");
+      const countEl = toolbar.querySelector(".selection-count");
+      if (countEl) {
+        countEl.textContent = `${count} selected`;
+      }
+    }
+  }
+
+  /**
+   * Handle card click for selection
+   */
+  function handleCardClick(e) {
+    const card = e.target.closest(".kanban-card");
+    if (!card) return;
+
+    // Don't handle selection if clicking on interactive elements inside the card
+    if (e.target.closest("button, a, [data-dropdown-trigger], [data-dropdown-option]")) {
+      return;
+    }
+
+    // Don't handle if we're in keyboard drag mode
+    if (keyboardDragState.isActive) return;
+
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey;
+    const isShiftPressed = e.shiftKey;
+
+    if (isShiftPressed) {
+      e.preventDefault();
+      selectRange(card);
+    } else if (isModifierPressed) {
+      e.preventDefault();
+      selectCard(card, { toggle: true });
+    } else {
+      // Plain click - select only this card
+      selectCard(card);
+    }
+  }
+
+  /**
+   * Handle click on empty space to clear selection
+   */
+  function handleBoardClick(e) {
+    // If click was on empty space (not on a card), clear selection
+    if (!e.target.closest(".kanban-card") && 
+        !e.target.closest("#kanban-selection-toolbar") &&
+        !e.target.closest("#kanban-move-menu")) {
+      clearSelection();
+    }
+  }
+
+  // ============================================
+  // KEYBOARD MOVE MENU
+  // ============================================
+
+  /**
+   * Open the keyboard-navigable move menu
+   */
+  function openMoveMenu() {
+    if (selectionState.selectedIds.size < 2) return;
+
+    // Store current focus to return to later
+    moveMenuState.previousFocus = document.activeElement;
+
+    // Build collections list from existing selection toolbar dropdown
+    const collections = [];
+    const currentColumnId = selectionState.columnId;
+
+    // Add Unsorted first
+    collections.push({
+      id: "",
+      name: "Unsorted",
+      color: null,
+      isCurrent: currentColumnId === null || currentColumnId === "",
+    });
+
+    // Get collections from existing dropdown
+    document.querySelectorAll("[data-selection-move-menu] [data-move-collection-id]").forEach((el) => {
+      const id = el.dataset.moveCollectionId;
+      if (id !== "") {
+        const colorEl = el.querySelector(".selection-move-option-color");
+        collections.push({
+          id: id,
+          name: el.querySelector("span:last-child")?.textContent.trim() || "Collection",
+          color: colorEl ? colorEl.style.backgroundColor : null,
+          isCurrent: id === currentColumnId,
+        });
+      }
+    });
+
+    moveMenuState.collections = collections;
+    // Set initial focus to first non-current item, or first item
+    moveMenuState.focusedIndex = collections.findIndex((c) => !c.isCurrent);
+    if (moveMenuState.focusedIndex === -1) moveMenuState.focusedIndex = 0;
+
+    // Render and show menu
+    renderMoveMenu();
+    
+    const menu = document.getElementById("kanban-move-menu");
+    const backdrop = document.getElementById("kanban-move-menu-backdrop");
+    if (menu) {
+      menu.classList.remove("hidden");
+      moveMenuState.isOpen = true;
+      // Focus the menu for keyboard events
+      menu.focus();
+    }
+    if (backdrop) {
+      backdrop.classList.remove("hidden");
+    }
+
+    // Update count in header
+    const countEl = document.getElementById("move-menu-count");
+    if (countEl) {
+      countEl.textContent = selectionState.selectedIds.size;
+    }
+
+    announce(`Move menu opened. ${collections.length} options. Use arrow keys to navigate.`);
+  }
+
+  /**
+   * Close the move menu
+   */
+  function closeMoveMenu() {
+    const menu = document.getElementById("kanban-move-menu");
+    const backdrop = document.getElementById("kanban-move-menu-backdrop");
+    
+    if (menu) {
+      menu.classList.add("hidden");
+    }
+    if (backdrop) {
+      backdrop.classList.add("hidden");
+    }
+    
+    moveMenuState.isOpen = false;
+
+    // Return focus to previous element
+    if (moveMenuState.previousFocus && moveMenuState.previousFocus.focus) {
+      moveMenuState.previousFocus.focus();
+    }
+    moveMenuState.previousFocus = null;
+  }
+
+  /**
+   * Render the move menu items
+   */
+  function renderMoveMenu() {
+    const list = document.querySelector(".kanban-move-menu-list");
+    if (!list) return;
+
+    list.innerHTML = moveMenuState.collections
+      .map((item, index) => {
+        const isFocused = index === moveMenuState.focusedIndex;
+        const shortcut = index < 9 ? index + 1 : null;
+
+        return `
+          <div class="kanban-move-menu-item ${item.isCurrent ? "current" : ""} ${isFocused ? "focused" : ""}"
+               role="option"
+               data-index="${index}"
+               data-collection-id="${item.id}"
+               aria-selected="${isFocused}"
+               ${item.isCurrent ? 'aria-disabled="true"' : ""}>
+            ${
+              item.color
+                ? `<span class="kanban-move-menu-item-color" style="background-color: ${item.color}"></span>`
+                : `<svg class="kanban-move-menu-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>`
+            }
+            <span class="kanban-move-menu-item-name">${item.name}</span>
+            ${shortcut ? `<span class="kanban-move-menu-item-shortcut">${shortcut}</span>` : ""}
+          </div>
+        `;
+      })
+      .join("");
+
+    // Add click handlers to items
+    list.querySelectorAll(".kanban-move-menu-item:not(.current)").forEach((el) => {
+      el.addEventListener("click", () => {
+        const index = parseInt(el.dataset.index, 10);
+        moveMenuState.focusedIndex = index;
+        selectMoveMenuItem();
+      });
+    });
+  }
+
+  /**
+   * Navigate the move menu (up/down)
+   */
+  function navigateMoveMenu(direction) {
+    const { collections, focusedIndex } = moveMenuState;
+    let newIndex = focusedIndex;
+
+    // Find next non-current item in direction
+    let attempts = 0;
+    do {
+      newIndex = newIndex + direction;
+      // Wrap around
+      if (newIndex < 0) newIndex = collections.length - 1;
+      if (newIndex >= collections.length) newIndex = 0;
+      attempts++;
+    } while (collections[newIndex].isCurrent && attempts < collections.length);
+
+    moveMenuState.focusedIndex = newIndex;
+    updateMoveMenuFocus();
+
+    const item = collections[newIndex];
+    announce(`${item.name}${item.isCurrent ? " (current)" : ""}`);
+  }
+
+  /**
+   * Update visual focus indicator in move menu
+   */
+  function updateMoveMenuFocus() {
+    const list = document.querySelector(".kanban-move-menu-list");
+    if (!list) return;
+
+    list.querySelectorAll(".kanban-move-menu-item").forEach((el, index) => {
+      const isFocused = index === moveMenuState.focusedIndex;
+      el.classList.toggle("focused", isFocused);
+      el.setAttribute("aria-selected", isFocused);
+    });
+
+    // Scroll focused item into view
+    const focusedEl = list.querySelector(".kanban-move-menu-item.focused");
+    if (focusedEl) {
+      focusedEl.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  /**
+   * Select the currently focused menu item and move bookmarks
+   */
+  function selectMoveMenuItem() {
+    const item = moveMenuState.collections[moveMenuState.focusedIndex];
+    if (!item || item.isCurrent) return;
+
+    closeMoveMenu();
+    handleBulkMove(item.id);
+  }
+
+  /**
+   * Handle quick select by number (1-9)
+   */
+  function quickSelectMoveItem(number) {
+    const index = number - 1; // 1 = index 0
+    if (index < 0 || index >= moveMenuState.collections.length) return;
+
+    const item = moveMenuState.collections[index];
+    if (item.isCurrent) {
+      announce(`${item.name} is the current column`);
+      return;
+    }
+
+    moveMenuState.focusedIndex = index;
+    selectMoveMenuItem();
+  }
+
+  /**
+   * Handle keyboard events for move menu
+   */
+  function handleMoveMenuKeydown(e) {
+    if (!moveMenuState.isOpen) return;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        navigateMoveMenu(-1);
+        break;
+
+      case "ArrowDown":
+        e.preventDefault();
+        navigateMoveMenu(1);
+        break;
+
+      case "Enter":
+        e.preventDefault();
+        selectMoveMenuItem();
+        break;
+
+      case "Escape":
+        e.preventDefault();
+        closeMoveMenu();
+        announce("Move menu closed");
+        break;
+
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
+        e.preventDefault();
+        quickSelectMoveItem(parseInt(e.key, 10));
+        break;
+
+      case "Tab":
+        // Trap focus within menu
+        e.preventDefault();
+        break;
+    }
+  }
+
+  /**
+   * Handle backdrop click to close menu
+   */
+  function handleMoveMenuBackdropClick() {
+    if (moveMenuState.isOpen) {
+      closeMoveMenu();
+      announce("Move menu closed");
     }
   }
 
@@ -105,36 +864,6 @@
     const column = card.closest(".kanban-column-content");
     const cards = Array.from(column.querySelectorAll(".kanban-card"));
     return cards.indexOf(card);
-  }
-
-  /**
-   * Get CSRF token from page
-   */
-  function getCSRFToken() {
-    const body = document.body;
-    const headers = body.getAttribute("hx-headers");
-    
-    if (headers) {
-      try {
-        const parsed = JSON.parse(headers);
-        if (parsed["X-CSRF-Token"]) {
-          return parsed["X-CSRF-Token"];
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-    
-    // Fallback: try to get from cookie
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'csrf_token') {
-        return value;
-      }
-    }
-    
-    return "";
   }
 
   // ============================================
@@ -335,22 +1064,96 @@
     const card = e.target.closest(".kanban-card");
     if (!card) return;
 
+    const bookmarkId = card.dataset.bookmarkId;
+    const isCardSelected = selectionState.selectedIds.has(bookmarkId);
+    const hasMultipleSelected = selectionState.selectedIds.size > 1;
+
+    // If dragging a card that's NOT selected, clear selection and do single drag
+    if (!isCardSelected) {
+      clearSelection();
+    }
+
     dragState.isDragging = true;
     dragState.draggedCard = card;
     dragState.sourceColumn = card.closest(".kanban-column-content");
     dragState.sourceIndex = getCardIndex(card);
 
-    // Set drag data
-    e.dataTransfer.setData("text/plain", card.dataset.bookmarkId);
-    e.dataTransfer.effectAllowed = "move";
+    // Check if this is a multi-drag scenario
+    if (isCardSelected && hasMultipleSelected) {
+      dragState.isMultiDrag = true;
+      
+      // Get all selected cards in DOM order (important for maintaining relative positions)
+      const column = card.closest(".kanban-column-content");
+      const allCardsInColumn = Array.from(column.querySelectorAll(".kanban-card"));
+      dragState.draggedCards = allCardsInColumn.filter((c) => 
+        selectionState.selectedIds.has(c.dataset.bookmarkId)
+      );
 
-    // Visual feedback (use timeout to avoid affecting drag image)
-    setTimeout(() => {
-      card.classList.add("dragging");
-    }, 0);
+      // Store original positions for potential revert
+      dragState.sourcePositions = dragState.draggedCards.map((c) => ({
+        card: c,
+        column: c.closest(".kanban-column-content"),
+        nextSibling: c.nextElementSibling
+      }));
+
+      // Add dragging class to all selected cards (with delay to not affect drag image)
+      setTimeout(() => {
+        dragState.draggedCards.forEach((c, i) => {
+          c.classList.add("dragging");
+          // Mark secondary cards for hiding
+          if (c !== card) {
+            c.classList.add("multi-drag-secondary");
+          }
+        });
+        // Add multi-drag badge to primary card
+        addMultiDragBadge(card, dragState.draggedCards.length);
+      }, 0);
+    } else {
+      dragState.isMultiDrag = false;
+      dragState.draggedCards = [card];
+      dragState.sourcePositions = [{
+        card: card,
+        column: card.closest(".kanban-column-content"),
+        nextSibling: card.nextElementSibling
+      }];
+
+      // Visual feedback (use timeout to avoid affecting drag image)
+      setTimeout(() => {
+        card.classList.add("dragging");
+      }, 0);
+    }
+
+    // Set drag data
+    e.dataTransfer.setData("text/plain", bookmarkId);
+    e.dataTransfer.effectAllowed = "move";
 
     // Create placeholder
     dragState.placeholder = createPlaceholder();
+  }
+
+  /**
+   * Add multi-drag badge showing count of cards being dragged
+   */
+  function addMultiDragBadge(card, count) {
+    // Remove any existing badge
+    removeMultiDragBadge();
+    
+    const badge = document.createElement("div");
+    badge.className = "multi-drag-badge";
+    badge.textContent = count;
+    badge.id = "multi-drag-badge";
+    card.style.position = "relative";
+    card.appendChild(badge);
+  }
+
+  /**
+   * Remove multi-drag badge from card
+   */
+  function removeMultiDragBadge() {
+    const badge = document.getElementById("multi-drag-badge");
+    if (badge) {
+      badge.remove();
+    }
   }
 
   /**
@@ -360,17 +1163,17 @@
     const card = e.target.closest(".kanban-card");
     if (!card) return;
 
-    card.classList.remove("dragging");
+    // Clean up all dragged cards
+    dragState.draggedCards.forEach((c) => {
+      c.classList.remove("dragging");
+      c.classList.remove("multi-drag-secondary");
+    });
+
+    removeMultiDragBadge();
     removePlaceholder();
     removeAllDragOverClasses();
     stopAutoScroll();
-
-    // Reset state
-    dragState.isDragging = false;
-    dragState.draggedCard = null;
-    dragState.sourceColumn = null;
-    dragState.sourceIndex = null;
-    dragState.placeholder = null;
+    resetDragState();
   }
 
   /**
@@ -427,35 +1230,106 @@
     const column = e.target.closest(".kanban-column-content");
     if (!column || !dragState.draggedCard) return;
 
-    const { draggedCard, sourceColumn, sourceIndex, placeholder } = dragState;
+    const { draggedCard, draggedCards, sourceColumn, sourceIndex, placeholder, isMultiDrag } = dragState;
 
-    // Insert card at placeholder position
-    if (placeholder && placeholder.parentNode) {
-      placeholder.parentNode.insertBefore(draggedCard, placeholder);
-    } else {
-      column.appendChild(draggedCard);
-    }
+    // Get the insert position (the element to insert before)
+    const insertBefore = placeholder ? placeholder.nextElementSibling : null;
 
-    // Remove placeholder and visual feedback
+    // Remove placeholder first
     removePlaceholder();
     removeAllDragOverClasses();
-    draggedCard.classList.remove("dragging");
 
-    // Calculate the new position (after which bookmark)
-    const afterBookmarkId = getAfterBookmarkId(draggedCard);
-    const newIndex = getCardIndex(draggedCard);
+    if (isMultiDrag && draggedCards.length > 1) {
+      // Multi-drag: insert all cards at the drop position
+      // First, remove secondary cards from their hiding
+      draggedCards.forEach((c) => {
+        c.classList.remove("dragging");
+        c.classList.remove("multi-drag-secondary");
+      });
+      removeMultiDragBadge();
 
-    // Check if position actually changed (different column OR different position in same column)
-    const positionChanged = column !== sourceColumn || newIndex !== sourceIndex;
+      // Insert all cards at the position (in order)
+      draggedCards.forEach((c) => {
+        if (insertBefore) {
+          column.insertBefore(c, insertBefore);
+        } else {
+          column.appendChild(c);
+        }
+      });
 
-    if (positionChanged) {
-      const bookmarkId = draggedCard.dataset.bookmarkId;
+      // Calculate after_id (bookmark ID of card before our first inserted card)
+      const firstInsertedCard = draggedCards[0];
+      const afterBookmarkId = getAfterBookmarkId(firstInsertedCard);
       const newCollectionId = column.dataset.collectionId || "";
 
-      moveBookmark(bookmarkId, newCollectionId, afterBookmarkId, draggedCard, sourceColumn, sourceIndex);
+      // Check if position changed
+      const positionChanged = column !== sourceColumn || 
+        draggedCards.some((c, i) => getCardIndex(c) !== (sourceIndex + i));
+
+      if (positionChanged) {
+        // Call bulk move API with position
+        const bookmarkIds = draggedCards.map((c) => parseInt(c.dataset.bookmarkId, 10));
+        bulkMoveBookmarksWithPosition(bookmarkIds, newCollectionId, afterBookmarkId, draggedCards, sourceColumn);
+      }
+
+      // Clear selection after drop
+      clearSelection();
+    } else {
+      // Single card drag (existing behavior)
+      draggedCard.classList.remove("dragging");
+
+      // Insert card at placeholder position
+      if (insertBefore) {
+        column.insertBefore(draggedCard, insertBefore);
+      } else {
+        column.appendChild(draggedCard);
+      }
+
+      // Calculate the new position (after which bookmark)
+      const afterBookmarkId = getAfterBookmarkId(draggedCard);
+      const newIndex = getCardIndex(draggedCard);
+
+      // Check if position actually changed (different column OR different position in same column)
+      const positionChanged = column !== sourceColumn || newIndex !== sourceIndex;
+
+      if (positionChanged) {
+        const bookmarkId = draggedCard.dataset.bookmarkId;
+        const newCollectionId = column.dataset.collectionId || "";
+
+        moveBookmark(bookmarkId, newCollectionId, afterBookmarkId, draggedCard, sourceColumn, sourceIndex);
+      }
     }
 
     // Update counts
+    updateColumnCounts();
+  }
+
+  /**
+   * Bulk move bookmarks with position support (for multi-drag)
+   */
+  function bulkMoveBookmarksWithPosition(bookmarkIds, collectionId, afterBookmarkId) {
+    bulkMoveBookmarksAPI(bookmarkIds, collectionId, {
+      afterBookmarkId,
+      onSuccess: () => {
+        announceCount(bookmarkIds.length, "moved", "bookmark");
+      },
+      onError: () => {
+        revertCardsToOriginalPositions();
+      }
+    });
+  }
+
+  /**
+   * Revert cards to their original positions (used on error)
+   */
+  function revertCardsToOriginalPositions() {
+    dragState.sourcePositions.forEach(({ card, column, nextSibling }) => {
+      if (nextSibling && nextSibling.parentNode === column) {
+        column.insertBefore(card, nextSibling);
+      } else {
+        column.appendChild(card);
+      }
+    });
     updateColumnCounts();
   }
 
@@ -544,14 +1418,7 @@
     // Update column counts
     updateColumnCounts();
 
-    // Reset state
-    keyboardDragState.isActive = false;
-    keyboardDragState.card = null;
-    keyboardDragState.originalColumn = null;
-    keyboardDragState.originalNextSibling = null;
-    keyboardDragState.originalIndex = null;
-
-    // Keep focus on card
+    resetKeyboardDragState();
     card.focus();
   }
 
@@ -634,6 +1501,37 @@
     const position = getCardPosition(card);
     announce(`Moved to ${columnName}, position ${position.index} of ${position.total}`);
     card.focus();
+  }
+
+  /**
+   * Move card to top of its column
+   */
+  function moveCardToTop(card) {
+    const column = getColumnContent(card);
+    const firstCard = column.querySelector(".kanban-card");
+    if (firstCard && firstCard !== card) {
+      column.insertBefore(card, firstCard);
+      announcePosition(card, "Moved to top");
+      scrollCardIntoView(card);
+    }
+  }
+
+  /**
+   * Move card to bottom of its column
+   */
+  function moveCardToBottom(card) {
+    const column = getColumnContent(card);
+    column.appendChild(card);
+    announcePosition(card, "Moved to bottom");
+    scrollCardIntoView(card);
+  }
+
+  /**
+   * Announce card position with prefix
+   */
+  function announcePosition(card, prefix) {
+    const position = getCardPosition(card);
+    announce(`${prefix}, position ${position.index} of ${position.total}`);
   }
 
   // ============================================
@@ -849,129 +1747,74 @@
     const card = e.target.closest(".kanban-card");
     if (!card) return;
 
-    // Don't interfere if focus is on interactive element inside the card
     const isOnCard = e.target === card;
     const isOnDragHandle = e.target.closest(".kanban-card-drag-handle");
     const isOnInteractiveElement = !isOnCard && !isOnDragHandle;
-
-    // Check if we're in grab mode
     const isGrabbed = keyboardDragState.isActive && keyboardDragState.card === card;
+    const hasModifier = e.metaKey || e.ctrlKey;
+    const hasMultiSelection = selectionState.selectedIds.size > 1;
 
     switch (e.key) {
       case " ":
       case "Enter":
-        // Only handle if focus is on the card itself (not buttons/links inside)
         if (isOnInteractiveElement) return;
-
         e.preventDefault();
-        if (isGrabbed) {
-          endKeyboardDrag(false); // Drop
-        } else {
-          startKeyboardDrag(card); // Pick up
-        }
+        isGrabbed ? endKeyboardDrag(false) : startKeyboardDrag(card);
         break;
 
       case "ArrowUp":
-        // Cmd+↑ on Mac = jump to first card / move to top
-        if (e.metaKey || e.ctrlKey) {
-          e.preventDefault();
-          if (isGrabbed) {
-            // Move card to top of current column
-            const column = card.closest(".kanban-column-content");
-            const firstCard = column.querySelector(".kanban-card");
-            if (firstCard && firstCard !== card) {
-              column.insertBefore(card, firstCard);
-              const position = getCardPosition(card);
-              announce(`Moved to top, position ${position.index} of ${position.total}`);
-              scrollCardIntoView(card);
-            }
-          } else {
-            focusFirstCard();
-          }
+        e.preventDefault();
+        if (hasModifier) {
+          isGrabbed ? moveCardToTop(card) : focusFirstCard();
+        } else if (e.shiftKey && !isGrabbed) {
+          extendSelectionInDirection(card, -1);
+        } else if (isGrabbed) {
+          moveCardUp(card);
+          scrollCardIntoView(card);
         } else {
-          e.preventDefault();
-          if (isGrabbed) {
-            moveCardUp(card);
-            scrollCardIntoView(card);
-          } else {
-            focusCardInDirection(card, -1);
-          }
+          focusCardInDirection(card, -1);
         }
         break;
 
       case "ArrowDown":
-        // Cmd+↓ on Mac = jump to last card / move to bottom
-        if (e.metaKey || e.ctrlKey) {
-          e.preventDefault();
-          if (isGrabbed) {
-            // Move card to bottom of current column
-            const column = card.closest(".kanban-column-content");
-            column.appendChild(card);
-            const position = getCardPosition(card);
-            announce(`Moved to bottom, position ${position.index} of ${position.total}`);
-            scrollCardIntoView(card);
-          } else {
-            focusLastCard();
-          }
+        e.preventDefault();
+        if (hasModifier) {
+          isGrabbed ? moveCardToBottom(card) : focusLastCard();
+        } else if (e.shiftKey && !isGrabbed) {
+          extendSelectionInDirection(card, 1);
+        } else if (isGrabbed) {
+          moveCardDown(card);
+          scrollCardIntoView(card);
         } else {
-          e.preventDefault();
-          if (isGrabbed) {
-            moveCardDown(card);
-            scrollCardIntoView(card);
-          } else {
-            focusCardInDirection(card, 1);
-          }
+          focusCardInDirection(card, 1);
         }
         break;
 
       case "ArrowLeft":
         e.preventDefault();
-        if (isGrabbed) {
-          moveCardToColumn(card, -1);
-          scrollCardIntoView(card);
-        } else {
-          focusCardInAdjacentColumn(card, -1);
-        }
+        isGrabbed ? moveCardToColumn(card, -1) : focusCardInAdjacentColumn(card, -1);
+        if (isGrabbed) scrollCardIntoView(card);
         break;
 
       case "ArrowRight":
         e.preventDefault();
-        if (isGrabbed) {
-          moveCardToColumn(card, 1);
-          scrollCardIntoView(card);
-        } else {
-          focusCardInAdjacentColumn(card, 1);
-        }
+        isGrabbed ? moveCardToColumn(card, 1) : focusCardInAdjacentColumn(card, 1);
+        if (isGrabbed) scrollCardIntoView(card);
         break;
 
       case "Home":
-        // Jump to first card (with Ctrl/Cmd, move grabbed card to top of column)
         e.preventDefault();
-        if (isGrabbed && (e.ctrlKey || e.metaKey)) {
-          // Move card to top of current column
-          const column = card.closest(".kanban-column-content");
-          const firstCard = column.querySelector(".kanban-card");
-          if (firstCard && firstCard !== card) {
-            column.insertBefore(card, firstCard);
-            const position = getCardPosition(card);
-            announce(`Moved to top, position ${position.index} of ${position.total}`);
-            scrollCardIntoView(card);
-          }
+        if (isGrabbed && hasModifier) {
+          moveCardToTop(card);
         } else if (!isGrabbed) {
           focusFirstCard();
         }
         break;
 
       case "End":
-        // Jump to last card (with Ctrl/Cmd, move grabbed card to bottom of column)
         e.preventDefault();
-        if (isGrabbed && (e.ctrlKey || e.metaKey)) {
-          // Move card to bottom of current column
-          const column = card.closest(".kanban-column-content");
-          column.appendChild(card);
-          const position = getCardPosition(card);
-          announce(`Moved to bottom, position ${position.index} of ${position.total}`);
-          scrollCardIntoView(card);
+        if (isGrabbed && hasModifier) {
+          moveCardToBottom(card);
         } else if (!isGrabbed) {
           focusLastCard();
         }
@@ -980,11 +1823,22 @@
       case "Escape":
         if (isGrabbed) {
           e.preventDefault();
-          endKeyboardDrag(true); // Cancel
+          endKeyboardDrag(true);
+        } else if (selectionState.selectedIds.size > 0) {
+          e.preventDefault();
+          clearSelection();
+          announce("Selection cleared");
         }
         break;
 
-      // Quick actions (only when not grabbed and focus is on card)
+      case "a":
+      case "A":
+        if (hasModifier && !isGrabbed && isOnCard) {
+          e.preventDefault();
+          selectAllInColumn(card);
+        }
+        break;
+
       case "e":
       case "E":
         if (!isGrabbed && isOnCard) {
@@ -1005,11 +1859,17 @@
       case "Backspace":
         if (!isGrabbed && isOnCard) {
           e.preventDefault();
-          triggerDeleteAction(card);
+          hasMultiSelection ? handleBulkDelete() : triggerDeleteAction(card);
         }
         break;
 
-      // Note: "?" is handled by handleGlobalKeydown at document level
+      case "m":
+      case "M":
+        if (!isGrabbed && hasMultiSelection) {
+          e.preventDefault();
+          openMoveMenu();
+        }
+        break;
     }
   }
 
@@ -1062,12 +1922,9 @@
       })
       .catch((error) => {
         console.error("[Kanban] Error moving bookmark:", error);
-        // Revert the move
         revertMove(item, fromColumn, oldIndex);
-        // Update counts after revert
         updateColumnCounts();
-        // Show error toast
-        showMoveError();
+        showErrorToast("Failed to move bookmark. Please try again.");
       });
   }
 
@@ -1122,15 +1979,84 @@
     }, 500);
   }
 
+  // ============================================
+  // BULK OPERATIONS
+  // ============================================
+
   /**
-   * Show error toast
+   * Handle bulk delete of selected cards
    */
-  function showMoveError() {
-    if (typeof window.showToast === "function") {
-      window.showToast("Failed to move bookmark. Please try again.", "error");
-    } else {
-      alert("Failed to move bookmark. Please try again.");
-    }
+  function handleBulkDelete() {
+    const count = selectionState.selectedIds.size;
+    if (count === 0) return;
+
+    const confirmed = confirm(`Are you sure you want to delete ${count} ${pluralize(count, "bookmark")}?`);
+    if (!confirmed) return;
+
+    const bookmarkIds = getSelectedBookmarkIds();
+    const csrfToken = getCSRFToken();
+
+    fetch("/admin/htmx/bookmarks/bulk/delete", {
+      method: "DELETE",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ bookmark_ids: bookmarkIds }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to delete bookmarks: ${response.status}`);
+        }
+        // Remove cards from DOM
+        bookmarkIds.forEach((id) => {
+          const card = getCardById(id);
+          if (card) card.remove();
+        });
+        clearSelection();
+        updateColumnCounts();
+        announceCount(count, "deleted", "bookmark");
+      })
+      .catch((error) => {
+        console.error("[Kanban] Error deleting bookmarks:", error);
+        showErrorToast("Failed to delete bookmarks. Please try again.");
+      });
+  }
+
+  /**
+   * Handle bulk move of selected cards to a collection
+   */
+  function handleBulkMove(collectionId) {
+    const count = selectionState.selectedIds.size;
+    if (count === 0) return;
+
+    const bookmarkIds = getSelectedBookmarkIds();
+
+    bulkMoveBookmarksAPI(bookmarkIds, collectionId, {
+      onSuccess: () => {
+        // Move cards in DOM to target column
+        const targetColumn = collectionId === ""
+          ? document.querySelector('.kanban-column[data-unsorted="true"] .kanban-column-content')
+          : document.querySelector(`.kanban-column[data-collection-id="${collectionId}"] .kanban-column-content`);
+
+        if (targetColumn) {
+          // Remove empty state from target if present
+          const emptyState = targetColumn.querySelector(".kanban-empty");
+          if (emptyState) emptyState.remove();
+
+          bookmarkIds.forEach((id) => {
+            const card = getCardById(id);
+            if (card) {
+              targetColumn.appendChild(card);
+            }
+          });
+        }
+
+        clearSelection();
+        updateColumnCounts();
+        announceCount(count, "moved", "bookmark");
+      }
+    });
   }
 
   // ============================================
@@ -1138,9 +2064,15 @@
   // ============================================
 
   /**
-   * Handle global keyboard events (for help modal, etc.)
+   * Handle global keyboard events (for help modal, move menu, etc.)
    */
   function handleGlobalKeydown(e) {
+    // Move menu keyboard handling (highest priority when open)
+    if (moveMenuState.isOpen) {
+      handleMoveMenuKeydown(e);
+      return;
+    }
+
     // Help modal toggle with ?
     if (e.key === "?" && !e.target.closest("input, textarea, select")) {
       e.preventDefault();
@@ -1177,6 +2109,12 @@
     // Keyboard navigation on cards
     board.addEventListener("keydown", handleCardKeydown);
 
+    // Multi-select click handling
+    board.addEventListener("click", handleCardClick);
+
+    // Clear selection when clicking empty space
+    document.addEventListener("click", handleBoardClick);
+
     // Global keyboard events (help modal, etc.)
     document.addEventListener("keydown", handleGlobalKeydown);
 
@@ -1196,8 +2134,77 @@
       }
     }
 
+    // Selection toolbar event handlers
+    initSelectionToolbar();
+
+    // Move menu backdrop click handler
+    const moveMenuBackdrop = document.getElementById("kanban-move-menu-backdrop");
+    if (moveMenuBackdrop) {
+      moveMenuBackdrop.addEventListener("click", handleMoveMenuBackdropClick);
+    }
+
     // Listen for HTMX events to reinitialize after content changes
     document.body.addEventListener("htmx:afterSwap", handleAfterSwap);
+  }
+
+  /**
+   * Initialize selection toolbar event handlers
+   */
+  function initSelectionToolbar() {
+    const toolbar = document.getElementById("kanban-selection-toolbar");
+    if (!toolbar) return;
+
+    // Clear selection button
+    const clearBtn = toolbar.querySelector(".clear-selection");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", clearSelection);
+    }
+
+    // Delete selected button
+    const deleteBtn = toolbar.querySelector(".delete-selected");
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", handleBulkDelete);
+    }
+
+    // Move dropdown
+    const moveDropdown = toolbar.querySelector("[data-selection-move-dropdown]");
+    if (moveDropdown) {
+      const trigger = moveDropdown.querySelector("[data-selection-move-trigger]");
+      const menu = moveDropdown.querySelector("[data-selection-move-menu]");
+
+      if (trigger && menu) {
+        // Toggle dropdown on trigger click
+        trigger.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = menu.classList.contains("open");
+          if (isOpen) {
+            menu.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+          } else {
+            menu.classList.add("open");
+            trigger.setAttribute("aria-expanded", "true");
+          }
+        });
+
+        // Handle move option clicks
+        menu.querySelectorAll("[data-move-collection-id]").forEach((option) => {
+          option.addEventListener("click", () => {
+            const collectionId = option.dataset.moveCollectionId;
+            handleBulkMove(collectionId);
+            menu.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+          });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+          if (!moveDropdown.contains(e.target)) {
+            menu.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+    }
   }
 
   /**
@@ -1227,13 +2234,18 @@
       board.removeEventListener("dragleave", handleDragLeave);
       board.removeEventListener("drop", handleDrop);
       board.removeEventListener("keydown", handleCardKeydown);
+      board.removeEventListener("click", handleCardClick);
     }
 
-    // Remove global keyboard listener
+    // Remove global listeners
     document.removeEventListener("keydown", handleGlobalKeydown);
+    document.removeEventListener("click", handleBoardClick);
 
     // Close help modal if open
     closeHelpModal();
+
+    // Clear selection
+    clearSelection();
 
     // Cancel any active keyboard drag
     if (keyboardDragState.isActive) {

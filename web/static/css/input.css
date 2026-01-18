@@ -1516,9 +1516,32 @@ html:not(.light):not(.dark) {
     @apply flex items-center gap-2;
   }
 
+  /* Selected state for multi-select */
+  .kanban-card.selected {
+    @apply ring-2 ring-primary/60 bg-primary/5;
+  }
+
+  .kanban-card.selected:focus {
+    @apply ring-2 ring-primary;
+  }
+
   /* Native drag states */
   .kanban-card.dragging {
     @apply opacity-50;
+  }
+
+  /* Multi-drag: hide secondary dragged cards */
+  .kanban-card.multi-drag-secondary {
+    @apply hidden;
+  }
+
+  /* Multi-drag badge showing count */
+  .multi-drag-badge {
+    @apply absolute -top-2 -right-2 z-10;
+    @apply w-6 h-6 flex items-center justify-center;
+    @apply bg-primary text-primary-foreground;
+    @apply text-xs font-semibold rounded-full;
+    @apply shadow-md;
   }
 
   /* Drop position indicator - line/bar */
@@ -1573,9 +1596,10 @@ html:not(.light):not(.dark) {
 
   /* Keyboard shortcuts help trigger button */
   .kanban-help-trigger {
-    @apply absolute top-2 right-2 z-10 flex items-center justify-center
-           w-7 h-7 bg-muted/80 hover:bg-muted border border-border
+    @apply fixed bottom-4 right-4 z-30 flex items-center justify-center
+           w-8 h-8 bg-card hover:bg-muted border border-border
            text-muted-foreground hover:text-foreground cursor-pointer;
+    box-shadow: var(--shadow-md);
     transition: background-color 0.15s ease, color 0.15s ease;
   }
 
@@ -1645,5 +1669,200 @@ html:not(.light):not(.dark) {
 
   .kanban-help-desc {
     @apply text-sm text-muted-foreground;
+  }
+
+  /* ============================================
+     SELECTION TOOLBAR
+     ============================================ */
+
+  .kanban-selection-toolbar {
+    @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-40;
+    @apply flex items-center gap-3 px-4 py-2;
+    @apply bg-card border border-border;
+    box-shadow: var(--shadow-lg);
+    animation: toolbar-slide-up 0.2s ease-out;
+  }
+
+  .kanban-selection-toolbar.hidden {
+    @apply hidden;
+  }
+
+  @keyframes toolbar-slide-up {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  .selection-count {
+    @apply text-sm font-medium text-foreground whitespace-nowrap;
+  }
+
+  .selection-toolbar-divider {
+    @apply h-5 w-px bg-border;
+  }
+
+  .selection-toolbar-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .selection-toolbar-btn {
+    @apply flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium;
+    @apply bg-muted hover:bg-muted/80 text-foreground;
+    transition: background-color 0.15s ease;
+  }
+
+  .selection-toolbar-btn-destructive {
+    @apply bg-destructive/10 hover:bg-destructive/20 text-destructive;
+  }
+
+  .selection-toolbar-close {
+    @apply p-1 text-muted-foreground hover:text-foreground hover:bg-muted;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  /* Move dropdown in selection toolbar */
+  .selection-move-dropdown {
+    @apply relative;
+  }
+
+  .selection-move-menu {
+    @apply absolute bottom-full left-0 mb-2 w-48;
+    @apply bg-card border border-border;
+    box-shadow: var(--shadow-md);
+    display: none;
+  }
+
+  .selection-move-menu.open {
+    display: block;
+  }
+
+  .selection-move-option {
+    @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-left;
+    @apply hover:bg-muted cursor-pointer;
+  }
+
+  .selection-move-option-color {
+    @apply w-3 h-3 shrink-0;
+  }
+
+  /* ============================================
+     KEYBOARD MOVE MENU
+     ============================================ */
+
+  .kanban-move-menu-backdrop {
+    @apply fixed inset-0 z-40;
+    background: rgba(0, 0, 0, 0.3);
+    animation: backdrop-fade-in 0.15s ease-out;
+  }
+
+  .kanban-move-menu-backdrop.hidden {
+    @apply hidden;
+  }
+
+  @keyframes backdrop-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .kanban-move-menu {
+    @apply fixed z-50;
+    @apply flex flex-col;
+    @apply bg-card border border-border;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 280px;
+    max-width: 360px;
+    max-height: 400px;
+    box-shadow: var(--shadow-lg);
+    animation: move-menu-fade-in 0.15s ease-out;
+  }
+
+  .kanban-move-menu.hidden {
+    @apply hidden;
+  }
+
+  @keyframes move-menu-fade-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  .kanban-move-menu-header {
+    @apply px-4 py-3 border-b border-border;
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .kanban-move-menu-list {
+    @apply flex-1 overflow-y-auto py-2;
+  }
+
+  .kanban-move-menu-item {
+    @apply flex items-center gap-3 px-4 py-2;
+    @apply text-sm text-foreground cursor-pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .kanban-move-menu-item:hover:not(.current) {
+    @apply bg-muted;
+  }
+
+  .kanban-move-menu-item.focused {
+    @apply bg-muted;
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+  }
+
+  .kanban-move-menu-item.current {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .kanban-move-menu-item.current .kanban-move-menu-item-name::after {
+    content: " (current)";
+    @apply text-xs text-muted-foreground;
+  }
+
+  .kanban-move-menu-item-color {
+    @apply w-3 h-3 shrink-0;
+  }
+
+  .kanban-move-menu-item-icon {
+    @apply w-4 h-4 shrink-0 text-muted-foreground;
+  }
+
+  .kanban-move-menu-item-name {
+    @apply flex-1 truncate;
+  }
+
+  .kanban-move-menu-item-shortcut {
+    @apply text-xs text-muted-foreground font-mono;
+  }
+
+  .kanban-move-menu-footer {
+    @apply px-4 py-2 border-t border-border;
+    @apply text-center;
+  }
+
+  .kanban-move-menu-hint {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .kanban-move-menu-hint kbd {
+    @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1
+           bg-muted border border-border text-xs font-mono mx-0.5;
+  }
+
+  .kanban-move-menu-hint-sep {
+    @apply mx-1 text-border;
   }
 }
