@@ -7,13 +7,24 @@ class SimpleMasonry {
   constructor(container, options = {}) {
     this.container = container;
     this.gap = options.gap || 16;
-    this.minColumnWidth = options.minColumnWidth || 300;
+    // Responsive min column width - smaller on mobile
+    this.minColumnWidthDesktop = options.minColumnWidth || 300;
+    this.minColumnWidthMobile = options.minColumnWidthMobile || 280;
     this.columnHeights = [];
     this.resizeTimeout = null;
     this.layoutTimeout = null;
     this.itemHeights = new Map(); // Track item heights to detect changes
 
     this.init();
+  }
+
+  // Get responsive min column width based on viewport
+  get minColumnWidth() {
+    // Use smaller columns on mobile (< 640px)
+    if (window.innerWidth < 640) {
+      return this.minColumnWidthMobile;
+    }
+    return this.minColumnWidthDesktop;
   }
 
   init() {
@@ -162,9 +173,11 @@ function initMasonry() {
   }
 
   // Initialize masonry - ResizeObserver will handle lazy images
+  // Responsive column widths: 350px on desktop, 280px on mobile
   window.bookmarkMasonry = new SimpleMasonry(grid, {
     gap: 16,
-    minColumnWidth: 350
+    minColumnWidth: 350,
+    minColumnWidthMobile: 280
   });
 }
 

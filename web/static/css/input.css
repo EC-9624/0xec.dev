@@ -223,7 +223,15 @@ html:not(.light):not(.dark) {
 @layer components {
   /* ===== 3-COLUMN LAYOUT ===== */
   .layout-container {
-    @apply flex min-h-screen;
+    @apply flex flex-1 overflow-hidden;
+    /* Account for fixed mobile header */
+    padding-top: 52px;
+  }
+
+  @media (min-width: 1024px) {
+    .layout-container {
+      padding-top: 0;
+    }
   }
 
   /* Left Sidebar */
@@ -250,11 +258,10 @@ html:not(.light):not(.dark) {
 
   /* Main Content */
   .main-content {
-    @apply flex-1 bg-background;
+    @apply flex-1 flex flex-col bg-background overflow-hidden;
   }
 
   .main-content-dots {
-    @apply flex-1;
     background-image: radial-gradient(
       circle,
       var(--color-border) 1px,
@@ -264,11 +271,199 @@ html:not(.light):not(.dark) {
   }
 
   .main-content-scroll {
-    @apply h-screen overflow-y-auto;
+    @apply flex-1 overflow-y-auto;
   }
 
   .main-content-inner {
-    @apply p-8 lg:p-12 max-w-4xl mx-auto;
+    @apply p-4 sm:p-6 lg:p-12 max-w-4xl mx-auto pb-20 lg:pb-12;
+  }
+
+  /* ===== MOBILE HEADER ===== */
+  .mobile-header {
+    @apply fixed top-0 left-0 right-0 z-40 flex lg:hidden items-center justify-between px-4 py-3 bg-sidebar border-b border-border;
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-header.scroll-hidden {
+    transform: translateY(-100%);
+  }
+
+  .mobile-header-logo {
+    @apply flex items-center gap-2;
+  }
+
+  .mobile-header-avatar {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center border border-border bg-background text-xs font-medium;
+  }
+
+  .mobile-header-title {
+    @apply font-semibold text-foreground;
+  }
+
+  .mobile-theme-toggle {
+    @apply flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-foreground hover:bg-muted;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
+  }
+
+  /* Theme icon visibility based on current theme */
+  .theme-icon-sun {
+    @apply hidden;
+  }
+
+  .theme-icon-moon {
+    @apply block;
+  }
+
+  .dark .theme-icon-sun {
+    @apply block;
+  }
+
+  .dark .theme-icon-moon {
+    @apply hidden;
+  }
+
+  /* ===== BOTTOM NAVIGATION ===== */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-40 flex lg:hidden bg-sidebar border-t border-border;
+    /* Safe area padding for notched devices */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    transition: transform 0.3s ease;
+  }
+
+  .bottom-nav.scroll-hidden {
+    transform: translateY(100%);
+  }
+
+  .bottom-nav-item {
+    @apply flex-1 flex flex-col items-center justify-center gap-1 py-3 text-muted-foreground;
+    transition-property: color;
+    transition-duration: var(--transition-duration);
+    /* Minimum touch target size */
+    min-height: 56px;
+  }
+
+  .bottom-nav-item:hover {
+    @apply text-foreground;
+  }
+
+  .bottom-nav-item-active {
+    @apply text-primary;
+  }
+
+  .bottom-nav-label {
+    @apply text-[10px] font-medium;
+  }
+
+  /* ===== MOBILE COLLECTION BAR ===== */
+  .mobile-collection-bar {
+    @apply flex lg:hidden overflow-x-auto gap-2 px-4 py-3 bg-sidebar border-b border-border;
+    /* Hide scrollbar but allow scroll */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-collection-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .collection-chip {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-sm font-medium text-muted-foreground bg-muted border border-border shrink-0;
+    transition-property: background-color, color, border-color;
+    transition-duration: var(--transition-duration);
+  }
+
+  .collection-chip:hover {
+    @apply text-foreground bg-muted/80;
+  }
+
+  .collection-chip-active {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+
+  .collection-chip-count {
+    @apply text-xs opacity-70;
+  }
+
+  /* ===== MOBILE POST LIST (Full list view) ===== */
+  .mobile-post-list {
+    @apply flex flex-col lg:hidden p-4 pb-20 gap-3;
+  }
+
+  .mobile-post-list-item {
+    @apply block p-4 bg-card border border-border;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .mobile-post-list-item:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-md);
+  }
+
+  .mobile-post-list-item-title {
+    @apply text-base font-semibold text-foreground leading-tight;
+  }
+
+  .mobile-post-list-item-meta {
+    @apply flex flex-wrap items-center gap-2 mt-2 text-sm text-muted-foreground;
+  }
+
+  .mobile-post-list-item-excerpt {
+    @apply mt-3 text-sm text-muted-foreground leading-relaxed line-clamp-2;
+  }
+
+  /* Accent-colored tag pills in mobile post list */
+  .mobile-post-list-item .badge-secondary {
+    @apply bg-primary/10 text-primary border border-primary/20 font-medium;
+  }
+
+  /* ===== MOBILE BACK LINK ===== */
+  .mobile-back-link {
+    @apply flex lg:hidden items-center gap-1 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground;
+    transition-property: color;
+    transition-duration: var(--transition-duration);
+  }
+
+  /* ===== ADMIN MOBILE HEADER ===== */
+  .admin-mobile-header {
+    @apply sticky top-0 z-40 flex lg:hidden items-center justify-between px-4 py-3 bg-sidebar border-b border-border;
+  }
+
+  .admin-mobile-header-btn {
+    @apply flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-foreground hover:bg-muted;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
+  }
+
+  /* ===== ADMIN BOTTOM NAVIGATION ===== */
+  .admin-bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-40 flex lg:hidden bg-sidebar border-t border-border;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .admin-bottom-nav-item {
+    @apply flex-1 flex flex-col items-center justify-center gap-1 py-2 text-muted-foreground;
+    transition-property: color;
+    transition-duration: var(--transition-duration);
+    min-height: 56px;
+  }
+
+  .admin-bottom-nav-item:hover {
+    @apply text-foreground;
+  }
+
+  .admin-bottom-nav-item-active {
+    @apply text-primary;
+  }
+
+  .admin-bottom-nav-label {
+    @apply text-[10px] font-medium;
+  }
+
+  /* Height calculation for mobile header offset */
+  .h-screen-minus-header {
+    height: calc(100vh - 52px); /* 52px = mobile header height (py-3 = 12px*2 + content) */
   }
 
   /* ===== PROFILE CARD ===== */
@@ -798,9 +993,16 @@ html:not(.light):not(.dark) {
   }
 
   /* ===== TABLE ===== */
+  /* Responsive table wrapper for horizontal scroll on mobile */
+  .table-wrapper {
+    @apply w-full overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .table {
     @apply w-full caption-bottom text-xs;
     table-layout: fixed;
+    min-width: 600px; /* Ensures table doesn't collapse too much on mobile */
   }
 
   .table-header {
@@ -974,6 +1176,39 @@ html:not(.light):not(.dark) {
 }
 
 @layer utilities {
+  /* ===== PROGRESS BAR (Mobile only) ===== */
+  .progress-bar {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .progress-bar {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .progress-bar.active {
+      opacity: 1;
+    }
+
+    .progress-bar-inner {
+      width: 100%;
+      height: 100%;
+      background: var(--color-muted-foreground);
+      opacity: 0.4;
+      transform: translateX(-100%);
+      transition: transform 0.2s ease-out;
+    }
+  }
+
   /* ===== SCREEN READER ONLY ===== */
   /* Visually hidden but accessible to screen readers */
   .sr-only {

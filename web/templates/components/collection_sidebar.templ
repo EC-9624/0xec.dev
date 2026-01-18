@@ -113,3 +113,45 @@ func sidebarLinkClass(active bool) string {
 	}
 	return "sidebar-link"
 }
+
+// MobileCollectionBar renders a horizontal scrollable collection bar for mobile
+// Hidden on lg+ screens where the middle column is visible
+templ MobileCollectionBar(collections []models.Collection, activeSlug string, totalBookmarks int) {
+	<div class="mobile-collection-bar" id="mobile-collection-bar">
+		<!-- All Bookmarks chip -->
+		<a
+			href="/bookmarks"
+			class={ collectionChipClass(activeSlug == "") }
+			hx-get="/htmx/bookmarks"
+			hx-target="#main-content"
+			hx-swap="innerHTML"
+			hx-push-url="/bookmarks"
+			hx-indicator="#main-content"
+		>
+			<span>All</span>
+			<span class="collection-chip-count">{ strconv.Itoa(totalBookmarks) }</span>
+		</a>
+		<!-- Collection chips -->
+		for _, collection := range collections {
+			<a
+				href={ templ.URL("/bookmarks/" + collection.Slug) }
+				class={ collectionChipClass(activeSlug == collection.Slug) }
+				hx-get={ "/htmx/bookmarks/" + collection.Slug }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url={ "/bookmarks/" + collection.Slug }
+				hx-indicator="#main-content"
+			>
+				<span>{ collection.Name }</span>
+				<span class="collection-chip-count">{ strconv.Itoa(collection.BookmarkCount) }</span>
+			</a>
+		}
+	</div>
+}
+
+func collectionChipClass(isActive bool) string {
+	if isActive {
+		return "collection-chip collection-chip-active"
+	}
+	return "collection-chip"
+}

@@ -11,24 +11,35 @@ import (
 // ============================================
 
 // PostsIndex shows the post list in middle column with empty state in main
+// On mobile: shows full post list instead of empty state
 templ PostsIndex(posts []models.Post) {
 	@layouts.ThreeColumn("Writing", "/posts", components.PostListColumn(posts, "")) {
-		@PostsEmptyState()
+		// Mobile: show full post list
+		@components.MobilePostList(posts)
+		// Desktop: show empty state (user selects from middle column)
+		<div class="main-content-inner hidden lg:block">
+			@PostsEmptyState()
+		</div>
 	}
 }
 
 // PostShow shows the post list in middle column with article content in main
 templ PostShow(post models.Post, allPosts []models.Post, contentHTML string) {
 	@layouts.ThreeColumn(post.Title, "/posts", components.PostListColumn(allPosts, post.Slug)) {
-		@PostArticle(post, contentHTML)
+		<div class="main-content-inner">
+			// Mobile: show back link
+			@components.MobileBackLink("/posts", "Back to Writing")
+			@PostArticle(post, contentHTML)
+		</div>
 	}
 }
 
-// PostContentPartial is the partial template for HTMX requests
+// PostContentPartial is the partial template for HTMX requests (desktop only)
 // It returns the main content area + OOB swap for middle column
 templ PostContentPartial(post models.Post, contentHTML string, allPosts []models.Post) {
 	<div class="main-content-scroll scrollable-area">
 		<div class="main-content-inner">
+			@components.MobileBackLink("/posts", "Back to Writing")
 			@PostArticle(post, contentHTML)
 		</div>
 	</div>

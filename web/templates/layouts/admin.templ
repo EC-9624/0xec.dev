@@ -18,26 +18,30 @@ func getCSRFToken(ctx context.Context) string {
 
 templ Admin(title string, currentPath string) {
 	@adminBase(title) {
-		<div class="flex h-screen">
+		@adminMobileHeader(currentPath)
+		<div class="flex h-screen-minus-header lg:h-screen">
 			@adminSidebar(currentPath)
-			<main class="flex-1 min-w-0 bg-muted/30 overflow-y-auto">
-				<div class="p-8 max-w-7xl">
+			<main class="flex-1 min-w-0 bg-muted/30 overflow-y-auto pb-20 lg:pb-0">
+				<div class="p-4 sm:p-6 lg:p-8 max-w-7xl">
 					{ children... }
 				</div>
 			</main>
 		</div>
+		@components.AdminBottomNav(currentPath)
 	}
 }
 
 // AdminFullWidth is a layout variant with no padding wrapper for full-width content like Kanban boards
 templ AdminFullWidth(title string, currentPath string) {
 	@adminBase(title) {
-		<div class="flex h-screen">
+		@adminMobileHeader(currentPath)
+		<div class="flex h-screen-minus-header lg:h-screen">
 			@adminSidebar(currentPath)
-			<main class="flex-1 min-w-0 bg-muted/30 overflow-hidden flex flex-col">
+			<main class="flex-1 min-w-0 bg-muted/30 overflow-hidden flex flex-col pb-16 lg:pb-0">
 				{ children... }
 			</main>
 		</div>
+		@components.AdminBottomNav(currentPath)
 	}
 }
 
@@ -115,8 +119,50 @@ func adminNavClass(currentPath, targetPath string) string {
 	return "sidebar-link"
 }
 
+// adminMobileHeader renders a sticky header for admin on mobile
+templ adminMobileHeader(currentPath string) {
+	<header class="admin-mobile-header">
+		<a href="/admin" class="mobile-header-logo">
+			<span class="font-semibold text-foreground">Admin</span>
+		</a>
+		<div class="flex items-center gap-2">
+			<a href="/" class="admin-mobile-header-btn" title="View Site">
+				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+					<polyline points="10 17 15 12 10 7"></polyline>
+					<line x1="15" x2="3" y1="12" y2="12"></line>
+				</svg>
+			</a>
+			<button
+				type="button"
+				class="admin-mobile-header-btn"
+				onclick="themeToggle.cycle()"
+				title="Toggle theme"
+				aria-label="Toggle theme"
+			>
+				<!-- Sun icon (shown in dark mode) -->
+				<svg class="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="12" cy="12" r="4"></circle>
+					<path d="M12 2v2"></path>
+					<path d="M12 20v2"></path>
+					<path d="m4.93 4.93 1.41 1.41"></path>
+					<path d="m17.66 17.66 1.41 1.41"></path>
+					<path d="M2 12h2"></path>
+					<path d="M20 12h2"></path>
+					<path d="m6.34 17.66-1.41 1.41"></path>
+					<path d="m19.07 4.93-1.41 1.41"></path>
+				</svg>
+				<!-- Moon icon (shown in light mode) -->
+				<svg class="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+				</svg>
+			</button>
+		</div>
+	</header>
+}
+
 templ adminSidebar(currentPath string) {
-	<aside class="w-64 shrink-0 border-r border-border bg-sidebar">
+	<aside class="hidden lg:block w-64 shrink-0 border-r border-border bg-sidebar">
 		<div class="flex h-14 items-center border-b border-border px-3">
 			<a href="/admin" class="font-semibold text-foreground">
 				Admin

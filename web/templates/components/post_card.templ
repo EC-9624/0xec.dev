@@ -129,3 +129,72 @@ templ PostListCompactItem(post models.Post) {
 		}
 	</a>
 }
+
+// MobilePostList renders a full-width post list for mobile
+// Shows title, date, and excerpt for each post
+// Hidden on lg+ screens where the middle column is visible
+templ MobilePostList(posts []models.Post) {
+	<div class="mobile-post-list">
+		for _, post := range posts {
+			@MobilePostListItem(post)
+		}
+	</div>
+}
+
+// MobilePostListItem renders a single post in the mobile list
+templ MobilePostListItem(post models.Post) {
+	<a href={ templ.URL("/posts/" + post.Slug) } class="mobile-post-list-item">
+		<h2 class="mobile-post-list-item-title">{ post.Title }</h2>
+		<div class="mobile-post-list-item-meta">
+			if post.PublishedAt.Valid {
+				<time datetime={ post.PublishedAt.Time.Format(time.RFC3339) }>
+					{ post.PublishedAt.Time.Format("Jan 2, 2006") }
+				</time>
+			}
+			if len(post.Tags) > 0 {
+				<span class="text-border">&bull;</span>
+				for _, tag := range post.Tags {
+					<span class="badge-secondary">{ tag.Name }</span>
+				}
+			}
+		</div>
+		if post.GetExcerpt() != "" {
+			<p class="mobile-post-list-item-excerpt">{ truncateExcerpt(post.GetExcerpt(), 100) }</p>
+		}
+	</a>
+}
+
+// MobileBackLink renders a back link for mobile article view
+templ MobileBackLink(href string, text string) {
+	<a href={ templ.URL(href) } class="mobile-back-link">
+		@iconArrowLeft()
+		<span>{ text }</span>
+	</a>
+}
+
+templ iconArrowLeft() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="m12 19-7-7 7-7"></path>
+		<path d="M19 12H5"></path>
+	</svg>
+}
+
+// truncateExcerpt truncates text to maxLen characters, adding ellipsis if needed
+func truncateExcerpt(text string, maxLen int) string {
+	if len(text) <= maxLen {
+		return text
+	}
+	// Find last space before maxLen to avoid cutting words
+	truncated := text[:maxLen]
+	lastSpace := -1
+	for i := len(truncated) - 1; i >= 0; i-- {
+		if truncated[i] == ' ' {
+			lastSpace = i
+			break
+		}
+	}
+	if lastSpace > 0 {
+		truncated = truncated[:lastSpace]
+	}
+	return truncated + "..."
+}
