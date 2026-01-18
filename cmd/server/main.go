@@ -163,6 +163,7 @@ func main() {
 	adminMux.HandleFunc("POST /admin/htmx/posts/{id}/toggle-draft", h.AdminTogglePostDraft)
 
 	// Bookmarks (HTMX)
+	adminMux.HandleFunc("GET /admin/htmx/bookmarks/view", h.HTMXBookmarksView)
 	adminMux.HandleFunc("GET /admin/htmx/bookmarks/new-drawer", h.HTMXAdminBookmarkNewDrawer)
 	adminMux.HandleFunc("GET /admin/htmx/bookmarks/{id}/edit-drawer", h.HTMXAdminBookmarkEditDrawer)
 	adminMux.HandleFunc("POST /admin/htmx/bookmarks/fetch-metadata", h.AdminBookmarkFetchMetadata)

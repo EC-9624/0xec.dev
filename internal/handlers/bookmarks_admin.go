@@ -101,6 +101,48 @@ func (h *Handlers) AdminBookmarksList(w http.ResponseWriter, r *http.Request) {
 	render(w, r, admin.BookmarksPage(data))
 }
 
+// HTMXBookmarksView handles HTMX requests to switch between board/table views
+func (h *Handlers) HTMXBookmarksView(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	view := r.URL.Query().Get("view")
+	if view == "" {
+		view = "board"
+	}
+
+	if view == "board" {
+		// Board view - load Kanban data
+		boardData, err := h.service.GetBoardViewData(ctx, 100)
+		if err != nil {
+			errors.WriteInternalError(w, r, "Failed to load board data", err)
+			return
+		}
+		render(w, r, admin.BoardViewPartial(boardData))
+	} else {
+		// Table view - load bookmarks list
+		bookmarks, err := h.service.ListBookmarks(ctx, service.BookmarkListOptions{
+			Limit:  h.config.AdminBookmarksLimit,
+			Offset: 0,
+		})
+		if err != nil {
+			errors.WriteInternalError(w, r, "Failed to load bookmarks", err)
+			return
+		}
+
+		collections, err := h.service.ListCollections(ctx, false)
+		if err != nil {
+			logger.Error(ctx, "failed to load collections for table view", "error", err)
+		}
+
+		data := admin.BookmarksPageData{
+			View:        "table",
+			Bookmarks:   bookmarks,
+			Collections: collections,
+		}
+		render(w, r, admin.TableViewPartial(data))
+	}
+}
+
 // AdminBookmarkNew handles the new bookmark form
 func (h *Handlers) AdminBookmarkNew(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

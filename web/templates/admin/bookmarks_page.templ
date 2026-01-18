@@ -27,35 +27,40 @@ type BookmarksPageData struct {
 
 // BookmarksPage renders the unified bookmarks page with board or table view
 templ BookmarksPage(data BookmarksPageData) {
-	if data.View == "board" {
-		@BookmarksBoardPage(data)
-	} else {
-		@BookmarksTablePage(data)
-	}
-}
-
-// BookmarksBoardPage renders the full-width Kanban board layout
-templ BookmarksBoardPage(data BookmarksPageData) {
-	@layouts.AdminFullWidth("Bookmarks", "/admin/bookmarks") {
-		<div class="flex-1 overflow-hidden p-8 flex flex-col gap-4" id="bookmarks-content">
-			@bookmarksPageHeader(data)
-			@BookmarksBoard(BookmarksBoardData{BoardData: data.BoardData})
-		</div>
-	}
-}
-
-// BookmarksTablePage renders the standard table view with constrained width
-templ BookmarksTablePage(data BookmarksPageData) {
 	@layouts.Admin("Bookmarks", "/admin/bookmarks") {
-		<div class="space-y-4">
+		<div id="bookmarks-page" class={ bookmarksPageClass(data.View) }>
 			<!-- Header with view toggle -->
 			@bookmarksPageHeader(data)
-			<!-- Content area -->
-			<div id="bookmarks-content">
-				@bookmarksTableView(data)
+			<!-- Content area - swapped by HTMX -->
+			<div id="bookmarks-view-content" class={ bookmarksContentClass(data.View) }>
+				if data.View == "board" {
+					@BookmarksBoard(BookmarksBoardData{BoardData: data.BoardData})
+				} else {
+					@bookmarksTableView(data)
+				}
 			</div>
 		</div>
 	}
+}
+
+// bookmarksPageClass returns the container class based on view mode
+func bookmarksPageClass(view string) string {
+	if view == "board" {
+		// Board view: flex column with fixed height for kanban scrolling
+		return "flex flex-col gap-4 h-[calc(100vh-6rem)]"
+	}
+	// Table view: standard spacing
+	return "space-y-4"
+}
+
+// bookmarksContentClass returns the content area class based on view mode
+func bookmarksContentClass(view string) string {
+	if view == "board" {
+		// Board view: flex-1 to fill height, allow kanban's internal scrolling
+		return "flex-1 min-h-0"
+	}
+	// Table view: no special styling needed
+	return ""
 }
 
 // bookmarksPageHeader renders the page header with view toggle
@@ -103,38 +108,50 @@ templ bookmarksPageHeader(data BookmarksPageData) {
 				@ViewToggle(data.View)
 			}
 			<!-- Action buttons -->
-			if data.View == "table" {
-				@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
-				@components.ImportButton("/admin/import")
-			}
+			@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
+			@components.ImportButton("/admin/import")
 			@components.NewButtonDrawer("/admin/htmx/bookmarks/new-drawer", "New Bookmark", "New Bookmark")
 		</div>
 	</div>
 }
 
-// ViewToggle renders the board/table view toggle buttons
+// ViewToggle renders the board/table view toggle buttons with HTMX
 templ ViewToggle(currentView string) {
-	<div class="flex border border-border">
-		<a
-			href="/admin/bookmarks?view=board"
+	<div id="view-toggle" class="flex border border-border">
+		<button
+			type="button"
+			hx-get="/admin/htmx/bookmarks/view?view=board"
+			hx-target="#bookmarks-page"
+			hx-swap="outerHTML"
+			hx-push-url="/admin/bookmarks?view=board"
 			class={ "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
 				templ.KV("bg-primary text-primary-foreground", currentView == "board"),
 				templ.KV("text-muted-foreground hover:text-foreground hover:bg-muted", currentView != "board") }
 			title="Board view"
+			if currentView == "board" {
+				disabled
+			}
 		>
 			@components.GridIcon(components.IconSM)
 			Board
-		</a>
-		<a
-			href="/admin/bookmarks?view=table"
+		</button>
+		<button
+			type="button"
+			hx-get="/admin/htmx/bookmarks/view?view=table"
+			hx-target="#bookmarks-page"
+			hx-swap="outerHTML"
+			hx-push-url="/admin/bookmarks?view=table"
 			class={ "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-border",
 				templ.KV("bg-primary text-primary-foreground", currentView == "table"),
 				templ.KV("text-muted-foreground hover:text-foreground hover:bg-muted", currentView != "table") }
 			title="Table view"
+			if currentView == "table" {
+				disabled
+			}
 		>
 			@components.ListIcon(components.IconSM)
 			Table
-		</a>
+		</button>
 	</div>
 }
 
@@ -225,4 +242,54 @@ func emptyStateDescription(data BookmarksPageData) string {
 		return "All your bookmarks are organized in collections."
 	}
 	return "Start saving interesting links."
+}
+
+// ============================================
+// HTMX PARTIAL TEMPLATES
+// ============================================
+
+// BoardViewPartial renders the board view for HTMX swapping
+// Replaces #bookmarks-page with updated layout classes and content
+templ BoardViewPartial(boardData *service.BoardViewData) {
+	<div id="bookmarks-page" class={ bookmarksPageClass("board") }>
+		@bookmarksPageHeaderPartial("board", len(boardData.Collections))
+		<div id="bookmarks-view-content" class={ bookmarksContentClass("board") }>
+			@BookmarksBoard(BookmarksBoardData{BoardData: boardData})
+		</div>
+	</div>
+}
+
+// TableViewPartial renders the table view for HTMX swapping
+// Replaces #bookmarks-page with updated layout classes and content
+templ TableViewPartial(data BookmarksPageData) {
+	<div id="bookmarks-page" class={ bookmarksPageClass("table") }>
+		@bookmarksPageHeaderPartial("table", len(data.Bookmarks))
+		<div id="bookmarks-view-content" class={ bookmarksContentClass("table") }>
+			@bookmarksTableView(data)
+		</div>
+	</div>
+}
+
+// bookmarksPageHeaderPartial is a simplified header for partials (no filtered state)
+templ bookmarksPageHeaderPartial(view string, count int) {
+	<div class="flex items-center justify-between">
+		<div class="flex items-center gap-4">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">Bookmarks</h1>
+				<p class="text-muted-foreground">
+					if view == "board" {
+						{ strconv.Itoa(count) } collections
+					} else {
+						{ strconv.Itoa(count) } bookmarks
+					}
+				</p>
+			</div>
+		</div>
+		<div class="flex items-center gap-2">
+			@ViewToggle(view)
+			@components.RefreshButton("refresh-btn", "startMetadataRefresh()", "Refresh Metadata")
+			@components.ImportButton("/admin/import")
+			@components.NewButtonDrawer("/admin/htmx/bookmarks/new-drawer", "New Bookmark", "New Bookmark")
+		</div>
+	</div>
 }
