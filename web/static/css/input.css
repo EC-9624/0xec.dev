@@ -2141,8 +2141,9 @@ html:not(.light):not(.dark) {
     view-transition-name: bottom-nav;
   }
 
+  /* Exclude collection bar from view transitions - avoids flicker when navigating to/from bookmarks */
   .mobile-collection-bar {
-    view-transition-name: mobile-collection-bar;
+    view-transition-name: none;
   }
 
   /* Instant crossfade for root (no animation) */
@@ -2151,28 +2152,22 @@ html:not(.light):not(.dark) {
     animation: none;
   }
 
-  /* Keep header, nav, and collection bar completely static - no animation */
+  /* Keep header and nav completely static - no animation */
   ::view-transition-old(mobile-header),
   ::view-transition-new(mobile-header),
   ::view-transition-old(bottom-nav),
-  ::view-transition-new(bottom-nav),
-  ::view-transition-old(mobile-collection-bar),
-  ::view-transition-new(mobile-collection-bar) {
+  ::view-transition-new(bottom-nav) {
     animation: none;
     mix-blend-mode: normal;
   }
 
-  /* Ensure header/nav/collection bar stay on top during transition */
+  /* Ensure header/nav stay on top during transition */
   ::view-transition-group(mobile-header) {
     z-index: 100;
   }
 
   ::view-transition-group(bottom-nav) {
     z-index: 100;
-  }
-
-  ::view-transition-group(mobile-collection-bar) {
-    z-index: 99;
   }
 
   /* iOS-style slide transition for main content */
@@ -2204,6 +2199,24 @@ html:not(.light):not(.dark) {
     }
     to {
       transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
       opacity: 1;
     }
   }

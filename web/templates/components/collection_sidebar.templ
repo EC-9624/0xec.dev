@@ -45,16 +45,16 @@ templ CollectionListColumn(collections []models.Collection, activeSlug string, t
 	</div>
 	<div class="middle-column-content scrollable-area">
 		<div class="flex flex-col gap-1">
-			<!-- All Bookmarks -->
-			<a
-				href="/bookmarks"
-				class={ collectionItemClass(activeSlug == "") }
-				hx-get="/htmx/bookmarks"
-				hx-target="#main-content"
-				hx-swap="innerHTML"
-				hx-push-url="/bookmarks"
-				hx-indicator="#main-content"
-			>
+		<!-- All Bookmarks -->
+		<a
+			href="/bookmarks"
+			class={ collectionItemClass(activeSlug == "") }
+			hx-get="/htmx/bookmarks"
+			hx-target="#main-content"
+			hx-swap="innerHTML"
+			hx-push-url="/bookmarks"
+			hx-indicator="#main-content"
+		>
 				<span>All Bookmarks</span>
 				<span class="list-item-count">{ strconv.Itoa(totalBookmarks) }</span>
 			</a>
