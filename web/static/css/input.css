@@ -1176,6 +1176,39 @@ html:not(.light):not(.dark) {
 }
 
 @layer utilities {
+  /* ===== PROGRESS BAR (Mobile only) ===== */
+  .progress-bar {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .progress-bar {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .progress-bar.active {
+      opacity: 1;
+    }
+
+    .progress-bar-inner {
+      width: 100%;
+      height: 100%;
+      background: var(--color-muted-foreground);
+      opacity: 0.4;
+      transform: translateX(-100%);
+      transition: transform 0.2s ease-out;
+    }
+  }
+
   /* ===== SCREEN READER ONLY ===== */
   /* Visually hidden but accessible to screen readers */
   .sr-only {

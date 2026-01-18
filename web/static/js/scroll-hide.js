@@ -126,12 +126,21 @@
   }
 
   // Re-initialize after HTMX swaps (for SPA-like navigation)
-  document.body.addEventListener('htmx:afterSettle', function() {
-    // Reset scroll position tracking
-    lastScrollY = 0;
-    showUI();
-    
-    // Re-find scroll container in case DOM changed
-    init();
-  });
+  function initHTMXListener() {
+    document.body.addEventListener('htmx:afterSettle', function() {
+      // Reset scroll position tracking
+      lastScrollY = 0;
+      showUI();
+      
+      // Re-find scroll container in case DOM changed
+      init();
+    });
+  }
+
+  // Initialize HTMX listener when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHTMXListener);
+  } else {
+    initHTMXListener();
+  }
 })();
