@@ -129,3 +129,33 @@ templ PostListCompactItem(post models.Post) {
 		}
 	</a>
 }
+
+// MobilePostBar renders a horizontal scrollable post list for mobile
+// Hidden on lg+ screens where the middle column is visible
+templ MobilePostBar(posts []models.Post, activeSlug string) {
+	<div class="mobile-post-bar" id="mobile-post-bar">
+		for _, post := range posts {
+			<a
+				href={ templ.URL("/posts/" + post.Slug) }
+				class={ postChipClass(post.Slug == activeSlug) }
+				hx-get={ "/htmx/posts/" + post.Slug }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url={ "/posts/" + post.Slug }
+				hx-indicator="#main-content"
+			>
+				<span class="post-chip-title">{ post.Title }</span>
+				if post.PublishedAt.Valid {
+					<span class="post-chip-date">{ post.PublishedAt.Time.Format("Jan 2, 2006") }</span>
+				}
+			</a>
+		}
+	</div>
+}
+
+func postChipClass(isActive bool) string {
+	if isActive {
+		return "post-chip post-chip-active"
+	}
+	return "post-chip"
+}

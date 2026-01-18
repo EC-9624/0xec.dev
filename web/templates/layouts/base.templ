@@ -1,5 +1,7 @@
 package layouts
 
+import "github.com/EC-9624/0xec.dev/web/templates/components"
+
 templ Base(title string) {
 	<!DOCTYPE html>
 	<html lang="en" class="antialiased">
@@ -16,7 +18,7 @@ templ Base(title string) {
 			<script src="/static/js/dropdown.js"></script>
 			<script src="/static/js/filter.js"></script>
 		</head>
-		<body class="min-h-screen bg-background font-mono">
+		<body class="min-h-screen bg-background font-mono flex flex-col">
 			{ children... }
 		</body>
 	</html>
@@ -25,6 +27,7 @@ templ Base(title string) {
 // TwoColumn layout for home page (left sidebar + main content)
 templ TwoColumn(title string, currentPath string) {
 	@Base(title) {
+		@components.MobileHeader()
 		<div class="layout-container">
 			@leftSidebar(currentPath)
 			<div class="main-content">
@@ -35,12 +38,14 @@ templ TwoColumn(title string, currentPath string) {
 				</div>
 			</div>
 		</div>
+		@components.BottomNav(currentPath)
 	}
 }
 
 // ThreeColumn layout for posts and bookmarks pages
 templ ThreeColumn(title string, currentPath string, middleColumn templ.Component) {
 	@Base(title) {
+		@components.MobileHeader()
 		<div class="layout-container">
 			@leftSidebar(currentPath)
 			<div class="middle-column" id="middle-column">
@@ -48,12 +53,11 @@ templ ThreeColumn(title string, currentPath string, middleColumn templ.Component
 			</div>
 			<div class="main-content main-content-dots" id="main-content">
 				<div class="main-content-scroll scrollable-area">
-					<div class="main-content-inner">
-						{ children... }
-					</div>
+					{ children... }
 				</div>
 			</div>
 		</div>
+		@components.BottomNav(currentPath)
 	}
 }
 

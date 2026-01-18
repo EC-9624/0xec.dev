@@ -20,14 +20,18 @@ templ BookmarksIndex(data templates.BookmarksData) {
 		"/bookmarks",
 		components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks),
 	) {
-		@BookmarkContent(data)
+		@components.MobileCollectionBar(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks)
+		<div class="main-content-inner">
+			@BookmarkContent(data)
+		</div>
 	}
 }
 
 // BookmarksContentPartial is the partial template for HTMX requests
-// It returns the main content area + OOB swap for middle column
+// It returns the main content area + OOB swap for middle column and mobile bar
 templ BookmarksContentPartial(data templates.BookmarksData) {
 	<div class="main-content-scroll scrollable-area">
+		@components.MobileCollectionBar(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks)
 		<div class="main-content-inner">
 			@BookmarkContent(data)
 		</div>
@@ -35,6 +39,10 @@ templ BookmarksContentPartial(data templates.BookmarksData) {
 	<!-- OOB swap for middle column to update active state -->
 	<div id="middle-column" hx-swap-oob="innerHTML">
 		@components.CollectionListColumn(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks)
+	</div>
+	<!-- OOB swap for mobile collection bar -->
+	<div id="mobile-collection-bar" hx-swap-oob="outerHTML">
+		@components.MobileCollectionBar(data.Collections, activeCollectionSlug(data.ActiveCollection), data.TotalAllBookmarks)
 	</div>
 }
 

@@ -13,21 +13,28 @@ import (
 // PostsIndex shows the post list in middle column with empty state in main
 templ PostsIndex(posts []models.Post) {
 	@layouts.ThreeColumn("Writing", "/posts", components.PostListColumn(posts, "")) {
-		@PostsEmptyState()
+		@components.MobilePostBar(posts, "")
+		<div class="main-content-inner">
+			@PostsEmptyState()
+		</div>
 	}
 }
 
 // PostShow shows the post list in middle column with article content in main
 templ PostShow(post models.Post, allPosts []models.Post, contentHTML string) {
 	@layouts.ThreeColumn(post.Title, "/posts", components.PostListColumn(allPosts, post.Slug)) {
-		@PostArticle(post, contentHTML)
+		@components.MobilePostBar(allPosts, post.Slug)
+		<div class="main-content-inner">
+			@PostArticle(post, contentHTML)
+		</div>
 	}
 }
 
 // PostContentPartial is the partial template for HTMX requests
-// It returns the main content area + OOB swap for middle column
+// It returns the main content area + OOB swap for middle column and mobile bar
 templ PostContentPartial(post models.Post, contentHTML string, allPosts []models.Post) {
 	<div class="main-content-scroll scrollable-area">
+		@components.MobilePostBar(allPosts, post.Slug)
 		<div class="main-content-inner">
 			@PostArticle(post, contentHTML)
 		</div>
@@ -35,6 +42,10 @@ templ PostContentPartial(post models.Post, contentHTML string, allPosts []models
 	<!-- OOB swap for middle column to update active state -->
 	<div id="middle-column" hx-swap-oob="innerHTML">
 		@components.PostListColumn(allPosts, post.Slug)
+	</div>
+	<!-- OOB swap for mobile post bar -->
+	<div id="mobile-post-bar" hx-swap-oob="outerHTML">
+		@components.MobilePostBar(allPosts, post.Slug)
 	</div>
 }
 

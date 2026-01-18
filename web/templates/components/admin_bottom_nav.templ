@@ -1,0 +1,73 @@
+package components
+
+// AdminBottomNav renders a fixed bottom navigation bar for admin on mobile devices
+// Hidden on lg+ screens where the sidebar is visible
+templ AdminBottomNav(currentPath string) {
+	<nav class="admin-bottom-nav" aria-label="Admin mobile navigation">
+		<a href="/admin" class={ adminBottomNavItemClass(currentPath, "/admin") }>
+			@iconDashboard()
+			<span class="admin-bottom-nav-label">Dashboard</span>
+		</a>
+		<a href="/admin/posts" class={ adminBottomNavItemClass(currentPath, "/admin/posts") }>
+			@iconPosts()
+			<span class="admin-bottom-nav-label">Posts</span>
+		</a>
+		<a href="/admin/bookmarks" class={ adminBottomNavItemClass(currentPath, "/admin/bookmarks") }>
+			@iconBookmarksAdmin()
+			<span class="admin-bottom-nav-label">Bookmarks</span>
+		</a>
+		<a href="/admin/tags" class={ adminBottomNavItemClass(currentPath, "/admin/tags") }>
+			@iconTags()
+			<span class="admin-bottom-nav-label">Tags</span>
+		</a>
+	</nav>
+}
+
+// Helper function to determine admin bottom nav item class
+func adminBottomNavItemClass(currentPath, targetPath string) string {
+	// Exact match for dashboard, prefix match for other paths
+	if targetPath == "/admin" {
+		if currentPath == "/admin" {
+			return "admin-bottom-nav-item admin-bottom-nav-item-active"
+		}
+		return "admin-bottom-nav-item"
+	}
+
+	// Check if current path starts with target path
+	if len(currentPath) >= len(targetPath) && currentPath[:len(targetPath)] == targetPath {
+		return "admin-bottom-nav-item admin-bottom-nav-item-active"
+	}
+	return "admin-bottom-nav-item"
+}
+
+// Icons for admin bottom nav
+templ iconDashboard() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<rect width="7" height="9" x="3" y="3" rx="1"></rect>
+		<rect width="7" height="5" x="14" y="3" rx="1"></rect>
+		<rect width="7" height="9" x="14" y="12" rx="1"></rect>
+		<rect width="7" height="5" x="3" y="16" rx="1"></rect>
+	</svg>
+}
+
+templ iconPosts() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
+		<path d="M18 14h-8"></path>
+		<path d="M18 18h-8"></path>
+		<path d="M18 10h-8"></path>
+	</svg>
+}
+
+templ iconBookmarksAdmin() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+	</svg>
+}
+
+templ iconTags() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path>
+		<circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+	</svg>
+}

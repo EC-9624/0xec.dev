@@ -79,6 +79,19 @@
   }
 
   /**
+   * Cycle through modes: light -> dark -> system -> light
+   */
+  function cycle() {
+    if (currentMode === LIGHT) {
+      setMode(DARK);
+    } else if (currentMode === DARK) {
+      setMode(SYSTEM);
+    } else {
+      setMode(LIGHT);
+    }
+  }
+
+  /**
    * Initialize from localStorage
    */
   function init() {
@@ -110,6 +123,7 @@
   window.themeToggle = {
     setMode: setMode,
     getMode: getMode,
+    cycle: cycle,
     LIGHT: LIGHT,
     DARK: DARK,
     SYSTEM: SYSTEM
