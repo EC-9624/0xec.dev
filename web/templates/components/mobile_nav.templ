@@ -184,3 +184,11 @@ templ iconExternal() {
 		<path d="M7 17 17 7"></path>
 	</svg>
 }
+
+// MobileLoadingIndicator renders a loading spinner for nav drawer page transitions
+// Hidden on lg+ screens where the nav drawer is not used
+templ MobileLoadingIndicator() {
+	<div id="nav-loading-indicator" class="nav-loading-indicator" aria-hidden="true">
+		<div class="nav-loading-spinner"></div>
+	</div>
+}

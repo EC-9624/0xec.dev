@@ -276,6 +276,11 @@ html:not(.light):not(.dark) {
     @apply flex items-center justify-between px-2 h-12;
     @apply bg-sidebar border-t border-border;
     padding-bottom: env(safe-area-inset-bottom, 0);
+    transition: transform 200ms ease-out;
+  }
+
+  .mobile-bottom-bar.scroll-hidden {
+    transform: translateY(100%);
   }
 
   .mobile-bar-btn {
@@ -415,6 +420,32 @@ html:not(.light):not(.dark) {
   /* Prevent interaction with scaled content */
   body.nav-drawer-open .layout-container * {
     pointer-events: none;
+  }
+
+  /* ===== NAV LOADING INDICATOR ===== */
+  .nav-loading-indicator {
+    @apply fixed inset-0 z-[60] lg:hidden flex items-center justify-center;
+    @apply pointer-events-none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 150ms ease-out, visibility 150ms ease-out;
+  }
+
+  .nav-loading-indicator.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .nav-loading-spinner {
+    @apply w-6 h-6 border-2 border-muted-foreground/30 rounded-full;
+    border-top-color: var(--color-foreground);
+    animation: nav-spin 600ms linear infinite;
+  }
+
+  @keyframes nav-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* ===== MOBILE COLLECTION BAR ===== */
@@ -2177,20 +2208,61 @@ html:not(.light):not(.dark) {
   }
 }
 
-/* ===== VIEW TRANSITIONS (Mobile only) ===== */
-/* Provides smooth native-like page transitions on supported browsers */
+/* ===== VIEW TRANSITIONS ===== */
+/* Scale-down/pop-up effect for page navigation on mobile */
 /* Progressive enhancement - browsers without support simply ignore these rules */
 
-/* Disable view transitions globally */
-.main-content,
-.middle-column,
-.mobile-collection-bar,
+/* Exclude UI elements from view transitions to prevent flickering */
 .nav-drawer,
-.mobile-bottom-bar {
+.mobile-bottom-bar,
+.nav-loading-indicator,
+.mobile-collection-bar {
   view-transition-name: none;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
+/* Mobile: Enable view transitions with scale/bounce effect */
+@media (max-width: 1023px) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  /* Scale down and fade out the old page */
+  ::view-transition-old(root) {
+    animation: vt-scale-down-out 250ms ease-out forwards;
+  }
+
+  /* Pop up with subtle bounce for new page */
+  ::view-transition-new(root) {
+    animation: vt-scale-up-bounce 250ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes vt-scale-down-out {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: scale(0.94);
+      opacity: 0;
+    }
+  }
+
+  @keyframes vt-scale-up-bounce {
+    from {
+      transform: scale(0.94);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
+
+/* Desktop: Disable view transitions */
+@media (min-width: 1024px) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
