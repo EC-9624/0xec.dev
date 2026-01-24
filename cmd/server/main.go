@@ -55,9 +55,9 @@ func main() {
 	// Rate limiter for login endpoint (5 attempts per minute per IP)
 	loginLimiter := middleware.NewRateLimiter(5.0/60.0, 5)
 
-	// Static files
+	// Static files with caching headers
 	staticDir := "./web/static"
-	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", middleware.StaticFileServer(staticDir)))
 
 	// ============================================
 	// PUBLIC ROUTES (with caching for prefetch + hx-boost)
@@ -213,8 +213,9 @@ func main() {
 	mux.Handle("/admin/", protectedAdmin)
 
 	// Apply global middleware
-	// Order: Logger → SecurityHeaders → Recoverer → Router
+	// Order: Logger → SecurityHeaders → Compress → Recoverer → Router
 	var handler http.Handler = mux
+	handler = middleware.Compress(handler)
 	handler = middleware.Recoverer(handler)
 	if cfg.IsDevelopment() {
 		handler = middleware.SecurityHeaders(handler)

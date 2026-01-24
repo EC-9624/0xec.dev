@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/yuin/goldmark v1.7.16 // indirect
 	golang.org/x/time v0.14.0 // indirect
 )
