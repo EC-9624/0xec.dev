@@ -17,7 +17,7 @@ templ Base(title string) {
 			<script src="/static/js/masonry.js" defer></script>
 			<script src="/static/js/components/ec-dropdown.js" defer></script>
 			<script src="/static/js/filter.js" defer></script>
-			<script src="/static/js/nav-drawer.js" defer></script>
+			<script src="/static/js/components/ec-mobile-nav.js" defer></script>
 			<script src="/static/js/progress-bar.js" defer></script>
 			<script src="/static/js/prefetch.js" defer></script>
 		</head>
@@ -40,9 +40,7 @@ templ TwoColumn(title string, currentPath string) {
 				</div>
 			</div>
 		</div>
-		@components.MobileNavDrawer(currentPath)
-		@components.MobileBottomBar(currentPath)
-		@components.MobileLoadingIndicator()
+		@components.MobileNav(currentPath)
 	}
 }
 
@@ -60,9 +58,7 @@ templ ThreeColumn(title string, currentPath string, middleColumn templ.Component
 				</div>
 			</div>
 		</div>
-		@components.MobileNavDrawer(currentPath)
-		@components.MobileBottomBar(currentPath)
-		@components.MobileLoadingIndicator()
+		@components.MobileNav(currentPath)
 	}
 }
 

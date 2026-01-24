@@ -272,8 +272,7 @@ html:not(.light):not(.dark) {
 
   /* ===== MOBILE BOTTOM BAR ===== */
   .mobile-bottom-bar {
-    @apply fixed bottom-0 left-0 right-0 z-40 lg:hidden;
-    @apply flex items-center justify-between px-2 h-12;
+    @apply fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between px-2 h-12 lg:hidden;
     @apply bg-sidebar border-t border-border;
     padding-bottom: env(safe-area-inset-bottom, 0);
     transition: transform 200ms ease-out;
@@ -328,7 +327,7 @@ html:not(.light):not(.dark) {
 
   /* ===== NAV DRAWER ===== */
   .nav-drawer-backdrop {
-    @apply fixed inset-0 z-40 lg:hidden;
+    @apply fixed inset-0 z-40 pointer-events-none lg:hidden;
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
     visibility: hidden;
@@ -340,11 +339,11 @@ html:not(.light):not(.dark) {
   body.nav-drawer-open .nav-drawer-backdrop {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
   }
 
   .nav-drawer {
-    @apply fixed inset-x-0 bottom-0 z-50 lg:hidden;
-    @apply bg-sidebar rounded-t-2xl;
+    @apply fixed inset-x-0 bottom-0 z-50 bg-sidebar rounded-t-2xl lg:hidden;
     transform: translateY(100%);
     transition: transform 200ms ease-out;
     padding-bottom: env(safe-area-inset-bottom, 0);
@@ -428,8 +427,7 @@ html:not(.light):not(.dark) {
 
   /* ===== NAV LOADING INDICATOR ===== */
   .nav-loading-indicator {
-    @apply fixed inset-0 z-[60] lg:hidden flex items-center justify-center;
-    @apply pointer-events-none;
+    @apply fixed inset-0 z-[60] flex items-center justify-center pointer-events-none lg:hidden;
     opacity: 0;
     visibility: hidden;
     transition:
@@ -1667,8 +1665,12 @@ html:not(.light):not(.dark) {
     @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-primary hover:bg-muted cursor-pointer;
   }
 
-  /* ===== DRAWER COMPONENT ===== */
-  .drawer-backdrop {
+  /* ===== DRAWER COMPONENT (ec-drawer Web Component) ===== */
+  ec-drawer {
+    display: contents; /* Don't affect layout */
+  }
+
+  ec-drawer [data-backdrop] {
     @apply fixed inset-0 z-40 bg-black/50;
     opacity: 0;
     visibility: hidden;
@@ -1677,12 +1679,12 @@ html:not(.light):not(.dark) {
       visibility 200ms ease-out;
   }
 
-  .drawer-backdrop.open {
+  ec-drawer [data-backdrop].open {
     opacity: 1;
     visibility: visible;
   }
 
-  .drawer-panel {
+  ec-drawer [data-panel] {
     @apply fixed top-0 right-0 z-50 h-full w-[600px] max-w-full
            bg-background border-l border-border
            flex flex-col;
@@ -1692,29 +1694,29 @@ html:not(.light):not(.dark) {
     overscroll-behavior: contain;
   }
 
-  .drawer-panel.open {
+  ec-drawer [data-panel].open {
     transform: translateX(0);
   }
 
-  .drawer-header {
+  ec-drawer [data-header] {
     @apply flex items-center justify-between px-6 py-4 border-b border-border;
   }
 
-  .drawer-title {
+  ec-drawer [data-title] {
     @apply text-lg font-semibold text-foreground;
   }
 
-  .drawer-close {
+  ec-drawer [data-close] {
     @apply p-1 text-muted-foreground hover:text-foreground hover:bg-muted;
     transition-property: background-color, color;
     transition-duration: var(--transition-duration);
   }
 
-  .drawer-content {
+  ec-drawer [data-content] {
     @apply flex-1 overflow-y-auto;
   }
 
-  /* Drawer form styling */
+  /* Drawer form styling (used inside loaded content) */
   .drawer-form {
     @apply p-6 space-y-6;
   }
