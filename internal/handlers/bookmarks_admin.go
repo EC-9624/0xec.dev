@@ -164,20 +164,12 @@ func (h *Handlers) AdminBookmarkCreate(w http.ResponseWriter, r *http.Request) {
 
 	isDrawer := r.FormValue("_drawer") == "true"
 
-	var collectionID *int64
-	if cid := r.FormValue("collection_id"); cid != "" {
-		id, err := strconv.ParseInt(cid, 10, 64)
-		if err == nil {
-			collectionID = &id
-		}
-	}
-
 	input := models.CreateBookmarkInput{
 		URL:          r.FormValue("url"),
 		Title:        r.FormValue("title"),
 		Description:  r.FormValue("description"),
 		CoverImage:   r.FormValue("cover_image"),
-		CollectionID: collectionID,
+		CollectionID: parseFormInt64(r, "collection_id"),
 		IsPublic:     r.FormValue("is_public") == "true",
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}
@@ -281,20 +273,12 @@ func (h *Handlers) AdminBookmarkUpdate(w http.ResponseWriter, r *http.Request) {
 
 	isDrawer := r.FormValue("_drawer") == "true"
 
-	var collectionID *int64
-	if cid := r.FormValue("collection_id"); cid != "" {
-		cid, err := strconv.ParseInt(cid, 10, 64)
-		if err == nil {
-			collectionID = &cid
-		}
-	}
-
 	input := models.UpdateBookmarkInput{
 		URL:          r.FormValue("url"),
 		Title:        r.FormValue("title"),
 		Description:  r.FormValue("description"),
 		CoverImage:   r.FormValue("cover_image"),
-		CollectionID: collectionID,
+		CollectionID: parseFormInt64(r, "collection_id"),
 		IsPublic:     r.FormValue("is_public") == "true",
 		IsFavorite:   r.FormValue("is_favorite") == "true",
 	}

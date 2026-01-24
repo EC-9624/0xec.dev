@@ -175,26 +175,10 @@ func (h *Handlers) AdminUpdateBookmarkCollection(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 
 	// Parse collection ID (empty string means no collection/unsorted)
-	var collectionID *int64
-	cidStr := r.FormValue("collection_id")
-
-	if cidStr != "" {
-		cid, err := strconv.ParseInt(cidStr, 10, 64)
-		if err == nil {
-			collectionID = &cid
-		}
-	}
+	collectionID := parseFormInt64(r, "collection_id")
 
 	// Parse after_id for position (empty string means insert at beginning)
-	var afterBookmarkID *int64
-	afterIDStr := r.FormValue("after_id")
-
-	if afterIDStr != "" {
-		aid, err := strconv.ParseInt(afterIDStr, 10, 64)
-		if err == nil {
-			afterBookmarkID = &aid
-		}
-	}
+	afterBookmarkID := parseFormInt64(r, "after_id")
 
 	// Use MoveBookmark which handles both collection and position
 	if err := h.service.MoveBookmark(ctx, id, collectionID, afterBookmarkID); err != nil {

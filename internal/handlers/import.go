@@ -3,7 +3,6 @@ package handlers
 import (
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/EC-9624/0xec.dev/internal/service"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
@@ -48,13 +47,7 @@ func (h *Handlers) AdminImportBookmarks(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Get optional collection ID
-	var collectionID *int64
-	if cid := r.FormValue("collection_id"); cid != "" {
-		id, err := strconv.ParseInt(cid, 10, 64)
-		if err == nil {
-			collectionID = &id
-		}
-	}
+	collectionID := parseFormInt64(r, "collection_id")
 
 	// Import the bookmarks
 	result, err := h.service.ImportBookmarks(ctx, bookmarks, collectionID)

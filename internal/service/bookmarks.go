@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"net/url"
 
 	"github.com/EC-9624/0xec.dev/internal/database/sqlc/db"
@@ -191,34 +190,21 @@ func (s *Service) CountBookmarks(ctx context.Context, opts BookmarkListOptions) 
 
 // Helper function to convert sqlc Bookmark to domain model
 func dbBookmarkToModel(b db.Bookmark) *models.Bookmark {
-	bookmark := &models.Bookmark{
-		ID:         b.ID,
-		URL:        b.Url,
-		Title:      b.Title,
-		IsPublic:   derefInt64(b.IsPublic) == 1,
-		IsFavorite: derefInt64(b.IsFavorite) == 1,
-		SortOrder:  int(derefInt64(b.SortOrder)),
-		CreatedAt:  derefTime(b.CreatedAt),
-		UpdatedAt:  derefTime(b.UpdatedAt),
+	return &models.Bookmark{
+		ID:           b.ID,
+		URL:          b.Url,
+		Title:        b.Title,
+		Description:  toNullString(b.Description),
+		CoverImage:   toNullString(b.CoverImage),
+		Favicon:      toNullString(b.Favicon),
+		Domain:       toNullString(b.Domain),
+		CollectionID: toNullInt64(b.CollectionID),
+		IsPublic:     derefInt64(b.IsPublic) == 1,
+		IsFavorite:   derefInt64(b.IsFavorite) == 1,
+		SortOrder:    int(derefInt64(b.SortOrder)),
+		CreatedAt:    derefTime(b.CreatedAt),
+		UpdatedAt:    derefTime(b.UpdatedAt),
 	}
-
-	if b.Description != nil {
-		bookmark.Description = sql.NullString{String: *b.Description, Valid: true}
-	}
-	if b.CoverImage != nil {
-		bookmark.CoverImage = sql.NullString{String: *b.CoverImage, Valid: true}
-	}
-	if b.Favicon != nil {
-		bookmark.Favicon = sql.NullString{String: *b.Favicon, Valid: true}
-	}
-	if b.Domain != nil {
-		bookmark.Domain = sql.NullString{String: *b.Domain, Valid: true}
-	}
-	if b.CollectionID != nil {
-		bookmark.CollectionID = sql.NullInt64{Int64: *b.CollectionID, Valid: true}
-	}
-
-	return bookmark
 }
 
 // extractDomain extracts the domain from a URL

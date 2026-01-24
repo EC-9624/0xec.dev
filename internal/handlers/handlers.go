@@ -67,3 +67,14 @@ func parsePathID(r *http.Request, name string) (int64, bool) {
 	}
 	return id, true
 }
+
+// parseFormInt64 parses an optional int64 from a form field.
+// Returns nil if the field is empty or invalid.
+func parseFormInt64(r *http.Request, field string) *int64 {
+	if val := r.FormValue(field); val != "" {
+		if id, err := strconv.ParseInt(val, 10, 64); err == nil {
+			return &id
+		}
+	}
+	return nil
+}

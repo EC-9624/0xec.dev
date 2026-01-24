@@ -199,23 +199,16 @@ func (s *Service) setPostTags(ctx context.Context, postID int64, tagIDs []int64)
 // Helper function to convert sqlc Post to domain model
 func dbPostToModel(p db.Post, tags []db.Tag) *models.Post {
 	post := &models.Post{
-		ID:        p.ID,
-		Title:     p.Title,
-		Slug:      p.Slug,
-		Content:   p.Content,
-		IsDraft:   derefInt64(p.IsDraft) == 1,
-		CreatedAt: derefTime(p.CreatedAt),
-		UpdatedAt: derefTime(p.UpdatedAt),
-	}
-
-	if p.Excerpt != nil {
-		post.Excerpt = sql.NullString{String: *p.Excerpt, Valid: true}
-	}
-	if p.CoverImage != nil {
-		post.CoverImage = sql.NullString{String: *p.CoverImage, Valid: true}
-	}
-	if p.PublishedAt != nil {
-		post.PublishedAt = sql.NullTime{Time: *p.PublishedAt, Valid: true}
+		ID:          p.ID,
+		Title:       p.Title,
+		Slug:        p.Slug,
+		Content:     p.Content,
+		Excerpt:     toNullString(p.Excerpt),
+		CoverImage:  toNullString(p.CoverImage),
+		PublishedAt: toNullTime(p.PublishedAt),
+		IsDraft:     derefInt64(p.IsDraft) == 1,
+		CreatedAt:   derefTime(p.CreatedAt),
+		UpdatedAt:   derefTime(p.UpdatedAt),
 	}
 
 	post.Tags = make([]models.Tag, 0, len(tags))
@@ -293,4 +286,28 @@ func boolToInt64Ptr(b bool) *int64 {
 		val = 1
 	}
 	return &val
+}
+
+// toNullString converts a *string to sql.NullString
+func toNullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
+// toNullInt64 converts a *int64 to sql.NullInt64
+func toNullInt64(n *int64) sql.NullInt64 {
+	if n == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: *n, Valid: true}
+}
+
+// toNullTime converts a *time.Time to sql.NullTime
+func toNullTime(t *time.Time) sql.NullTime {
+	if t == nil {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: *t, Valid: true}
 }

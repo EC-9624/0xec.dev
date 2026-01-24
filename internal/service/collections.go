@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/EC-9624/0xec.dev/internal/database/sqlc/db"
 	"github.com/EC-9624/0xec.dev/internal/logger"
@@ -134,28 +133,19 @@ func (s *Service) ListCollections(ctx context.Context, publicOnly bool) ([]model
 
 // Helper function to convert sqlc Collection to domain model
 func dbCollectionToModel(c db.Collection, bookmarkCount int) *models.Collection {
-	collection := &models.Collection{
+	return &models.Collection{
 		ID:            c.ID,
 		Name:          c.Name,
 		Slug:          c.Slug,
+		Description:   toNullString(c.Description),
+		Color:         toNullString(c.Color),
+		ParentID:      toNullInt64(c.ParentID),
 		SortOrder:     int(derefInt64(c.SortOrder)),
 		IsPublic:      derefInt64(c.IsPublic) == 1,
 		CreatedAt:     derefTime(c.CreatedAt),
 		UpdatedAt:     derefTime(c.UpdatedAt),
 		BookmarkCount: bookmarkCount,
 	}
-
-	if c.Description != nil {
-		collection.Description = sql.NullString{String: *c.Description, Valid: true}
-	}
-	if c.Color != nil {
-		collection.Color = sql.NullString{String: *c.Color, Valid: true}
-	}
-	if c.ParentID != nil {
-		collection.ParentID = sql.NullInt64{Int64: *c.ParentID, Valid: true}
-	}
-
-	return collection
 }
 
 // ============================================
@@ -347,26 +337,17 @@ func (s *Service) GetRecentUnsortedBookmarks(ctx context.Context, limit int) ([]
 
 // Helper function to convert sqlc ListAllCollectionsWithCountsRow to domain model
 func dbCollectionRowToModel(c db.ListAllCollectionsWithCountsRow) *models.Collection {
-	collection := &models.Collection{
+	return &models.Collection{
 		ID:            c.ID,
 		Name:          c.Name,
 		Slug:          c.Slug,
+		Description:   toNullString(c.Description),
+		Color:         toNullString(c.Color),
+		ParentID:      toNullInt64(c.ParentID),
 		SortOrder:     int(derefInt64(c.SortOrder)),
 		IsPublic:      derefInt64(c.IsPublic) == 1,
 		CreatedAt:     derefTime(c.CreatedAt),
 		UpdatedAt:     derefTime(c.UpdatedAt),
 		BookmarkCount: int(c.BookmarkCount),
 	}
-
-	if c.Description != nil {
-		collection.Description = sql.NullString{String: *c.Description, Valid: true}
-	}
-	if c.Color != nil {
-		collection.Color = sql.NullString{String: *c.Color, Valid: true}
-	}
-	if c.ParentID != nil {
-		collection.ParentID = sql.NullInt64{Int64: *c.ParentID, Valid: true}
-	}
-
-	return collection
 }
