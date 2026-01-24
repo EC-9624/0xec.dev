@@ -3,6 +3,7 @@ package layouts
 import (
 	"context"
 
+	"github.com/EC-9624/0xec.dev/internal/assets"
 	"github.com/EC-9624/0xec.dev/internal/middleware"
 	"github.com/EC-9624/0xec.dev/web/templates/components"
 )
@@ -55,18 +56,18 @@ templ adminBase(title string) {
 			<meta name="theme-color" content="#faf9f7"/>
 			<meta name="htmx-config" content='{"scrollBehavior":"smooth","responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'/>
 			<title>{ title } | Admin</title>
-			<link rel="stylesheet" href="/static/css/output.css"/>
-			<script src="/static/js/theme.js"></script>
-			<script src="/static/js/htmx.min.js" defer></script>
-			<script src="/static/js/utils.js" defer></script>
-			<script src="/static/js/components/ec-toast-container.js" defer></script>
-			<script src="/static/js/components/ec-dropdown.js" defer></script>
-			<script src="/static/js/filter.js" defer></script>
-			<script src="/static/js/validation.js" defer></script>
-			<script src="/static/js/components/ec-tag-select.js" defer></script>
-			<script src="/static/js/expandable-row.js" defer></script>
-			<script src="/static/js/components/ec-drawer.js" defer></script>
-			<script src="/static/js/kanban.js" defer></script>
+			<link rel="stylesheet" href={ assets.Path("css/output.css") }/>
+			<script src={ assets.Path("js/theme.js") }></script>
+			<script src={ assets.Path("js/htmx.min.js") } defer></script>
+			<script src={ assets.Path("js/utils.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-toast-container.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-dropdown.js") } defer></script>
+			<script src={ assets.Path("js/filter.js") } defer></script>
+			<script src={ assets.Path("js/validation.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-tag-select.js") } defer></script>
+			<script src={ assets.Path("js/expandable-row.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-drawer.js") } defer></script>
+			<script src={ assets.Path("js/kanban.js") } defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }

@@ -43,6 +43,12 @@ data/*.db-shm
 *_templ.go
 web/static/css/output.css
 
+# Generated asset manifest
+internal/assets/manifest_gen.go
+
+# Hashed static files (e.g., output.a1b2c3d4.css)
+web/static/**/*.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].*
+
 # Build logs
 build-errors.log
 

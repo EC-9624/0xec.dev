@@ -1,6 +1,9 @@
 package layouts
 
-import "github.com/EC-9624/0xec.dev/web/templates/components"
+import (
+	"github.com/EC-9624/0xec.dev/internal/assets"
+	"github.com/EC-9624/0xec.dev/web/templates/components"
+)
 
 templ Base(title string) {
 	<!DOCTYPE html>
@@ -11,15 +14,15 @@ templ Base(title string) {
 			<meta name="theme-color" content="#f5f6f8"/>
 			<meta name="htmx-config" content='{"globalViewTransitions":true,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'/>
 			<title>{ title }</title>
-			<link rel="stylesheet" href="/static/css/output.css"/>
-			<script src="/static/js/theme.js"></script>
-			<script src="/static/js/htmx.min.js" defer></script>
-			<script src="/static/js/masonry.js" defer></script>
-			<script src="/static/js/components/ec-dropdown.js" defer></script>
-			<script src="/static/js/filter.js" defer></script>
-			<script src="/static/js/components/ec-mobile-nav.js" defer></script>
-			<script src="/static/js/progress-bar.js" defer></script>
-			<script src="/static/js/prefetch.js" defer></script>
+			<link rel="stylesheet" href={ assets.Path("css/output.css") }/>
+			<script src={ assets.Path("js/theme.js") }></script>
+			<script src={ assets.Path("js/htmx.min.js") } defer></script>
+			<script src={ assets.Path("js/masonry.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-dropdown.js") } defer></script>
+			<script src={ assets.Path("js/filter.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-mobile-nav.js") } defer></script>
+			<script src={ assets.Path("js/progress-bar.js") } defer></script>
+			<script src={ assets.Path("js/prefetch.js") } defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-sans flex flex-col">
 			{ children... }

@@ -1,4 +1,4 @@
-.PHONY: dev build run clean templ css install setup sqlc seed db db-backup db-reset test lint fmt check help
+.PHONY: dev build run clean templ css install setup sqlc seed db db-backup db-reset test lint fmt check help hash-assets hash-assets-dev clean-hashed
 
 # Tailwind standalone CLI
 TAILWIND := ./bin/tailwindcss
@@ -31,6 +31,8 @@ dev:
 	@echo "Starting development server with hot reload..."
 	@echo "Building initial CSS..."
 	@$(TAILWIND) -i ./web/static/css/input.css -o ./web/static/css/output.css
+	@echo "Generating dev asset manifest..."
+	@go run ./cmd/hashstatic -dev
 	@echo "Generating templates..."
 	@templ generate
 	@echo "Starting watchers..."
@@ -74,8 +76,21 @@ css:
 css-watch:
 	$(TAILWIND) -i ./web/static/css/input.css -o ./web/static/css/output.css --watch
 
+# Hash static assets for production (content-based cache busting)
+hash-assets:
+	go run ./cmd/hashstatic
+
+# Dev mode manifest (identity mapping, no hashing)
+hash-assets-dev:
+	go run ./cmd/hashstatic -dev
+
+# Clean hashed files
+clean-hashed:
+	find ./web/static -regex ".*\.[0-9a-f]\{8\}\..*" -delete 2>/dev/null || true
+	rm -f internal/assets/manifest_gen.go
+
 # Build for production
-build: templ css sqlc
+build: templ css hash-assets sqlc
 	CGO_ENABLED=1 go build -o bin/server ./cmd/server
 
 # Run without hot reload
@@ -83,7 +98,7 @@ run: templ css
 	go run ./cmd/server
 
 # Clean build artifacts
-clean:
+clean: clean-hashed
 	rm -rf tmp data/*.db
 	rm -f web/templates/**/*_templ.go
 	rm -f web/static/css/output.css
@@ -117,6 +132,9 @@ help:
 	@echo "  make sqlc       - Generate sqlc database code"
 	@echo "  make css        - Build CSS"
 	@echo "  make css-watch  - Watch CSS for changes"
+	@echo "  make hash-assets      - Hash static assets for cache busting"
+	@echo "  make hash-assets-dev  - Generate dev manifest (no hashing)"
+	@echo "  make clean-hashed     - Remove hashed files and manifest"
 	@echo "  make seed       - Seed database with sample data"
 	@echo "  make db         - Open SQLite CLI with pretty formatting"
 	@echo "  make db-backup  - Backup database with timestamp"
