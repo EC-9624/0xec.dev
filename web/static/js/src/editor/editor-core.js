@@ -249,5 +249,8 @@ class EditorCore {
   }
 }
 
-// Export for use
+// Export for ES modules
+export { EditorCore };
+
+// Also expose globally for backward compatibility
 window.EditorCore = EditorCore;

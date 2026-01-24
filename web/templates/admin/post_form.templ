@@ -9,7 +9,7 @@ import (
 // PostForm renders the full-page post editor with sidebar
 templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreatePostInput) {
 	@layouts.AdminFullWidth(postFormTitle(post, isNew), "/admin/posts") {
-		<div class="editor-layout" data-editor data-is-new={ boolToString(isNew) }>
+		<div class="editor-layout" data-editor data-is-new={ boolToString(isNew) } data-editor-type="block">
 			<!-- Main Editor Area -->
 			<div class="editor-main">
 				<!-- Editor Header -->
@@ -109,27 +109,8 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 					</form>
 				</div>
 
-				<!-- Floating Markdown Toolbar -->
-				<ec-markdown-toolbar target="content">
-					<button type="button" data-action="bold" title="Bold (Ctrl+B)">
-						<strong>B</strong>
-					</button>
-					<button type="button" data-action="italic" title="Italic (Ctrl+I)">
-						<em>I</em>
-					</button>
-					<button type="button" data-action="code" title="Inline code (Ctrl+`)">
-						<code>&lt;/&gt;</code>
-					</button>
-					<button type="button" data-action="link" title="Link (Ctrl+K)">
-						@editorLinkIcon()
-					</button>
-					<button type="button" data-action="heading" title="Heading">
-						H
-					</button>
-					<button type="button" data-action="quote" title="Quote">
-						@editorQuoteIcon()
-					</button>
-				</ec-markdown-toolbar>
+				<!-- Floating Markdown Toolbar (only for markdown editor) -->
+				<!-- Note: Block editor has its own inline toolbar via Editor.js -->
 			</div>
 
 			<!-- Sidebar -->

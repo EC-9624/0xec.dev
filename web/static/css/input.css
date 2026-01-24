@@ -1536,6 +1536,231 @@ html:not(.light):not(.dark) {
   ec-markdown-toolbar button code {
     @apply text-xs font-mono bg-transparent p-0;
   }
+
+  /* ===== BLOCK EDITOR (Editor.js) ===== */
+  .block-editor-container {
+    @apply min-h-[60vh];
+  }
+
+  .block-editor-holder {
+    @apply text-base lg:text-lg leading-relaxed;
+  }
+
+  /* Editor.js Core Styles */
+  .codex-editor {
+    @apply text-foreground;
+  }
+
+  .codex-editor__redactor {
+    @apply pb-32; /* Space for typing at bottom */
+  }
+
+  .ce-block__content {
+    @apply max-w-none; /* Remove default max-width */
+  }
+
+  .ce-paragraph {
+    @apply leading-relaxed;
+  }
+
+  /* Placeholder styling */
+  .ce-paragraph[data-placeholder]:empty::before {
+    @apply text-muted-foreground/40;
+  }
+
+  .ce-paragraph[data-placeholder]:empty:focus::before {
+    @apply text-muted-foreground/30;
+  }
+
+  /* Header blocks */
+  .ce-header {
+    @apply font-semibold text-foreground;
+  }
+
+  h2.ce-header {
+    @apply text-2xl mt-8 mb-4 border-b border-border pb-2;
+  }
+
+  h3.ce-header {
+    @apply text-xl mt-6 mb-3;
+  }
+
+  h4.ce-header {
+    @apply text-lg mt-4 mb-2;
+  }
+
+  /* List blocks */
+  .ce-block .cdx-list {
+    @apply my-4 ml-6;
+  }
+
+  .cdx-list--unordered {
+    list-style-type: disc;
+  }
+
+  .cdx-list--ordered {
+    list-style-type: decimal;
+  }
+
+  .cdx-list__item {
+    @apply mt-2 leading-relaxed;
+  }
+
+  /* Quote blocks */
+  .cdx-quote {
+    @apply my-4 border-l-4 border-border pl-4 italic;
+  }
+
+  .cdx-quote__text {
+    @apply text-muted-foreground;
+  }
+
+  .cdx-quote__caption {
+    @apply text-sm text-muted-foreground mt-2;
+  }
+
+  /* Code blocks */
+  .ce-code__textarea {
+    @apply w-full font-mono text-sm bg-muted p-4 rounded-lg border-none resize-none;
+    min-height: 100px;
+  }
+
+  .ce-code__textarea:focus {
+    @apply outline-none ring-2 ring-primary/20;
+  }
+
+  /* Delimiter blocks */
+  .ce-delimiter {
+    @apply my-8 text-center;
+  }
+
+  .ce-delimiter::before {
+    content: '***';
+    @apply text-muted-foreground tracking-widest;
+  }
+
+  /* Inline toolbar */
+  .ce-inline-toolbar {
+    @apply bg-popover border border-border/50 rounded-lg;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ce-inline-toolbar__buttons {
+    @apply flex items-center gap-0.5 p-1;
+  }
+
+  .ce-inline-tool {
+    @apply flex items-center justify-center w-8 h-8 text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .ce-inline-tool:hover {
+    @apply bg-muted;
+  }
+
+  .ce-inline-tool--active {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .ce-inline-tool svg {
+    @apply w-4 h-4;
+  }
+
+  /* Block toolbar (plus button) */
+  .ce-toolbar__plus {
+    @apply w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color, color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .ce-toolbar__plus:hover {
+    @apply bg-muted;
+  }
+
+  .ce-toolbar__plus svg {
+    @apply w-5 h-5;
+  }
+
+  /* Settings button */
+  .ce-toolbar__settings-btn {
+    @apply w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color, color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .ce-toolbar__settings-btn:hover {
+    @apply bg-muted;
+  }
+
+  /* Toolbox (block type picker) */
+  .ce-toolbox {
+    @apply bg-popover border border-border/50 rounded-lg p-1;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ce-toolbox__button {
+    @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .ce-toolbox__button:hover {
+    @apply bg-muted;
+  }
+
+  .ce-toolbox__button svg {
+    @apply w-5 h-5;
+  }
+
+  /* Settings panel */
+  .ce-settings {
+    @apply bg-popover border border-border/50 rounded-lg p-1;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ce-settings__button {
+    @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .ce-settings__button:hover {
+    @apply bg-muted;
+  }
+
+  .ce-settings__button--active {
+    @apply bg-primary/10 text-primary;
+  }
+
+  /* Block focus state */
+  .ce-block--focused {
+    @apply bg-muted/30 -mx-4 px-4 rounded-md;
+  }
+
+  /* Conversion toolbar */
+  .ce-conversion-toolbar {
+    @apply bg-popover border border-border/50 rounded-lg;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ce-conversion-tool {
+    @apply flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50;
+    transition-property: background-color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .ce-conversion-tool:hover {
+    @apply bg-muted;
+  }
+
+  .ce-conversion-tool--focused {
+    @apply bg-muted;
+  }
+
+  .ce-conversion-tool__icon {
+    @apply w-5 h-5;
+  }
 }
 
 @layer utilities {
