@@ -1,108 +1,109 @@
 package components
 
-// MobileBottomBar renders a slim fixed bar at the bottom with hamburger, logo/title, and theme toggle
+// MobileNav wraps all mobile navigation elements in a Web Component
 // Hidden on lg+ screens where the sidebar is visible
-templ MobileBottomBar(currentPath string) {
-	<div class="mobile-bottom-bar">
-		<!-- Hamburger menu button -->
-		<button
-			type="button"
-			class="mobile-bar-btn"
-			onclick="navDrawer.toggle()"
-			aria-label="Open navigation menu"
-			aria-expanded="false"
-			aria-controls="nav-drawer"
+templ MobileNav(currentPath string) {
+	<ec-mobile-nav>
+		<!-- Backdrop for dismissing drawer -->
+		<div class="nav-drawer-backdrop" aria-hidden="true"></div>
+		<!-- Nav drawer -->
+		<nav
+			class="nav-drawer"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Navigation menu"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<line x1="4" x2="20" y1="12" y2="12"></line>
-				<line x1="4" x2="20" y1="6" y2="6"></line>
-				<line x1="4" x2="20" y1="18" y2="18"></line>
-			</svg>
-		</button>
-		<!-- Logo and page title -->
-		<div class="mobile-bar-title">
-			<span class="mobile-bar-logo">0x</span>
-			<span class="mobile-bar-separator">·</span>
-			<span class="mobile-bar-page">{ getPageTitle(currentPath) }</span>
+			<!-- Drag handle indicator -->
+			<div class="nav-drawer-handle"></div>
+			<!-- Main navigation -->
+			<div class="nav-drawer-section">
+				<a href="/" class={ navDrawerItemClass(currentPath, "/") } hx-boost="true">
+					@iconHome()
+					<span>Home</span>
+				</a>
+				<a href="/posts" class={ navDrawerItemClass(currentPath, "/posts") } hx-boost="true">
+					@iconPencil()
+					<span>Writing</span>
+				</a>
+				<a href="/bookmarks" class={ navDrawerItemClass(currentPath, "/bookmarks") } hx-boost="true">
+					@iconBookmark()
+					<span>Bookmarks</span>
+				</a>
+			</div>
+			<!-- Social links -->
+			<div class="nav-drawer-section nav-drawer-section-secondary">
+				<span class="nav-drawer-label">Online</span>
+				<a href="https://x.com" target="_blank" rel="noopener noreferrer" class="nav-drawer-link">
+					@iconX()
+					<span>X (Twitter)</span>
+					@iconExternal()
+				</a>
+				<a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="nav-drawer-link">
+					@iconInstagram()
+					<span>Instagram</span>
+					@iconExternal()
+				</a>
+				<a href="https://github.com" target="_blank" rel="noopener noreferrer" class="nav-drawer-link">
+					@iconGitHub()
+					<span>GitHub</span>
+					@iconExternal()
+				</a>
+			</div>
+		</nav>
+		<!-- Bottom bar -->
+		<div class="mobile-bottom-bar">
+			<!-- Hamburger menu button -->
+			<button
+				type="button"
+				class="mobile-bar-btn"
+				data-toggle
+				aria-label="Open navigation menu"
+				aria-expanded="false"
+				aria-controls="nav-drawer"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<line x1="4" x2="20" y1="12" y2="12"></line>
+					<line x1="4" x2="20" y1="6" y2="6"></line>
+					<line x1="4" x2="20" y1="18" y2="18"></line>
+				</svg>
+			</button>
+			<!-- Logo and page title -->
+			<div class="mobile-bar-title">
+				<span class="mobile-bar-logo">0x</span>
+				<span class="mobile-bar-separator">·</span>
+				<span class="mobile-bar-page">{ getPageTitle(currentPath) }</span>
+			</div>
+			<!-- Theme toggle -->
+			<button
+				type="button"
+				class="mobile-bar-btn"
+				onclick="themeToggle.cycle()"
+				title="Toggle theme"
+				aria-label="Toggle theme"
+			>
+				<!-- Sun icon (shown in dark mode) -->
+				<svg class="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="12" cy="12" r="4"></circle>
+					<path d="M12 2v2"></path>
+					<path d="M12 20v2"></path>
+					<path d="m4.93 4.93 1.41 1.41"></path>
+					<path d="m17.66 17.66 1.41 1.41"></path>
+					<path d="M2 12h2"></path>
+					<path d="M20 12h2"></path>
+					<path d="m6.34 17.66-1.41 1.41"></path>
+					<path d="m19.07 4.93-1.41 1.41"></path>
+				</svg>
+				<!-- Moon icon (shown in light mode) -->
+				<svg class="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+				</svg>
+			</button>
 		</div>
-		<!-- Theme toggle -->
-		<button
-			type="button"
-			class="mobile-bar-btn"
-			onclick="themeToggle.cycle()"
-			title="Toggle theme"
-			aria-label="Toggle theme"
-		>
-			<!-- Sun icon (shown in dark mode) -->
-			<svg class="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<circle cx="12" cy="12" r="4"></circle>
-				<path d="M12 2v2"></path>
-				<path d="M12 20v2"></path>
-				<path d="m4.93 4.93 1.41 1.41"></path>
-				<path d="m17.66 17.66 1.41 1.41"></path>
-				<path d="M2 12h2"></path>
-				<path d="M20 12h2"></path>
-				<path d="m6.34 17.66-1.41 1.41"></path>
-				<path d="m19.07 4.93-1.41 1.41"></path>
-			</svg>
-			<!-- Moon icon (shown in light mode) -->
-			<svg class="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-			</svg>
-		</button>
-	</div>
-}
-
-// MobileNavDrawer renders the bottom sheet navigation drawer
-// Hidden on lg+ screens where the sidebar is visible
-templ MobileNavDrawer(currentPath string) {
-	<!-- Backdrop for dismissing drawer -->
-	<div id="nav-drawer-backdrop" class="nav-drawer-backdrop" aria-hidden="true"></div>
-	<!-- Nav drawer -->
-	<nav
-		id="nav-drawer"
-		class="nav-drawer"
-		role="dialog"
-		aria-modal="true"
-		aria-label="Navigation menu"
-	>
-		<!-- Drag handle indicator -->
-		<div class="nav-drawer-handle"></div>
-		<!-- Main navigation -->
-		<div class="nav-drawer-section">
-			<a href="/" class={ navDrawerItemClass(currentPath, "/") } hx-boost="true">
-				@iconHome()
-				<span>Home</span>
-			</a>
-			<a href="/posts" class={ navDrawerItemClass(currentPath, "/posts") } hx-boost="true">
-				@iconPencil()
-				<span>Writing</span>
-			</a>
-			<a href="/bookmarks" class={ navDrawerItemClass(currentPath, "/bookmarks") } hx-boost="true">
-				@iconBookmark()
-				<span>Bookmarks</span>
-			</a>
+		<!-- Loading indicator -->
+		<div class="nav-loading-indicator" aria-hidden="true">
+			<div class="nav-loading-spinner"></div>
 		</div>
-		<!-- Social links -->
-		<div class="nav-drawer-section nav-drawer-section-secondary">
-			<span class="nav-drawer-label">Online</span>
-			<a href="https://x.com" target="_blank" rel="noopener noreferrer" class="nav-drawer-link">
-				@iconX()
-				<span>X (Twitter)</span>
-				@iconExternal()
-			</a>
-			<a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="nav-drawer-link">
-				@iconInstagram()
-				<span>Instagram</span>
-				@iconExternal()
-			</a>
-			<a href="https://github.com" target="_blank" rel="noopener noreferrer" class="nav-drawer-link">
-				@iconGitHub()
-				<span>GitHub</span>
-				@iconExternal()
-			</a>
-		</div>
-	</nav>
+	</ec-mobile-nav>
 }
 
 // Helper to get page title from path
@@ -183,12 +184,4 @@ templ iconExternal() {
 		<path d="M7 7h10v10"></path>
 		<path d="M7 17 17 7"></path>
 	</svg>
-}
-
-// MobileLoadingIndicator renders a loading spinner for nav drawer page transitions
-// Hidden on lg+ screens where the nav drawer is not used
-templ MobileLoadingIndicator() {
-	<div id="nav-loading-indicator" class="nav-loading-indicator" aria-hidden="true">
-		<div class="nav-loading-spinner"></div>
-	</div>
 }

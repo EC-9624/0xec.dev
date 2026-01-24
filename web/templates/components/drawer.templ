@@ -1,41 +1,40 @@
 package components
 
 // Drawer renders a slide-out drawer panel from the right side.
-// The drawer is initially hidden and controlled via JavaScript.
+// Uses ec-drawer Web Component for behavior (open/close, focus trap, dirty form tracking).
 templ Drawer() {
-	<div
-		id="drawer-backdrop"
-		class="drawer-backdrop"
-		onclick="window.drawerClose()"
-		aria-hidden="true"
-	></div>
-	<aside
-		id="drawer-panel"
-		class="drawer-panel"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="drawer-title"
-	>
-		<header class="drawer-header">
-			<h2 id="drawer-title" class="drawer-title">
-				<!-- Set by JS -->
-			</h2>
-			<button
-				type="button"
-				onclick="window.drawerClose()"
-				class="drawer-close"
-				aria-label="Close drawer"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M18 6 6 18"></path>
-					<path d="m6 6 12 12"></path>
-				</svg>
-			</button>
-		</header>
-		<div id="drawer-content" class="drawer-content">
-			<!-- Content loaded via HTMX -->
-		</div>
-	</aside>
+	<ec-drawer>
+		<div
+			data-backdrop
+			aria-hidden="true"
+		></div>
+		<aside
+			data-panel
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="drawer-title"
+			tabindex="-1"
+		>
+			<header data-header>
+				<h2 data-title id="drawer-title">
+					<!-- Set by JS -->
+				</h2>
+				<button
+					type="button"
+					data-close
+					aria-label="Close drawer"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M18 6 6 18"></path>
+						<path d="m6 6 12 12"></path>
+					</svg>
+				</button>
+			</header>
+			<div data-content id="drawer-content">
+				<!-- Content loaded via HTMX -->
+			</div>
+		</aside>
+	</ec-drawer>
 }
 
 

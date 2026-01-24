@@ -1,14 +1,14 @@
 /**
  * Expandable Row Module
  * Reusable expand/collapse functionality for table rows with lazy-loaded content.
- * Used by Tags and Collections admin pages for treeview patterns.
+ * Used by Tags admin page for treeview patterns.
  * 
  * @module ExpandableRow
  * 
  * Usage:
  * 1. Add data attributes to your rows:
  *    - data-expandable-id="<id>" on the main row
- *    - data-expandable-type="<type>" (e.g., "tag" or "collection")
+ *    - data-expandable-type="<type>" (e.g., "tag")
  *    - role="button" for expandable rows
  * 
  * 2. Add content container with:
@@ -57,7 +57,7 @@
 
   /**
    * Prefetch content for a row (only once)
-   * @param {string} type - The type of expandable (e.g., "tag", "collection")
+   * @param {string} type - The type of expandable (e.g., "tag")
    * @param {string} id - The unique ID of the row
    */
   function prefetchRow(type, id) {
@@ -72,7 +72,7 @@
 
   /**
    * Toggle expand/collapse for a row
-   * @param {string} type - The type of expandable (e.g., "tag", "collection")
+   * @param {string} type - The type of expandable (e.g., "tag")
    * @param {string} id - The unique ID of the row
    */
   function toggleRow(type, id) {
@@ -146,7 +146,7 @@
 
   /**
    * Initialize all expandable rows of a given type
-   * @param {string} type - The type of expandable (e.g., "tag", "collection")
+   * @param {string} type - The type of expandable (e.g., "tag")
    */
   function initType(type) {
     const rows = document.querySelectorAll(`[${CONFIG.TYPE_ATTR}="${type}"]`);
@@ -175,9 +175,7 @@
   }
 
   // Initialize on DOM ready
-  if (typeof Utils !== 'undefined') {
-    Utils.onReady(init);
-  } else if (document.readyState === 'loading') {
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();

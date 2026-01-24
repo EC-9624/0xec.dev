@@ -86,9 +86,9 @@ type FormSelectProps struct {
 }
 
 // FormSelect renders a custom dropdown for use in forms
-// Works with existing dropdown.js - uses hidden input for form submission
+// Works with ec-dropdown Web Component - uses hidden input for form submission
 templ FormSelect(props FormSelectProps) {
-	<div data-dropdown class="dropdown w-full">
+	<ec-dropdown class="w-full">
 		<input
 			type="hidden"
 			id={ props.ID }
@@ -97,22 +97,21 @@ templ FormSelect(props FormSelectProps) {
 		/>
 		<button
 			type="button"
-			data-dropdown-trigger
+			data-trigger
 			class={ formSelectTriggerClass(props.Errors, props.Field) }
 			aria-expanded="false"
 		>
-			<span data-dropdown-label class="truncate">
+			<span data-label class="truncate">
 				{ formSelectLabel(props) }
 			</span>
 			@ChevronDownIcon(IconSM)
 		</button>
-		<div data-dropdown-menu class="dropdown-menu hidden">
+		<div data-menu>
 			if props.Placeholder != "" {
 				<button
 					type="button"
-					data-dropdown-option
+					data-option
 					data-value=""
-					class="dropdown-option"
 					if props.Selected == "" {
 						data-selected="true"
 					}
@@ -123,9 +122,8 @@ templ FormSelect(props FormSelectProps) {
 			for _, opt := range props.Options {
 				<button
 					type="button"
-					data-dropdown-option
+					data-option
 					data-value={ opt.Value }
-					class="dropdown-option"
 					if props.Selected == opt.Value {
 						data-selected="true"
 					}
@@ -134,7 +132,7 @@ templ FormSelect(props FormSelectProps) {
 				</button>
 			}
 		</div>
-	</div>
+	</ec-dropdown>
 }
 
 // formSelectName returns the name attribute value for the hidden input

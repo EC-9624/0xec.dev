@@ -33,26 +33,22 @@ templ TagSelect(props TagSelectProps) {
 	}}
 	<div class="space-y-2">
 		<label class="label">Tags</label>
-		<div
-			class="tag-select"
-			data-tag-select
-			data-field-name={ fieldName }
-		>
+		<ec-tag-select field-name={ fieldName }>
 			<!-- Selected tags display (chips) -->
-			<div class="tag-select-trigger" data-tag-trigger>
-				<div class="tag-select-chips" data-tag-chips>
+			<div data-trigger>
+				<div data-chips>
 					for _, tag := range props.AllTags {
 						if isTagSelected(tag.ID, props.SelectedIDs) {
 							<span class="tag-chip" data-tag-id={ strconv.FormatInt(tag.ID, 10) }>
 								{ tag.Name }
-								<button type="button" class="tag-chip-remove" data-remove-tag={ strconv.FormatInt(tag.ID, 10) }>
+								<button type="button" class="tag-chip-remove" data-remove={ strconv.FormatInt(tag.ID, 10) }>
 									@XIcon(IconXS)
 								</button>
 							</span>
 						}
 					}
 				</div>
-				<span class="tag-select-placeholder" data-tag-placeholder>
+				<span data-placeholder>
 					if len(props.SelectedIDs) == 0 {
 						Select tags...
 					}
@@ -60,21 +56,20 @@ templ TagSelect(props TagSelectProps) {
 				@ChevronDownIcon(IconSM)
 			</div>
 			<!-- Dropdown -->
-			<div class="tag-select-dropdown hidden" data-tag-dropdown>
+			<div data-dropdown class="hidden">
 				<!-- Filter input -->
-				<div class="tag-select-search">
+				<div>
 					<input
 						type="text"
 						placeholder="Filter or create tag..."
-						class="tag-select-input"
-						data-tag-filter
+						data-filter
 						autocomplete="off"
 					/>
 				</div>
 				<!-- Options list -->
-				<div class="tag-select-options" data-tag-options>
+				<div data-options>
 					for _, tag := range props.AllTags {
-						<label class="tag-select-option" data-tag-option data-tag-name={ tag.Name }>
+						<label data-option data-name={ tag.Name }>
 							<input
 								type="checkbox"
 								name={ fieldName }
@@ -82,25 +77,20 @@ templ TagSelect(props TagSelectProps) {
 								if isTagSelected(tag.ID, props.SelectedIDs) {
 									checked
 								}
-								data-tag-checkbox
-								data-tag-id={ strconv.FormatInt(tag.ID, 10) }
+								data-id={ strconv.FormatInt(tag.ID, 10) }
 							/>
 							<span>{ tag.Name }</span>
 						</label>
 					}
 				</div>
 				<!-- Create new tag option -->
-				<div class="tag-select-create hidden" data-tag-create>
-					<button
-						type="button"
-						class="tag-select-create-btn"
-						data-create-tag-btn
-					>
+				<div data-create class="hidden">
+					<button type="button" data-create-btn>
 						@PlusIcon(IconSM)
-						<span>Create "<span data-create-tag-name></span>"</span>
+						<span>Create "<span data-create-name></span>"</span>
 					</button>
 				</div>
 			</div>
-		</div>
+		</ec-tag-select>
 	</div>
 }

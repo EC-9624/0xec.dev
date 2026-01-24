@@ -272,8 +272,7 @@ html:not(.light):not(.dark) {
 
   /* ===== MOBILE BOTTOM BAR ===== */
   .mobile-bottom-bar {
-    @apply fixed bottom-0 left-0 right-0 z-40 lg:hidden;
-    @apply flex items-center justify-between px-2 h-12;
+    @apply fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between px-2 h-12 lg:hidden;
     @apply bg-sidebar border-t border-border;
     padding-bottom: env(safe-area-inset-bottom, 0);
     transition: transform 200ms ease-out;
@@ -328,21 +327,23 @@ html:not(.light):not(.dark) {
 
   /* ===== NAV DRAWER ===== */
   .nav-drawer-backdrop {
-    @apply fixed inset-0 z-40 lg:hidden;
+    @apply fixed inset-0 z-40 pointer-events-none lg:hidden;
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 200ms ease-out, visibility 200ms ease-out;
+    transition:
+      opacity 200ms ease-out,
+      visibility 200ms ease-out;
   }
 
   body.nav-drawer-open .nav-drawer-backdrop {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
   }
 
   .nav-drawer {
-    @apply fixed inset-x-0 bottom-0 z-50 lg:hidden;
-    @apply bg-sidebar rounded-t-2xl;
+    @apply fixed inset-x-0 bottom-0 z-50 bg-sidebar rounded-t-2xl lg:hidden;
     transform: translateY(100%);
     transition: transform 200ms ease-out;
     padding-bottom: env(safe-area-inset-bottom, 0);
@@ -357,7 +358,7 @@ html:not(.light):not(.dark) {
   }
 
   .nav-drawer-handle::before {
-    content: '';
+    content: "";
     @apply w-10 h-1 bg-border rounded-full;
   }
 
@@ -407,7 +408,9 @@ html:not(.light):not(.dark) {
 
   /* Scale effect on layout when drawer is open */
   .layout-container {
-    transition: transform 200ms ease-out, border-radius 200ms ease-out;
+    transition:
+      transform 200ms ease-out,
+      border-radius 200ms ease-out;
     transform-origin: center bottom;
   }
 
@@ -424,11 +427,12 @@ html:not(.light):not(.dark) {
 
   /* ===== NAV LOADING INDICATOR ===== */
   .nav-loading-indicator {
-    @apply fixed inset-0 z-[60] lg:hidden flex items-center justify-center;
-    @apply pointer-events-none;
+    @apply fixed inset-0 z-[60] flex items-center justify-center pointer-events-none lg:hidden;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 150ms ease-out, visibility 150ms ease-out;
+    transition:
+      opacity 150ms ease-out,
+      visibility 150ms ease-out;
   }
 
   .nav-loading-indicator.active {
@@ -1134,33 +1138,39 @@ html:not(.light):not(.dark) {
     @apply ring-inset ring-offset-0;
   }
 
-  /* ===== CUSTOM DROPDOWN ===== */
-  .dropdown {
+  /* ===== CUSTOM DROPDOWN (ec-dropdown Web Component) ===== */
+  ec-dropdown {
     @apply relative w-36;
+    display: block;
   }
 
-  .dropdown-trigger {
+  ec-dropdown [data-trigger] {
     @apply flex items-center justify-between gap-2 w-full
            bg-background border border-input px-2 h-8 text-xs text-left
            hover:bg-muted cursor-pointer;
   }
 
-  .dropdown-trigger [data-dropdown-label] {
+  ec-dropdown [data-label] {
     @apply truncate;
   }
 
-  .dropdown-menu {
-    @apply fixed z-[100] bg-card border border-border max-h-60 overflow-y-auto;
+  /* Menu styles - both in ec-dropdown and portal */
+  ec-dropdown [data-menu],
+  #dropdown-portal [data-menu] {
+    @apply fixed z-100 bg-card border border-border max-h-60 overflow-y-auto;
     box-shadow: var(--shadow-md);
     display: none;
   }
 
-  .dropdown-option {
+  /* Option styles - both in ec-dropdown and portal */
+  ec-dropdown [data-option],
+  #dropdown-portal [data-option] {
     @apply block w-full px-2 py-1.5 text-xs text-left text-foreground
            hover:bg-muted cursor-pointer truncate;
   }
 
-  .dropdown-option[data-selected="true"] {
+  ec-dropdown [data-option][data-selected="true"],
+  #dropdown-portal [data-option][data-selected="true"] {
     @apply bg-muted font-medium;
   }
 
@@ -1449,8 +1459,8 @@ html:not(.light):not(.dark) {
     }
   }
 
-  /* ===== TOAST NOTIFICATIONS ===== */
-  .toast-container {
+  /* ===== TOAST NOTIFICATIONS (ec-toast-container Web Component) ===== */
+  ec-toast-container {
     position: fixed;
     bottom: 1rem;
     right: 1rem;
@@ -1461,29 +1471,51 @@ html:not(.light):not(.dark) {
     pointer-events: none;
   }
 
-  .toast {
+  ec-toast-container .toast {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: white;
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+    background: var(--color-card);
+    color: var(--color-card-foreground);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
     font-size: 0.75rem;
     cursor: pointer;
     pointer-events: auto;
     animation: toast-enter 0.2s ease-out;
   }
 
-  .toast-error {
-    border-left: 3px solid rgb(239 68 68);
+  /* Toast type styles */
+  ec-toast-container .toast-error {
+    border-left: 3px solid var(--color-destructive);
+  }
+  ec-toast-container .toast-error .toast-icon {
+    color: var(--color-destructive);
   }
 
-  .toast-error .toast-icon {
-    color: rgb(239 68 68);
+  ec-toast-container .toast-success {
+    border-left: 3px solid hsl(142 76% 36%);
+  }
+  ec-toast-container .toast-success .toast-icon {
+    color: hsl(142 76% 36%);
   }
 
-  .toast-exit {
+  ec-toast-container .toast-warning {
+    border-left: 3px solid hsl(38 92% 50%);
+  }
+  ec-toast-container .toast-warning .toast-icon {
+    color: hsl(38 92% 50%);
+  }
+
+  ec-toast-container .toast-info {
+    border-left: 3px solid hsl(217 91% 60%);
+  }
+  ec-toast-container .toast-info .toast-icon {
+    color: hsl(217 91% 60%);
+  }
+
+  ec-toast-container .toast-exit {
     animation: toast-exit 0.2s ease-out forwards;
   }
 
@@ -1561,29 +1593,29 @@ html:not(.light):not(.dark) {
     @apply border-green-500 focus-visible:ring-green-500;
   }
 
-  /* ===== TAG SELECT COMPONENT ===== */
-  .tag-select {
-    @apply relative;
+  /* ===== TAG SELECT COMPONENT (ec-tag-select Web Component) ===== */
+  ec-tag-select {
+    @apply relative block;
   }
 
-  .tag-select-trigger {
+  ec-tag-select [data-trigger] {
     @apply flex flex-wrap items-center gap-1.5 min-h-10 w-full border border-input bg-background px-3 py-2 text-sm
            cursor-pointer hover:bg-muted/50;
   }
 
-  .tag-select-chips {
+  ec-tag-select [data-chips] {
     @apply flex flex-wrap gap-1;
   }
 
-  .tag-select-placeholder {
+  ec-tag-select [data-placeholder] {
     @apply text-muted-foreground;
   }
 
-  .tag-select-placeholder:empty {
+  ec-tag-select [data-placeholder]:empty {
     @apply hidden;
   }
 
-  .tag-select-trigger > svg {
+  ec-tag-select [data-trigger] > svg {
     @apply ml-auto shrink-0 text-muted-foreground;
   }
 
@@ -1595,46 +1627,50 @@ html:not(.light):not(.dark) {
     @apply hover:text-destructive cursor-pointer;
   }
 
-  .tag-select-dropdown {
+  ec-tag-select [data-dropdown] {
     @apply absolute top-full left-0 right-0 mt-1 z-50
            bg-card border border-border shadow-md max-h-60 overflow-hidden;
   }
 
-  .tag-select-search {
+  ec-tag-select [data-dropdown] > div:first-child {
     @apply border-b border-border;
   }
 
-  .tag-select-input {
+  ec-tag-select [data-filter] {
     @apply w-full px-3 py-2 text-sm bg-transparent outline-none
            placeholder:text-muted-foreground;
   }
 
-  .tag-select-options {
+  ec-tag-select [data-options] {
     @apply max-h-40 overflow-y-auto;
   }
 
-  .tag-select-option {
+  ec-tag-select [data-option] {
     @apply flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted;
   }
 
-  .tag-select-option[hidden] {
+  ec-tag-select [data-option][hidden] {
     @apply hidden;
   }
 
-  .tag-select-option input[type="checkbox"] {
+  ec-tag-select [data-option] input[type="checkbox"] {
     @apply h-4 w-4 border-input;
   }
 
-  .tag-select-create {
+  ec-tag-select [data-create] {
     @apply border-t border-border;
   }
 
-  .tag-select-create-btn {
+  ec-tag-select [data-create-btn] {
     @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-primary hover:bg-muted cursor-pointer;
   }
 
-  /* ===== DRAWER COMPONENT ===== */
-  .drawer-backdrop {
+  /* ===== DRAWER COMPONENT (ec-drawer Web Component) ===== */
+  ec-drawer {
+    display: contents; /* Don't affect layout */
+  }
+
+  ec-drawer [data-backdrop] {
     @apply fixed inset-0 z-40 bg-black/50;
     opacity: 0;
     visibility: hidden;
@@ -1643,12 +1679,12 @@ html:not(.light):not(.dark) {
       visibility 200ms ease-out;
   }
 
-  .drawer-backdrop.open {
+  ec-drawer [data-backdrop].open {
     opacity: 1;
     visibility: visible;
   }
 
-  .drawer-panel {
+  ec-drawer [data-panel] {
     @apply fixed top-0 right-0 z-50 h-full w-[600px] max-w-full
            bg-background border-l border-border
            flex flex-col;
@@ -1658,29 +1694,29 @@ html:not(.light):not(.dark) {
     overscroll-behavior: contain;
   }
 
-  .drawer-panel.open {
+  ec-drawer [data-panel].open {
     transform: translateX(0);
   }
 
-  .drawer-header {
+  ec-drawer [data-header] {
     @apply flex items-center justify-between px-6 py-4 border-b border-border;
   }
 
-  .drawer-title {
+  ec-drawer [data-title] {
     @apply text-lg font-semibold text-foreground;
   }
 
-  .drawer-close {
+  ec-drawer [data-close] {
     @apply p-1 text-muted-foreground hover:text-foreground hover:bg-muted;
     transition-property: background-color, color;
     transition-duration: var(--transition-duration);
   }
 
-  .drawer-content {
+  ec-drawer [data-content] {
     @apply flex-1 overflow-y-auto;
   }
 
-  /* Drawer form styling */
+  /* Drawer form styling (used inside loaded content) */
   .drawer-form {
     @apply p-6 space-y-6;
   }
@@ -1835,11 +1871,11 @@ html:not(.light):not(.dark) {
   }
 
   /* Kanban card dropdown - specific styles for icon-trigger dropdowns */
-  .kanban-dropdown-menu {
+  ec-dropdown .kanban-dropdown-menu {
     width: 140px !important;
   }
 
-  .kanban-dropdown-option {
+  ec-dropdown .kanban-dropdown-option {
     @apply flex items-center gap-2;
   }
 
@@ -2233,7 +2269,8 @@ html:not(.light):not(.dark) {
 
   /* Pop up with subtle bounce for new page */
   ::view-transition-new(root) {
-    animation: vt-scale-up-bounce 250ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: vt-scale-up-bounce 250ms cubic-bezier(0.34, 1.56, 0.64, 1)
+      forwards;
   }
 
   @keyframes vt-scale-down-out {

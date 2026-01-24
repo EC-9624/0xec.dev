@@ -65,25 +65,23 @@ templ BookmarkFavoriteStar(id int64, isFavorite bool, success bool) {
 
 // BookmarkCollectionDropdown renders the inline collection selector
 templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollection bool, collections []models.Collection, success bool) {
-	<div
-		data-dropdown
-		class={ "dropdown w-28", templ.KV("save-success", success) }
+	<ec-dropdown
+		class={ "w-28", templ.KV("save-success", success) }
 		data-bookmark-id={ strconv.FormatInt(id, 10) }
 	>
 		<input type="hidden" id={ "collection-" + strconv.FormatInt(id, 10) } value={ getCurrentCollectionValue(currentCollectionID, hasCollection) }/>
-		<button type="button" data-dropdown-trigger class="dropdown-trigger h-6 text-[10px]" aria-expanded="false">
-			<span data-dropdown-label class="truncate">{ getCurrentCollectionLabel(currentCollectionID, hasCollection, collections) }</span>
+		<button type="button" data-trigger class="h-6 text-[10px]" aria-expanded="false">
+			<span data-label class="truncate">{ getCurrentCollectionLabel(currentCollectionID, hasCollection, collections) }</span>
 			@components.ChevronDownIcon(components.IconSM)
 		</button>
-		<div data-dropdown-menu class="dropdown-menu hidden">
+		<div data-menu>
 			<button
 				type="button"
-				data-dropdown-option
+				data-option
 				data-value=""
-				class="dropdown-option"
 				hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
 				hx-vals='{"collection_id": ""}'
-				hx-target="closest [data-dropdown]"
+				hx-target="closest ec-dropdown"
 				hx-swap="outerHTML"
 				if !hasCollection {
 					data-selected="true"
@@ -94,12 +92,11 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 			for _, collection := range collections {
 				<button
 					type="button"
-					data-dropdown-option
+					data-option
 					data-value={ strconv.FormatInt(collection.ID, 10) }
-					class="dropdown-option"
 					hx-post={ "/admin/htmx/bookmarks/" + strconv.FormatInt(id, 10) + "/collection" }
 					hx-vals={ `{"collection_id": "` + strconv.FormatInt(collection.ID, 10) + `"}` }
-					hx-target="closest [data-dropdown]"
+					hx-target="closest ec-dropdown"
 					hx-swap="outerHTML"
 					if hasCollection && currentCollectionID == collection.ID {
 						data-selected="true"
@@ -109,7 +106,7 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 				</button>
 			}
 		</div>
-	</div>
+	</ec-dropdown>
 }
 
 // ============================================
@@ -118,20 +115,20 @@ templ BookmarkCollectionDropdown(id int64, currentCollectionID int64, hasCollect
 
 // bookmarkCollectionFilter renders the collection filter dropdown with dynamic options
 templ bookmarkCollectionFilter(collections []models.Collection, preselectedID int64) {
-	<div data-dropdown class="dropdown">
+	<ec-dropdown>
 		<input type="hidden" id="collection-filter" value={ preselectedCollectionValue(preselectedID) }/>
-		<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
-			<span data-dropdown-label>{ preselectedCollectionLabel(collections, preselectedID) }</span>
+		<button type="button" data-trigger aria-expanded="false">
+			<span data-label>{ preselectedCollectionLabel(collections, preselectedID) }</span>
 			@components.ChevronDownIcon(components.IconSM)
 		</button>
-		<div data-dropdown-menu class="dropdown-menu hidden">
-			<button type="button" data-dropdown-option data-value="" class="dropdown-option" data-selected={ boolStr(preselectedID == 0) }>All Collections</button>
-			<button type="button" data-dropdown-option data-value="none" class="dropdown-option">Unsorted</button>
+		<div data-menu>
+			<button type="button" data-option data-value="" data-selected={ boolStr(preselectedID == 0) }>All Collections</button>
+			<button type="button" data-option data-value="none">Unsorted</button>
 			for _, collection := range collections {
-				<button type="button" data-dropdown-option data-value={ strconv.FormatInt(collection.ID, 10) } class="dropdown-option" data-selected={ boolStr(collection.ID == preselectedID) }>
+				<button type="button" data-option data-value={ strconv.FormatInt(collection.ID, 10) } data-selected={ boolStr(collection.ID == preselectedID) }>
 					{ collection.Name }
 				</button>
 			}
 		</div>
-	</div>
+	</ec-dropdown>
 }

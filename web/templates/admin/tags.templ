@@ -41,7 +41,6 @@ templ TagsList(tags []service.TagWithCount) {
 				})
 			}
 		</div>
-		@tagExpandScript()
 	}
 }
 
@@ -133,11 +132,6 @@ script handleTagRowKeydown(tagID int64) {
 
 script toggleTagExpand(tagID int64) {
 	ExpandableRow.toggle('tag', tagID.toString());
-}
-
-// tagExpandScript is deprecated - expandable-row.js now handles this
-// Kept as empty templ for backward compatibility
-templ tagExpandScript() {
 }
 
 // TagPostsExpanded renders the expanded posts list for a tag
