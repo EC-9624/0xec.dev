@@ -76,19 +76,18 @@ type FilterDropdownProps struct {
 
 // FilterDropdown renders a custom dropdown filter
 templ FilterDropdown(props FilterDropdownProps) {
-	<div data-dropdown class="dropdown">
+	<ec-dropdown>
 		<input type="hidden" id={ props.ID } value={ getSelectedValue(props.Options) } { changeAttrs(props.OnChange)... }/>
-		<button type="button" data-dropdown-trigger class="dropdown-trigger" aria-expanded="false">
-			<span data-dropdown-label>{ getSelectedLabel(props.Options, props.DefaultLabel) }</span>
+		<button type="button" data-trigger aria-expanded="false">
+			<span data-label>{ getSelectedLabel(props.Options, props.DefaultLabel) }</span>
 			@ChevronDownIcon(IconSM)
 		</button>
-		<div data-dropdown-menu class="dropdown-menu hidden">
+		<div data-menu>
 			for _, opt := range props.Options {
 				<button
 					type="button"
-					data-dropdown-option
+					data-option
 					data-value={ opt.Value }
-					class="dropdown-option"
 					if opt.Selected {
 						data-selected="true"
 					}
@@ -97,7 +96,7 @@ templ FilterDropdown(props FilterDropdownProps) {
 				</button>
 			}
 		</div>
-	</div>
+	</ec-dropdown>
 }
 
 // changeAttrs returns onchange attribute if handler is provided

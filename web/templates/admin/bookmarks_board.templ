@@ -516,20 +516,20 @@ templ KanbanCard(bookmark KanbanBookmark) {
 
 // KanbanCardDropdown renders the actions dropdown for a Kanban card
 templ KanbanCardDropdown(bookmark KanbanBookmark) {
-	<div class="dropdown w-auto" data-dropdown>
+	<ec-dropdown class="w-auto">
 		<button
 			type="button"
 			class="p-1 text-muted-foreground hover:text-foreground hover:bg-muted"
-			data-dropdown-trigger
+			data-trigger
 			title="Actions"
 		>
 			@components.MoreHorizontalIcon(components.IconSM)
 		</button>
-		<div class="dropdown-menu kanban-dropdown-menu" data-dropdown-menu>
+		<div class="kanban-dropdown-menu" data-menu>
 			<button
 				type="button"
-				class="dropdown-option kanban-dropdown-option"
-				data-dropdown-option
+				class="kanban-dropdown-option"
+				data-option
 				hx-get={ "/admin/htmx/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) + "/edit-drawer" }
 				hx-target="#drawer-content"
 				hx-swap="innerHTML"
@@ -542,16 +542,16 @@ templ KanbanCardDropdown(bookmark KanbanBookmark) {
 				href={ templ.URL(bookmark.URL) }
 				target="_blank"
 				rel="noopener noreferrer"
-				class="dropdown-option kanban-dropdown-option"
-				data-dropdown-option
+				class="kanban-dropdown-option"
+				data-option
 			>
 				@components.ExternalLinkIcon(components.IconSM)
 				<span>Open URL</span>
 			</a>
 			<button
 				type="button"
-				class="dropdown-option kanban-dropdown-option text-destructive hover:text-destructive"
-				data-dropdown-option
+				class="kanban-dropdown-option text-destructive hover:text-destructive"
+				data-option
 				hx-delete={ "/admin/bookmarks/" + strconv.FormatInt(bookmark.ID, 10) }
 				hx-confirm="Are you sure you want to delete this bookmark?"
 				hx-target="closest .kanban-card"
@@ -561,7 +561,7 @@ templ KanbanCardDropdown(bookmark KanbanBookmark) {
 				<span>Delete</span>
 			</button>
 		</div>
-	</div>
+	</ec-dropdown>
 }
 
 // KanbanNewColumn renders the "+ New Collection" column

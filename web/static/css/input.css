@@ -332,7 +332,9 @@ html:not(.light):not(.dark) {
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 200ms ease-out, visibility 200ms ease-out;
+    transition:
+      opacity 200ms ease-out,
+      visibility 200ms ease-out;
   }
 
   body.nav-drawer-open .nav-drawer-backdrop {
@@ -357,7 +359,7 @@ html:not(.light):not(.dark) {
   }
 
   .nav-drawer-handle::before {
-    content: '';
+    content: "";
     @apply w-10 h-1 bg-border rounded-full;
   }
 
@@ -407,7 +409,9 @@ html:not(.light):not(.dark) {
 
   /* Scale effect on layout when drawer is open */
   .layout-container {
-    transition: transform 200ms ease-out, border-radius 200ms ease-out;
+    transition:
+      transform 200ms ease-out,
+      border-radius 200ms ease-out;
     transform-origin: center bottom;
   }
 
@@ -428,7 +432,9 @@ html:not(.light):not(.dark) {
     @apply pointer-events-none;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 150ms ease-out, visibility 150ms ease-out;
+    transition:
+      opacity 150ms ease-out,
+      visibility 150ms ease-out;
   }
 
   .nav-loading-indicator.active {
@@ -1134,33 +1140,39 @@ html:not(.light):not(.dark) {
     @apply ring-inset ring-offset-0;
   }
 
-  /* ===== CUSTOM DROPDOWN ===== */
-  .dropdown {
+  /* ===== CUSTOM DROPDOWN (ec-dropdown Web Component) ===== */
+  ec-dropdown {
     @apply relative w-36;
+    display: block;
   }
 
-  .dropdown-trigger {
+  ec-dropdown [data-trigger] {
     @apply flex items-center justify-between gap-2 w-full
            bg-background border border-input px-2 h-8 text-xs text-left
            hover:bg-muted cursor-pointer;
   }
 
-  .dropdown-trigger [data-dropdown-label] {
+  ec-dropdown [data-label] {
     @apply truncate;
   }
 
-  .dropdown-menu {
-    @apply fixed z-[100] bg-card border border-border max-h-60 overflow-y-auto;
+  /* Menu styles - both in ec-dropdown and portal */
+  ec-dropdown [data-menu],
+  #dropdown-portal [data-menu] {
+    @apply fixed z-100 bg-card border border-border max-h-60 overflow-y-auto;
     box-shadow: var(--shadow-md);
     display: none;
   }
 
-  .dropdown-option {
+  /* Option styles - both in ec-dropdown and portal */
+  ec-dropdown [data-option],
+  #dropdown-portal [data-option] {
     @apply block w-full px-2 py-1.5 text-xs text-left text-foreground
            hover:bg-muted cursor-pointer truncate;
   }
 
-  .dropdown-option[data-selected="true"] {
+  ec-dropdown [data-option][data-selected="true"],
+  #dropdown-portal [data-option][data-selected="true"] {
     @apply bg-muted font-medium;
   }
 
@@ -1835,11 +1847,11 @@ html:not(.light):not(.dark) {
   }
 
   /* Kanban card dropdown - specific styles for icon-trigger dropdowns */
-  .kanban-dropdown-menu {
+  ec-dropdown .kanban-dropdown-menu {
     width: 140px !important;
   }
 
-  .kanban-dropdown-option {
+  ec-dropdown .kanban-dropdown-option {
     @apply flex items-center gap-2;
   }
 
@@ -2233,7 +2245,8 @@ html:not(.light):not(.dark) {
 
   /* Pop up with subtle bounce for new page */
   ::view-transition-new(root) {
-    animation: vt-scale-up-bounce 250ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: vt-scale-up-bounce 250ms cubic-bezier(0.34, 1.56, 0.64, 1)
+      forwards;
   }
 
   @keyframes vt-scale-down-out {
