@@ -59,19 +59,7 @@ templ adminBase(title string) {
 			<link rel="stylesheet" href={ assets.Path("css/output.css") }/>
 			<script src={ assets.Path("js/theme.js") }></script>
 			<script src={ assets.Path("js/htmx.min.js") } defer></script>
-			<script src={ assets.Path("js/utils.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-toast-container.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-dropdown.js") } defer></script>
-			<script src={ assets.Path("js/filter.js") } defer></script>
-			<script src={ assets.Path("js/validation.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-tag-select.js") } defer></script>
-			<script src={ assets.Path("js/expandable-row.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-drawer.js") } defer></script>
-			<script src={ assets.Path("js/kanban.js") } defer></script>
-			<script src={ assets.Path("js/ec-editor-core.js") } defer></script>
-			<script src={ assets.Path("js/ec-markdown-editor.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-markdown-toolbar.js") } defer></script>
-			<script src={ assets.Path("js/post-editor.js") } defer></script>
+			<script src={ assets.Path("js/dist/bundle.js") } defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }

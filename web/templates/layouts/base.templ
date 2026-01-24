@@ -17,12 +17,7 @@ templ Base(title string) {
 			<link rel="stylesheet" href={ assets.Path("css/output.css") }/>
 			<script src={ assets.Path("js/theme.js") }></script>
 			<script src={ assets.Path("js/htmx.min.js") } defer></script>
-			<script src={ assets.Path("js/masonry.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-dropdown.js") } defer></script>
-			<script src={ assets.Path("js/filter.js") } defer></script>
-			<script src={ assets.Path("js/components/ec-mobile-nav.js") } defer></script>
-			<script src={ assets.Path("js/progress-bar.js") } defer></script>
-			<script src={ assets.Path("js/prefetch.js") } defer></script>
+			<script src={ assets.Path("js/dist/bundle.js") } defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-sans flex flex-col">
 			{ children... }
