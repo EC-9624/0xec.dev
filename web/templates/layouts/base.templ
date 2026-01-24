@@ -8,7 +8,7 @@ templ Base(title string) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<meta name="theme-color" content="#faf9f7"/>
+			<meta name="theme-color" content="#f5f6f8"/>
 			<meta name="htmx-config" content='{"globalViewTransitions":true,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'/>
 			<title>{ title }</title>
 			<link rel="stylesheet" href="/static/css/output.css"/>
@@ -21,7 +21,7 @@ templ Base(title string) {
 			<script src="/static/js/progress-bar.js" defer></script>
 			<script src="/static/js/prefetch.js" defer></script>
 		</head>
-		<body class="min-h-screen bg-background font-mono flex flex-col">
+		<body class="min-h-screen bg-background font-sans flex flex-col">
 			{ children... }
 		</body>
 	</html>
