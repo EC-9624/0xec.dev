@@ -27,6 +27,14 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.writer.Write(b)
 }
 
+// Flush implements http.Flusher for SSE support
+func (w *gzipResponseWriter) Flush() {
+	w.writer.Flush()
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 // Compress is middleware that gzip-compresses HTTP responses.
 //
 // It checks the Accept-Encoding header and only compresses if the client
