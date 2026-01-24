@@ -1,6 +1,9 @@
 package admin
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/EC-9624/0xec.dev/internal/models"
 )
 
@@ -90,4 +93,76 @@ func postFormTagIDs(post *models.Post, tags []models.Tag, input *models.CreatePo
 		return ids
 	}
 	return nil
+}
+
+// postFormAutosaveURL returns the autosave URL (empty for new posts)
+func postFormAutosaveURL(post *models.Post, isNew bool) string {
+	if isNew || post == nil {
+		return ""
+	}
+	return "/admin/posts/" + post.Slug + "/autosave"
+}
+
+// postFormIsDraftValue returns "true" or "false" string for hidden input
+func postFormIsDraftValue(post *models.Post, input *models.CreatePostInput) string {
+	if postFormIsDraft(post, input) {
+		return "true"
+	}
+	return "false"
+}
+
+// tagIDToString converts a tag ID to string
+func tagIDToString(id int64) string {
+	return strconv.FormatInt(id, 10)
+}
+
+// boolToString converts a bool to "true" or "false" string
+func boolToString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+// postUpdatedAtISO returns the ISO 8601 timestamp for JavaScript
+func postUpdatedAtISO(post *models.Post) string {
+	if post == nil {
+		return ""
+	}
+	return post.UpdatedAt.Format(time.RFC3339)
+}
+
+// postUpdatedAtRelative returns a human-readable relative time
+func postUpdatedAtRelative(post *models.Post) string {
+	if post == nil {
+		return ""
+	}
+	return formatRelativeTime(post.UpdatedAt)
+}
+
+// formatRelativeTime formats a time as relative to now
+func formatRelativeTime(t time.Time) string {
+	now := time.Now()
+	diff := now.Sub(t)
+
+	switch {
+	case diff < time.Minute:
+		return "just now"
+	case diff < time.Hour:
+		mins := int(diff.Minutes())
+		if mins == 1 {
+			return "1 minute ago"
+		}
+		return strconv.Itoa(mins) + " minutes ago"
+	case diff < 24*time.Hour:
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return strconv.Itoa(hours) + " hours ago"
+	case diff < 48*time.Hour:
+		return "yesterday"
+	default:
+		return t.Format("Jan 2, 2006")
+	}
 }

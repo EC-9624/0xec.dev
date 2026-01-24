@@ -206,8 +206,8 @@ func TestAdminPostEdit(t *testing.T) {
 	h.AdminPostEdit(rec, req)
 
 	assertStatus(t, rec, http.StatusOK)
-	assertBodyContains(t, rec, "Edit Post")
-	assertBodyContains(t, rec, "Edit Me")
+	assertBodyContains(t, rec, "Edit: Edit Me") // Page title format
+	assertBodyContains(t, rec, "Edit Me")       // Post title in form
 }
 
 func TestAdminPostEdit_NotFound(t *testing.T) {

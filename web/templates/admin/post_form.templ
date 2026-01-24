@@ -6,155 +6,305 @@ import (
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 )
 
-// PostForm renders the full-page post form
+// PostForm renders the full-page post editor with sidebar
 templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreatePostInput) {
-	@layouts.Admin(postFormTitle(post, isNew), "/admin/posts") {
-		<div class="max-w-3xl space-y-6">
-			<div>
-				<h1 class="text-2xl font-bold tracking-tight text-foreground">
-					if isNew {
-						New Post
-					} else {
-						Edit Post
-					}
-				</h1>
-				<p class="text-muted-foreground">
-					if isNew {
-						Create a new blog post.
-					} else {
-						Make changes to your post.
-					}
-				</p>
-			</div>
-			@components.FormErrorBanner(errors)
-			<form
-				if isNew {
-					action="/admin/posts"
-				} else {
-					action={ templ.URL("/admin/posts/" + post.Slug) }
-				}
-				method="POST"
-				class="space-y-6"
-				data-validate
-				novalidate
-			>
-				<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
-				<div class="card">
-					<div class="card-content pt-6 space-y-6">
-						<div class="space-y-2">
-							<label for="title" class="label">Title <span class="text-destructive">*</span></label>
-							<input
-								type="text"
-								id="title"
-								name="title"
-								class={ components.InputClass(errors, "title") }
-								value={ postFormValue(post, input, "title") }
-								placeholder="Enter post title"
-								required
-								maxlength="200"
-								data-error-required="Title is required"
-								data-error-maxlength="Title cannot exceed 200 characters"
-							/>
-							@components.FieldError(errors, "title")
+	@layouts.AdminFullWidth(postFormTitle(post, isNew), "/admin/posts") {
+		<div class="editor-layout" data-editor data-is-new={ boolToString(isNew) }>
+			<!-- Main Editor Area -->
+			<div class="editor-main">
+				<!-- Editor Header -->
+				<header class="editor-header">
+					<div class="editor-header-left">
+						<a href="/admin/posts" class="editor-back-btn" title="Back to posts">
+							@components.ArrowLeftIcon(components.IconMD)
+						</a>
+						<span class="editor-header-title" data-title-display>
+							if !isNew && post != nil {
+								{ post.Title }
+							} else {
+								Untitled
+							}
+						</span>
+					</div>
+					<div class="editor-header-center">
+						<span class="editor-status" data-status>
+							if !isNew && post != nil {
+								<span class="editor-status-saved" data-updated-at={ postUpdatedAtISO(post) }>
+									Last saved: { postUpdatedAtRelative(post) }
+								</span>
+							}
+						</span>
+					</div>
+					<div class="editor-header-right">
+						<button
+							type="button"
+							class="btn-outline btn-sm"
+							data-action-btn="save"
+							title="Save without publishing"
+						>
+							Save
+						</button>
+						@publishButton(post, isNew)
+					</div>
+				</header>
+
+				<!-- Editor Body -->
+				<div class="editor-body">
+					<form
+						id="post-editor-form"
+						if isNew {
+							action="/admin/posts"
+						} else {
+							action={ templ.URL("/admin/posts/" + post.Slug) }
+						}
+						method="POST"
+						class="editor-form"
+						data-validate
+						data-autosave={ postFormAutosaveURL(post, isNew) }
+						novalidate
+					>
+						<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+						<input type="hidden" name="action" value="save" data-action-field/>
+						
+						<!-- Title Input -->
+						<input
+							type="text"
+							id="title"
+							name="title"
+							class="editor-title"
+							value={ postFormValue(post, input, "title") }
+							placeholder="Post title..."
+							required
+							maxlength="200"
+							autocomplete="off"
+							data-error-required="Title is required"
+							data-error-maxlength="Title cannot exceed 200 characters"
+						/>
+						@components.FieldError(errors, "title")
+						
+						<!-- Editor Content Area (component mountpoint) -->
+						<div class="editor-content-area" data-editor-mount>
+							<textarea
+								id="content"
+								name="content"
+								class="editor-content"
+								placeholder="Write your story..."
+								data-error-required="Content is required when publishing"
+							>{ postFormValue(post, input, "content") }</textarea>
+							@components.FieldError(errors, "content")
 						</div>
+
+						<!-- Hidden fields synced from sidebar -->
+						<input type="hidden" id="slug" name="slug" value={ postFormValue(post, input, "slug") }/>
+						<input type="hidden" id="excerpt" name="excerpt" value={ postFormValue(post, input, "excerpt") }/>
+						<input type="hidden" id="cover_image" name="cover_image" value={ postFormValue(post, input, "cover_image") }/>
+						<input type="hidden" id="is_draft" name="is_draft" value={ postFormIsDraftValue(post, input) }/>
+						
+						<!-- Tag IDs container -->
+						<div id="tag-ids-container">
+							for _, tagID := range postFormTagIDs(post, tags, input) {
+								<input type="hidden" name="tag_ids" value={ tagIDToString(tagID) } data-tag-id={ tagIDToString(tagID) }/>
+							}
+						</div>
+					</form>
+				</div>
+
+				<!-- Floating Markdown Toolbar -->
+				<ec-markdown-toolbar target="content">
+					<button type="button" data-action="bold" title="Bold (Ctrl+B)">
+						<strong>B</strong>
+					</button>
+					<button type="button" data-action="italic" title="Italic (Ctrl+I)">
+						<em>I</em>
+					</button>
+					<button type="button" data-action="code" title="Inline code (Ctrl+`)">
+						<code>&lt;/&gt;</code>
+					</button>
+					<button type="button" data-action="link" title="Link (Ctrl+K)">
+						@editorLinkIcon()
+					</button>
+					<button type="button" data-action="heading" title="Heading">
+						H
+					</button>
+					<button type="button" data-action="quote" title="Quote">
+						@editorQuoteIcon()
+					</button>
+				</ec-markdown-toolbar>
+			</div>
+
+			<!-- Sidebar -->
+			<aside class="editor-sidebar">
+				<div class="editor-sidebar-content">
+					<!-- URL Section -->
+					<div class="editor-sidebar-section">
+						<h3 class="editor-sidebar-heading">URL</h3>
 						<div class="space-y-2">
-							<label for="slug" class="label">Slug <span class="text-destructive">*</span></label>
+							<label for="sidebar-slug" class="label">Slug <span class="text-destructive">*</span></label>
 							<input
 								type="text"
-								id="slug"
-								name="slug"
+								id="sidebar-slug"
 								class={ components.InputClass(errors, "slug") }
 								value={ postFormValue(post, input, "slug") }
 								placeholder="post-url-slug"
 								required
 								maxlength="100"
 								pattern="[a-z0-9-]+"
-								data-error-required="Slug is required"
-								data-error-maxlength="Slug cannot exceed 100 characters"
-								data-error-pattern="Slug can only contain lowercase letters, numbers, and hyphens"
+								data-sync="slug"
 							/>
+							<p class="text-xs text-muted-foreground">Lowercase letters, numbers, hyphens only</p>
 							@components.FieldError(errors, "slug")
 						</div>
+					</div>
+
+					<!-- SEO Section -->
+					<div class="editor-sidebar-section">
+						<h3 class="editor-sidebar-heading">SEO</h3>
 						<div class="space-y-2">
-							<label for="excerpt" class="label">Excerpt</label>
+							<label for="sidebar-excerpt" class="label">Excerpt</label>
 							<textarea
-								id="excerpt"
-								name="excerpt"
-								rows="2"
-								class="textarea"
-								placeholder="Brief description of your post"
+								id="sidebar-excerpt"
+								rows="3"
+								class="textarea text-sm"
+								placeholder="Brief description for search engines and social sharing..."
+								data-sync="excerpt"
 							>{ postFormValue(post, input, "excerpt") }</textarea>
 						</div>
-						<div class="space-y-2">
-							<label for="content" class="label">Content (Markdown) <span class="text-destructive text-xs">(required when publishing)</span></label>
-							<textarea
-								id="content"
-								name="content"
-								rows="20"
-								class={ components.TextareaClass(errors, "content") + " font-mono text-sm" }
-								placeholder="Write your post content in Markdown..."
-								data-error-required="Content is required when publishing"
-							>{ postFormValue(post, input, "content") }</textarea>
-							@components.FieldError(errors, "content")
+					</div>
+
+					<!-- Media Section -->
+					<div class="editor-sidebar-section">
+						<h3 class="editor-sidebar-heading">Media</h3>
+						<div class="space-y-3">
+							<div class="space-y-2">
+								<label for="sidebar-cover-image" class="label">Cover Image URL</label>
+								<input
+									type="url"
+									id="sidebar-cover-image"
+									class={ components.InputClass(errors, "cover_image") }
+									value={ postFormValue(post, input, "cover_image") }
+									placeholder="https://example.com/image.jpg"
+									data-sync="cover_image"
+									data-preview-trigger
+								/>
+								@components.FieldError(errors, "cover_image")
+							</div>
+							<!-- Cover Image Preview -->
+							<div class="cover-image-preview" data-cover-preview>
+								if postFormValue(post, input, "cover_image") != "" {
+									<img 
+										src={ postFormValue(post, input, "cover_image") } 
+										alt="Cover preview"
+										class="cover-image-preview-img"
+										onerror="this.parentElement.classList.add('error')"
+										onload="this.parentElement.classList.remove('error')"
+									/>
+								}
+								<div class="cover-image-preview-placeholder">
+									@imageIcon()
+									<span>No image</span>
+								</div>
+								<div class="cover-image-preview-error">
+									@alertIcon()
+									<span>Failed to load</span>
+								</div>
+							</div>
 						</div>
-						<div class="space-y-2">
-							<label for="cover_image" class="label">Cover Image URL</label>
-							<input
-								type="url"
-								id="cover_image"
-								name="cover_image"
-								class={ components.InputClass(errors, "cover_image") }
-								value={ postFormValue(post, input, "cover_image") }
-								placeholder="https://example.com/image.jpg"
-								data-error-url="Cover image must be a valid URL"
-							/>
-							@components.FieldError(errors, "cover_image")
-						</div>
+					</div>
+
+					<!-- Tags Section -->
+					<div class="editor-sidebar-section">
+						<h3 class="editor-sidebar-heading">Tags</h3>
 						@components.TagSelect(components.TagSelectProps{
 							AllTags:     allTags,
 							SelectedIDs: postFormTagIDs(post, tags, input),
-							FieldName:   "tag_ids",
+							FieldName:   "sidebar_tag_ids",
 						})
-						<div class="flex items-center space-x-2">
-							<input
-								type="checkbox"
-								id="is_draft"
-								name="is_draft"
-								value="true"
-								if postFormIsDraft(post, input) {
-									checked
-								}
-								class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
-							/>
-							<label for="is_draft" class="label">
-								Save as draft
-							</label>
-						</div>
 					</div>
-				</div>
-				<div class="flex items-center gap-4">
-					<button type="submit" class="btn-default">
-						if isNew {
-							Create Post
-						} else {
-							Save Changes
-						}
-					</button>
-					<a href="/admin/posts" class="btn-outline">
-						Cancel
-					</a>
+
+					<!-- Danger Zone Section -->
 					if !isNew {
-						<button
-							type="button"
-							hx-delete={ "/admin/posts/" + post.Slug }
-							hx-confirm="Are you sure you want to delete this post?"
-							class="btn-destructive ml-auto"
-						>
-							Delete
-						</button>
+						<div class="editor-sidebar-section editor-sidebar-danger">
+							<h3 class="editor-sidebar-heading text-destructive">Danger Zone</h3>
+							<button
+								type="button"
+								hx-delete={ "/admin/posts/" + post.Slug }
+								hx-confirm="Are you sure you want to delete this post? This action cannot be undone."
+								class="btn-destructive btn-sm w-full"
+							>
+								@components.TrashIcon(components.IconMD)
+								Delete Post
+							</button>
+						</div>
 					}
 				</div>
-			</form>
+			</aside>
 		</div>
 	}
+}
+
+// publishButton renders the publish/unpublish button based on post state
+templ publishButton(post *models.Post, isNew bool) {
+	if isNew || (post != nil && post.IsDraft) {
+		<button
+			type="button"
+			class="btn-default btn-sm"
+			data-action-btn="publish"
+		>
+			Publish
+		</button>
+	} else {
+		<div class="editor-publish-dropdown" data-dropdown-container>
+			<button
+				type="button"
+				class="btn-default btn-sm"
+				data-dropdown-trigger
+			>
+				Published
+				@components.ChevronDownIcon(components.IconSM)
+			</button>
+			<div class="editor-publish-menu" data-dropdown-menu>
+				<button type="button" data-action-btn="unpublish" class="editor-publish-menu-item">
+					@draftIcon()
+					Unpublish (revert to draft)
+				</button>
+			</div>
+		</div>
+	}
+}
+
+// Helper icons
+templ editorLinkIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+		<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+	</svg>
+}
+
+templ editorQuoteIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"></path>
+		<path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"></path>
+	</svg>
+}
+
+templ imageIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+		<rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+		<circle cx="9" cy="9" r="2"></circle>
+		<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+	</svg>
+}
+
+templ alertIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<circle cx="12" cy="12" r="10"></circle>
+		<line x1="12" x2="12" y1="8" y2="12"></line>
+		<line x1="12" x2="12.01" y1="16" y2="16"></line>
+	</svg>
+}
+
+templ draftIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
+	</svg>
 }

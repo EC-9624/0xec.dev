@@ -1332,6 +1332,210 @@ html:not(.light):not(.dark) {
   .article-content td {
     @apply border border-border px-4 py-2;
   }
+
+  /* ===== POST EDITOR (2-column layout with sidebar) ===== */
+  .editor-layout {
+    @apply flex flex-row flex-1 min-h-0;
+  }
+
+  .editor-main {
+    @apply flex-1 flex flex-col min-w-0 overflow-hidden;
+  }
+
+  .editor-header {
+    @apply sticky top-0 z-20 flex items-center gap-4 px-4 py-2.5 bg-background border-b border-border;
+  }
+
+  .editor-header-left {
+    @apply flex items-center gap-3 min-w-0;
+  }
+
+  .editor-header-center {
+    @apply flex-1 flex justify-center;
+  }
+
+  .editor-header-right {
+    @apply flex items-center gap-2 shrink-0;
+  }
+
+  .editor-back-btn {
+    @apply flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md shrink-0;
+    transition-property: background-color, color;
+    transition-duration: var(--duration-normal);
+  }
+
+  .editor-header-title {
+    @apply text-sm font-medium text-foreground truncate max-w-[200px];
+  }
+
+  .editor-status {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .editor-status-saved {
+    @apply text-green-600;
+  }
+
+  .editor-status-saving {
+    @apply text-muted-foreground;
+  }
+
+  .editor-status-unsaved {
+    @apply text-amber-600;
+  }
+
+  .editor-status-error {
+    @apply text-destructive;
+  }
+
+  .editor-body {
+    @apply flex-1 overflow-y-auto;
+  }
+
+  .editor-form {
+    @apply max-w-3xl mx-auto px-6 py-8 lg:px-8 lg:py-12;
+  }
+
+  .editor-title {
+    @apply w-full text-3xl lg:text-4xl font-bold text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/40;
+    line-height: 1.2;
+    resize: none;
+  }
+
+  .editor-title:focus {
+    @apply outline-none ring-0;
+  }
+
+  .editor-content-area {
+    @apply mt-6;
+  }
+
+  .editor-content {
+    @apply w-full min-h-[60vh] text-base lg:text-lg leading-relaxed font-mono text-foreground bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/40;
+  }
+
+  .editor-content:focus {
+    @apply outline-none ring-0;
+  }
+
+  /* ===== EDITOR SIDEBAR ===== */
+  .editor-sidebar {
+    @apply w-[300px] shrink-0 border-l border-border bg-sidebar overflow-y-auto;
+  }
+
+  .editor-sidebar-content {
+    @apply p-4 space-y-6;
+  }
+
+  .editor-sidebar-section {
+    @apply space-y-3;
+  }
+
+  .editor-sidebar-heading {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  .editor-sidebar-danger {
+    @apply pt-4 mt-4 border-t border-border;
+  }
+
+  /* ===== COVER IMAGE PREVIEW ===== */
+  .cover-image-preview {
+    @apply relative aspect-video w-full bg-muted/50 border border-border/50 rounded-md overflow-hidden;
+  }
+
+  .cover-image-preview-img {
+    @apply absolute inset-0 w-full h-full object-cover;
+  }
+
+  .cover-image-preview-placeholder,
+  .cover-image-preview-error {
+    @apply absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs;
+  }
+
+  .cover-image-preview-placeholder {
+    @apply flex;
+  }
+
+  .cover-image-preview-error {
+    @apply hidden text-destructive;
+  }
+
+  /* Show placeholder when no image */
+  .cover-image-preview:not(:has(img)) .cover-image-preview-placeholder {
+    @apply flex;
+  }
+
+  /* Hide placeholder when image loads */
+  .cover-image-preview:has(img) .cover-image-preview-placeholder {
+    @apply hidden;
+  }
+
+  /* Show error state */
+  .cover-image-preview.error .cover-image-preview-error {
+    @apply flex;
+  }
+
+  .cover-image-preview.error .cover-image-preview-placeholder,
+  .cover-image-preview.error .cover-image-preview-img {
+    @apply hidden;
+  }
+
+  /* ===== PUBLISH DROPDOWN ===== */
+  .editor-publish-dropdown {
+    @apply relative;
+  }
+
+  .editor-publish-menu {
+    @apply absolute top-full right-0 mt-1 min-w-[180px] bg-popover border border-border/50 rounded-md py-1 hidden;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .editor-publish-dropdown.open .editor-publish-menu {
+    @apply block;
+  }
+
+  .editor-publish-menu-item {
+    @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-foreground hover:bg-muted/50;
+    transition-property: background-color;
+    transition-duration: var(--duration-fast);
+  }
+
+  /* ===== MARKDOWN TOOLBAR (ec-markdown-toolbar) ===== */
+  ec-markdown-toolbar {
+    @apply fixed z-50 hidden;
+  }
+
+  ec-markdown-toolbar.visible {
+    @apply flex items-center gap-0.5 p-1 bg-popover border border-border/50 rounded-lg;
+    box-shadow: var(--shadow-lg);
+    animation: toolbar-appear 0.15s ease-out;
+  }
+
+  @keyframes toolbar-appear {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  ec-markdown-toolbar button {
+    @apply flex items-center justify-center w-8 h-8 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color;
+    transition-duration: var(--duration-fast);
+  }
+
+  ec-markdown-toolbar button:hover {
+    @apply bg-muted;
+  }
+
+  ec-markdown-toolbar button code {
+    @apply text-xs font-mono bg-transparent p-0;
+  }
 }
 
 @layer utilities {

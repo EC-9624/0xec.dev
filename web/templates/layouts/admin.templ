@@ -68,6 +68,10 @@ templ adminBase(title string) {
 			<script src={ assets.Path("js/expandable-row.js") } defer></script>
 			<script src={ assets.Path("js/components/ec-drawer.js") } defer></script>
 			<script src={ assets.Path("js/kanban.js") } defer></script>
+			<script src={ assets.Path("js/ec-editor-core.js") } defer></script>
+			<script src={ assets.Path("js/ec-markdown-editor.js") } defer></script>
+			<script src={ assets.Path("js/components/ec-markdown-toolbar.js") } defer></script>
+			<script src={ assets.Path("js/post-editor.js") } defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>
 			{ children... }

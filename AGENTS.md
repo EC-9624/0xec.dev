@@ -34,7 +34,7 @@ make run              # Run without hot reload
 make build            # Production build [Note: dont run this unless ask to.]
 make templ            # Generate templ templates
 make sqlc             # Generate SQLC code
-make css              # Build Tailwind CSS
+make css              # Build Tailwind CSS [Note: run everytime there is changes to css files]
 
 # Testing
 make test             # Run all tests

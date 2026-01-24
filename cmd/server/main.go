@@ -143,6 +143,7 @@ func main() {
 	adminMux.HandleFunc("GET /admin/posts/{slug}/edit", h.AdminPostEdit)
 	adminMux.HandleFunc("POST /admin/posts/{slug}", h.AdminPostUpdate)
 	adminMux.HandleFunc("DELETE /admin/posts/{slug}", h.AdminPostDelete)
+	adminMux.HandleFunc("PATCH /admin/posts/{slug}/autosave", h.AdminPostAutosave)
 
 	// Bookmarks
 	adminMux.HandleFunc("GET /admin/bookmarks", h.AdminBookmarksList)

@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -300,6 +301,116 @@ func (h *Handlers) AdminPostUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/posts", http.StatusSeeOther)
+}
+
+// AutosaveResponse is the JSON response for autosave requests
+type AutosaveResponse struct {
+	UpdatedAt string `json:"updated_at"`
+	IsDraft   bool   `json:"is_draft"`
+	Message   string `json:"message"`
+}
+
+// AdminPostAutosave handles auto-saving a post (PATCH request, returns JSON)
+// Supports action parameter: "save" (default), "publish", "unpublish"
+func (h *Handlers) AdminPostAutosave(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	slug := r.PathValue("slug")
+	if slug == "" {
+		http.Error(w, "Missing slug", http.StatusBadRequest)
+		return
+	}
+
+	post, err := h.service.GetPostBySlug(ctx, slug)
+	if err != nil {
+		http.Error(w, "Post not found", http.StatusNotFound)
+		return
+	}
+
+	// Parse multipart form data (FormData from JavaScript sends multipart/form-data)
+	if err := r.ParseMultipartForm(32 << 20); err != nil { // 32MB max
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	// Determine action
+	action := r.FormValue("action")
+	if action == "" {
+		action = "save"
+	}
+
+	// Determine draft state based on action
+	var isDraft bool
+	switch action {
+	case "publish":
+		isDraft = false
+	case "unpublish":
+		isDraft = true
+	default: // "save"
+		isDraft = r.FormValue("is_draft") == "true"
+	}
+
+	input := models.UpdatePostInput{
+		Title:      r.FormValue("title"),
+		Slug:       r.FormValue("slug"),
+		Content:    r.FormValue("content"),
+		Excerpt:    r.FormValue("excerpt"),
+		CoverImage: r.FormValue("cover_image"),
+		IsDraft:    isDraft,
+		TagIDs:     parseTagIDs(r),
+	}
+
+	// Basic validation - we're more lenient for autosave
+	if input.Title == "" {
+		http.Error(w, "Title is required", http.StatusUnprocessableEntity)
+		return
+	}
+
+	// For publish action, require content
+	if action == "publish" && input.Content == "" {
+		http.Error(w, "Content is required to publish", http.StatusUnprocessableEntity)
+		return
+	}
+
+	// Check slug uniqueness only if changed
+	if input.Slug != post.Slug && input.Slug != "" {
+		existing, _ := h.service.GetPostBySlug(ctx, input.Slug)
+		if existing != nil {
+			http.Error(w, "Slug already in use", http.StatusConflict)
+			return
+		}
+	}
+
+	// Keep existing slug if new one is empty
+	if input.Slug == "" {
+		input.Slug = post.Slug
+	}
+
+	updatedPost, err := h.service.UpdatePost(ctx, post.ID, input)
+	if err != nil {
+		logger.Error(ctx, "failed to autosave post", "error", err, "id", post.ID)
+		http.Error(w, "Failed to save", http.StatusInternalServerError)
+		return
+	}
+
+	// Build response message
+	var message string
+	switch action {
+	case "publish":
+		message = "Published"
+	case "unpublish":
+		message = "Unpublished"
+	default:
+		message = "Saved"
+	}
+
+	// Return JSON response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(AutosaveResponse{
+		UpdatedAt: updatedPost.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		IsDraft:   updatedPost.IsDraft,
+		Message:   message,
+	})
 }
 
 // AdminPostDelete handles deleting a post
