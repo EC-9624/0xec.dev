@@ -27,11 +27,11 @@ web/
 
 ```bash
 # Development
-make dev              # Hot reload with air + tailwind watch
+make dev              # Hot reload with air + tailwind watch [Note: dont run this unless ask to.]
 make run              # Run without hot reload
 
 # Build
-make build            # Production build
+make build            # Production build [Note: dont run this unless ask to.]
 make templ            # Generate templ templates
 make sqlc             # Generate SQLC code
 make css              # Build Tailwind CSS
@@ -119,6 +119,7 @@ type AuthService interface {
 Use Go standard library only - no testify, gomock, or external frameworks.
 
 **Table-driven tests**:
+
 ```go
 tests := []struct {
     name    string
@@ -139,6 +140,7 @@ for _, tt := range tests {
 ```
 
 **Function-field mocks** (see `internal/handlers/handlers_test.go`):
+
 ```go
 mock := &mockService{
     getBookmarkByIDFunc: func(ctx context.Context, id int64) (*models.Bookmark, error) {
@@ -149,6 +151,7 @@ h := newTestHandlers(mock)
 ```
 
 **Handler tests use real templ rendering** - verify actual HTML output:
+
 ```go
 req := httptest.NewRequest(http.MethodGet, "/bookmarks", nil)
 rec := httptest.NewRecorder()

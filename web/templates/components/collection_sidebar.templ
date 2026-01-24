@@ -13,7 +13,7 @@ templ CollectionListItem(collection models.Collection, isActive bool) {
 		class={ collectionItemClass(isActive) }
 		hx-get={ "/htmx/bookmarks/" + collection.Slug }
 		hx-target="#main-content"
-		hx-swap="innerHTML transition:false"
+		hx-swap="innerHTML"
 		hx-push-url={ "/bookmarks/" + collection.Slug }
 		hx-indicator="#main-content"
 	>
@@ -51,7 +51,7 @@ templ CollectionListColumn(collections []models.Collection, activeSlug string, t
 			class={ collectionItemClass(activeSlug == "") }
 			hx-get="/htmx/bookmarks"
 			hx-target="#main-content"
-			hx-swap="innerHTML transition:false"
+			hx-swap="innerHTML"
 			hx-push-url="/bookmarks"
 			hx-indicator="#main-content"
 		>
@@ -86,7 +86,7 @@ templ MobileCollectionBar(collections []models.Collection, activeSlug string, to
 			class={ collectionChipClass(activeSlug == "") }
 			hx-get="/htmx/bookmarks"
 			hx-target="#main-content"
-			hx-swap="innerHTML transition:false"
+			hx-swap="innerHTML"
 			hx-push-url="/bookmarks"
 			hx-indicator="#main-content"
 		>
@@ -100,7 +100,7 @@ templ MobileCollectionBar(collections []models.Collection, activeSlug string, to
 				class={ collectionChipClass(activeSlug == collection.Slug) }
 				hx-get={ "/htmx/bookmarks/" + collection.Slug }
 				hx-target="#main-content"
-				hx-swap="innerHTML transition:false"
+				hx-swap="innerHTML"
 				hx-push-url={ "/bookmarks/" + collection.Slug }
 				hx-indicator="#main-content"
 			>

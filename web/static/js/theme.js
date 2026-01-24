@@ -92,6 +92,14 @@
   }
 
   /**
+   * Simple 2-way toggle: light ↔ dark (for mobile)
+   */
+  function toggle() {
+    var newMode = getEffectiveMode() === DARK ? LIGHT : DARK;
+    setMode(newMode);
+  }
+
+  /**
    * Initialize from localStorage
    */
   function init() {
@@ -124,6 +132,7 @@
     setMode: setMode,
     getMode: getMode,
     cycle: cycle,
+    toggle: toggle,
     LIGHT: LIGHT,
     DARK: DARK,
     SYSTEM: SYSTEM
