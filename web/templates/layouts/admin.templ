@@ -59,7 +59,7 @@ templ adminBase(title string) {
 			<script src="/static/js/theme.js"></script>
 			<script src="/static/js/htmx.min.js" defer></script>
 			<script src="/static/js/utils.js" defer></script>
-			<script src="/static/js/toast.js" defer></script>
+			<script src="/static/js/components/ec-toast-container.js" defer></script>
 			<script src="/static/js/components/ec-dropdown.js" defer></script>
 			<script src="/static/js/filter.js" defer></script>
 			<script src="/static/js/validation.js" defer></script>
@@ -77,9 +77,9 @@ templ adminBase(title string) {
 	</html>
 }
 
-// toastContainer renders the fixed container for toast notifications
+// toastContainer renders the toast notifications Web Component
 templ toastContainer() {
-	<div id="toast-container" class="toast-container" role="status" aria-live="polite" aria-label="Notifications"></div>
+	<ec-toast-container></ec-toast-container>
 }
 
 // dropdownPortal renders the portal container for dropdown menus
