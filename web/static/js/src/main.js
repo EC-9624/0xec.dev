@@ -32,9 +32,8 @@ import './components/ec-mobile-nav.js';
 import './components/ec-markdown-toolbar.js';
 
 // ============================================
-// EDITOR (EditorCore + implementations)
+// EDITOR (EditorCore + Markdown implementation)
 // ============================================
 import './editor/editor-core.js';
 import './editor/markdown-editor.js';
-import './editor/block-editor.js';
 import './editor/post-editor.js';

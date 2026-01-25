@@ -10,7 +10,6 @@ import (
 
 	"github.com/EC-9624/0xec.dev/internal/logger"
 	"github.com/EC-9624/0xec.dev/internal/models"
-	"github.com/EC-9624/0xec.dev/internal/renderer"
 	"github.com/EC-9624/0xec.dev/web/templates/admin"
 	"github.com/EC-9624/0xec.dev/web/templates/pages"
 
@@ -81,27 +80,10 @@ func (h *Handlers) getPostData(ctx context.Context, slug string) (*models.Post, 
 		allPosts = []models.Post{}
 	}
 
-	// Convert content to HTML (auto-detects Editor.js JSON vs Markdown)
-	contentHTML := contentToHTML(post.Content)
+	// Convert markdown content to HTML
+	contentHTML := markdownToHTML(post.Content)
 
 	return post, allPosts, contentHTML, nil
-}
-
-// contentToHTML converts post content to HTML, auto-detecting the format.
-// Supports both Editor.js JSON and Markdown content.
-func contentToHTML(content string) string {
-	// Check if content is Editor.js JSON
-	if renderer.IsEditorJSContent(content) {
-		html, err := renderer.RenderEditorJS(content)
-		if err != nil {
-			// Fallback to escaped content on error
-			return "<p>" + template.HTMLEscapeString(content) + "</p>"
-		}
-		return html
-	}
-
-	// Otherwise, treat as Markdown
-	return markdownToHTML(content)
 }
 
 // markdownToHTML converts markdown to HTML safely using goldmark.

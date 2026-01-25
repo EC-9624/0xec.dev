@@ -9,7 +9,6 @@
  * - Sidebar field sync to hidden form fields
  * - Cover image preview
  * - Publish dropdown toggle
- * - Supports multiple editor types (markdown, block)
  */
 
 (function () {
@@ -37,14 +36,10 @@
   let editorLayout = null;
   let form = null;
   let titleInput = null;
-  let contentTextarea = null; // Hidden field for form submission
+  let contentTextarea = null;
   let titleDisplay = null;
   let statusEl = null;
   let actionField = null;
-
-  // Editor instance (MarkdownEditor or BlockEditor)
-  let editorInstance = null;
-  let editorType = 'markdown'; // 'markdown' or 'block'
 
   // ============================================
   // INITIALIZATION
@@ -58,7 +53,6 @@
     if (!form) return;
 
     isNewPost = editorLayout.dataset.isNew === "true";
-    editorType = editorLayout.dataset.editorType || 'markdown';
     
     titleInput = document.getElementById("title");
     contentTextarea = document.getElementById("content");
@@ -66,11 +60,13 @@
     statusEl = document.querySelector("[data-status]");
     actionField = document.querySelector("[data-action-field]");
 
-    // Initialize the editor based on type
-    initEditor();
+    // Setup change tracking on textarea
+    if (contentTextarea) {
+      contentTextarea.addEventListener('input', handleEditorChange);
+    }
 
     // Store initial content for change detection
-    updateLastSavedContent();
+    lastSavedContent = getContentSnapshot();
 
     // Setup features
     setupTitleSync();
@@ -80,7 +76,6 @@
     setupPublishDropdown();
     setupCoverImagePreview();
     setupRelativeTimeUpdates();
-    setupFormSubmission();
 
     // Auto-generate slug from title for new posts
     if (isNewPost) {
@@ -89,47 +84,8 @@
   }
 
   // ============================================
-  // EDITOR INITIALIZATION
+  // EDITOR CHANGE HANDLING
   // ============================================
-
-  function initEditor() {
-    const editorMount = document.querySelector("[data-editor-mount]");
-    if (!editorMount || !window.EditorCore) return;
-
-    // For markdown editor, the textarea is the editor itself
-    // For block editor, we need to create a container and hide the textarea
-    if (editorType === 'block') {
-      // Create a container for the block editor
-      const blockContainer = document.createElement('div');
-      blockContainer.className = 'block-editor-container';
-      blockContainer.id = 'block-editor-container';
-      
-      // Insert before the textarea
-      if (contentTextarea) {
-        contentTextarea.style.display = 'none';
-        contentTextarea.parentNode.insertBefore(blockContainer, contentTextarea);
-      }
-
-      // Create block editor with initial content from textarea
-      const initialContent = contentTextarea?.value || '';
-      editorInstance = window.EditorCore.create('block', blockContainer, {
-        placeholder: 'Start writing...',
-        initialData: initialContent,
-      });
-
-      // Listen for changes
-      if (editorInstance) {
-        editorInstance.on('change', handleEditorChange);
-      }
-    } else {
-      // Markdown editor - use textarea directly
-      // The MarkdownEditor is auto-registered and handles textarea with data attributes
-      // We just need to track changes on the textarea
-      if (contentTextarea) {
-        contentTextarea.addEventListener('input', handleEditorChange);
-      }
-    }
-  }
 
   function handleEditorChange() {
     // Show unsaved indicator
@@ -152,56 +108,19 @@
   // CONTENT SNAPSHOT
   // ============================================
 
-  async function getContentSnapshot() {
-    let content = '';
-    
-    if (editorType === 'block' && editorInstance) {
-      // For block editor, get content asynchronously
-      if (typeof editorInstance.getContentAsync === 'function') {
-        content = await editorInstance.getContentAsync();
-      } else {
-        content = editorInstance.getContent();
-      }
-    } else {
-      // For markdown, get from textarea
-      content = contentTextarea?.value || '';
-    }
-
+  function getContentSnapshot() {
     return {
       title: titleInput?.value || "",
-      content: content,
+      content: contentTextarea?.value || "",
       slug: document.getElementById("slug")?.value || "",
       excerpt: document.getElementById("excerpt")?.value || "",
       cover_image: document.getElementById("cover_image")?.value || "",
     };
-  }
-
-  function getContentSnapshotSync() {
-    // Synchronous version for quick checks (uses cached content for block editor)
-    let content = '';
-    
-    if (editorType === 'block' && editorInstance) {
-      content = editorInstance.getContent();
-    } else {
-      content = contentTextarea?.value || '';
-    }
-
-    return {
-      title: titleInput?.value || "",
-      content: content,
-      slug: document.getElementById("slug")?.value || "",
-      excerpt: document.getElementById("excerpt")?.value || "",
-      cover_image: document.getElementById("cover_image")?.value || "",
-    };
-  }
-
-  async function updateLastSavedContent() {
-    lastSavedContent = await getContentSnapshot();
   }
 
   function hasUnsavedChanges() {
     if (!lastSavedContent) return false;
-    const current = getContentSnapshotSync();
+    const current = getContentSnapshot();
     return (
       current.title !== lastSavedContent.title ||
       current.content !== lastSavedContent.content ||
@@ -263,9 +182,6 @@
     updateStatus("saving");
 
     try {
-      // Sync editor content to hidden field before saving
-      await syncEditorToForm();
-
       // Get CSRF token
       const csrfInput = form.querySelector('input[name="csrf_token"]');
       const csrfToken = csrfInput?.value || "";
@@ -288,7 +204,7 @@
 
       if (response.ok) {
         const data = await response.json();
-        await updateLastSavedContent();
+        lastSavedContent = getContentSnapshot();
 
         // Update status with new timestamp
         updateStatus("saved", data.updated_at);
@@ -296,12 +212,6 @@
         // Update UI based on publish state
         if (data.is_draft !== undefined) {
           updatePublishState(data.is_draft);
-        }
-
-        // If action was publish/unpublish, may need to reload
-        if (action === "publish" || action === "unpublish") {
-          // Optionally reload to get fresh state
-          // For now, just update the UI
         }
       } else {
         const errorText = await response.text();
@@ -312,41 +222,6 @@
       console.error("Save error:", error);
       updateStatus("error", null, error.message);
     }
-  }
-
-  // ============================================
-  // FORM SUBMISSION
-  // ============================================
-
-  function setupFormSubmission() {
-    if (!form) return;
-
-    // Intercept form submission to sync editor content
-    form.addEventListener('submit', async (e) => {
-      // For block editor, we need to sync content before submit
-      if (editorType === 'block') {
-        e.preventDefault();
-        await syncEditorToForm();
-        form.submit();
-      }
-      // For markdown, the textarea is already the form field
-    });
-  }
-
-  async function syncEditorToForm() {
-    if (!contentTextarea) return;
-
-    if (editorType === 'block' && editorInstance) {
-      // Get content from block editor and put in hidden field
-      let content = '';
-      if (typeof editorInstance.getContentAsync === 'function') {
-        content = await editorInstance.getContentAsync();
-      } else {
-        content = editorInstance.getContent();
-      }
-      contentTextarea.value = content;
-    }
-    // For markdown, textarea is already synced
   }
 
   // ============================================
@@ -417,7 +292,7 @@
   function setupActionButtons() {
     // Save button
     document.querySelectorAll('[data-action-btn="save"]').forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
         if (isNewPost) {
           // For new posts, submit normally with save action
@@ -425,7 +300,6 @@
           // Set is_draft to true for save
           const draftInput = document.getElementById("is_draft");
           if (draftInput) draftInput.value = "true";
-          await syncEditorToForm();
           form.submit();
         } else {
           performSave("save");
@@ -435,14 +309,13 @@
 
     // Publish button
     document.querySelectorAll('[data-action-btn="publish"]').forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
         if (isNewPost) {
           // For new posts, submit normally with publish action
           if (actionField) actionField.value = "publish";
           const draftInput = document.getElementById("is_draft");
           if (draftInput) draftInput.value = "false";
-          await syncEditorToForm();
           form.submit();
         } else {
           performSave("publish");
@@ -661,12 +534,6 @@
     if (autosaveTimeout) clearTimeout(autosaveTimeout);
     if (coverPreviewTimeout) clearTimeout(coverPreviewTimeout);
     if (timeUpdateInterval) clearInterval(timeUpdateInterval);
-    
-    // Destroy editor instance
-    if (editorInstance && typeof editorInstance.destroy === 'function') {
-      editorInstance.destroy();
-      editorInstance = null;
-    }
   }
 
   // ============================================

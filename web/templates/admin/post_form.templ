@@ -9,7 +9,7 @@ import (
 // PostForm renders the full-page post editor with sidebar
 templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreatePostInput) {
 	@layouts.AdminFullWidth(postFormTitle(post, isNew), "/admin/posts") {
-		<div class="editor-layout" data-editor data-is-new={ boolToString(isNew) } data-editor-type="block">
+		<div class="editor-layout" data-editor data-is-new={ boolToString(isNew) } data-editor-type="markdown">
 			<!-- Main Editor Area -->
 			<div class="editor-main">
 				<!-- Editor Header -->
@@ -109,8 +109,7 @@ templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew
 					</form>
 				</div>
 
-				<!-- Floating Markdown Toolbar (only for markdown editor) -->
-				<!-- Note: Block editor has its own inline toolbar via Editor.js -->
+				<!-- Floating Markdown Toolbar -->
 			</div>
 
 			<!-- Sidebar -->
