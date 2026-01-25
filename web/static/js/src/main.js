@@ -37,3 +37,4 @@ import './components/ec-markdown-toolbar.js';
 import './editor/editor-core.js';
 import './editor/markdown-editor.js';
 import './editor/post-editor.js';
+import './editor/split-editor.js';

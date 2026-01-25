@@ -1535,6 +1535,200 @@ html:not(.light):not(.dark) {
   ec-markdown-toolbar button code {
     @apply text-xs font-mono bg-transparent p-0;
   }
+
+  /* ===== SPLIT MARKDOWN EDITOR ===== */
+  .split-editor-layout {
+    @apply flex flex-col flex-1 min-h-0 bg-background;
+  }
+
+  /* Header */
+  .split-editor-header {
+    @apply flex items-center gap-4 px-4 py-2.5 bg-background border-b border-border shrink-0;
+  }
+
+  .split-editor-header-left {
+    @apply flex items-center gap-3 min-w-0;
+  }
+
+  .split-editor-header-center {
+    @apply flex-1 flex justify-center;
+  }
+
+  .split-editor-header-right {
+    @apply flex items-center gap-2 shrink-0;
+  }
+
+  .split-editor-back-btn {
+    @apply flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md shrink-0;
+    transition-property: background-color, color;
+    transition-duration: var(--duration-normal);
+  }
+
+  .split-editor-title {
+    @apply text-sm font-medium text-foreground truncate max-w-[200px];
+  }
+
+  /* Toolbar */
+  .split-editor-toolbar {
+    @apply flex items-center gap-1 px-4 py-2 bg-sidebar border-b border-border shrink-0 overflow-x-auto;
+  }
+
+  .split-editor-toolbar-group {
+    @apply flex items-center gap-0.5;
+  }
+
+  .split-editor-toolbar-divider {
+    @apply w-px h-5 bg-border mx-1;
+  }
+
+  .split-editor-toolbar-spacer {
+    @apply flex-1;
+  }
+
+  .split-editor-toolbar button {
+    @apply flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md;
+    transition-property: background-color, color;
+    transition-duration: var(--duration-fast);
+  }
+
+  .split-editor-toolbar button:hover {
+    @apply bg-muted text-foreground;
+  }
+
+  .split-editor-toolbar-toggle {
+    @apply w-auto px-3 gap-1.5;
+  }
+
+  .split-editor-toolbar-toggle.active {
+    @apply bg-primary/10 text-primary;
+  }
+
+  /* Main content area */
+  .split-editor-main {
+    @apply flex flex-1 min-h-0 overflow-hidden;
+  }
+
+  /* Split content (editor + preview) */
+  .split-editor-content {
+    @apply flex flex-1 min-w-0 overflow-hidden;
+  }
+
+  /* Editor pane */
+  .split-editor-pane {
+    @apply flex-1 flex flex-col min-w-0 overflow-hidden border-r border-border;
+  }
+
+  .split-editor-layout.preview-hidden .split-editor-pane {
+    @apply border-r-0;
+  }
+
+  .split-editor-form {
+    @apply flex flex-col flex-1 p-6 overflow-y-auto;
+  }
+
+  .split-editor-title-input {
+    @apply w-full text-2xl lg:text-3xl font-bold text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/40 mb-4;
+    resize: none;
+  }
+
+  .split-editor-title-input:focus {
+    @apply outline-none ring-0;
+  }
+
+  .split-editor-textarea-wrapper {
+    @apply relative flex-1 min-h-[400px];
+  }
+
+  .split-editor-textarea {
+    @apply w-full h-full min-h-[400px] text-base leading-relaxed font-mono text-foreground bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/40;
+  }
+
+  .split-editor-textarea:focus {
+    @apply outline-none ring-0;
+  }
+
+  /* Dropzone overlay */
+  .split-editor-dropzone-overlay {
+    @apply absolute inset-0 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary/30 rounded-lg pointer-events-none opacity-0;
+    transition: opacity 0.2s ease;
+  }
+
+  .split-editor-dropzone-overlay.active {
+    @apply opacity-100;
+  }
+
+  .split-editor-dropzone-content {
+    @apply flex flex-col items-center gap-2 text-primary;
+  }
+
+  /* Preview pane */
+  .split-editor-preview {
+    @apply flex-1 min-w-0 overflow-y-auto bg-card;
+  }
+
+  .split-editor-layout.preview-hidden .split-editor-preview {
+    @apply hidden;
+  }
+
+  .split-editor-preview-inner {
+    @apply p-6 max-w-3xl mx-auto;
+  }
+
+  .split-editor-preview-title {
+    @apply text-2xl lg:text-3xl font-bold text-foreground mb-6;
+  }
+
+  /* Sidebar */
+  .split-editor-sidebar {
+    @apply w-[280px] shrink-0 border-l border-border bg-sidebar overflow-y-auto;
+  }
+
+  .split-editor-layout.sidebar-hidden .split-editor-sidebar {
+    @apply hidden;
+  }
+
+  .split-editor-sidebar-content {
+    @apply p-4 space-y-5;
+  }
+
+  .split-editor-sidebar-section {
+    @apply space-y-2;
+  }
+
+  .split-editor-sidebar-heading {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  .split-editor-sidebar-danger {
+    @apply pt-4 mt-4 border-t border-border;
+  }
+
+  /* Preview content - code block styling */
+  .split-editor-preview .article-content pre {
+    @apply my-4 p-4 bg-[#0d1117] rounded-lg overflow-x-auto;
+  }
+
+  .split-editor-preview .article-content pre code {
+    @apply bg-transparent p-0 text-sm font-mono;
+  }
+
+  .split-editor-preview .article-content code:not(pre code) {
+    @apply px-1.5 py-0.5 bg-muted text-sm font-mono rounded;
+  }
+
+  /* Preview table styling */
+  .split-editor-preview .article-content table {
+    @apply w-full my-4 border-collapse;
+  }
+
+  .split-editor-preview .article-content th,
+  .split-editor-preview .article-content td {
+    @apply border border-border px-3 py-2 text-left;
+  }
+
+  .split-editor-preview .article-content th {
+    @apply bg-muted font-semibold;
+  }
 }
 
 @layer utilities {

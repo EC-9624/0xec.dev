@@ -196,6 +196,10 @@ func main() {
 	adminMux.HandleFunc("POST /admin/htmx/tags/create-inline", h.AdminTagCreateInline)
 	adminMux.HandleFunc("GET /admin/htmx/tags/{id}/posts", h.AdminTagPosts)
 
+	// Uploads (for post editor image upload)
+	adminMux.HandleFunc("POST /admin/uploads/image", h.AdminUploadImage)
+	adminMux.HandleFunc("DELETE /admin/uploads/image", h.AdminDeleteImage)
+
 	// Test routes (development only)
 	if cfg.IsDevelopment() {
 		adminMux.HandleFunc("GET /admin/test/errors", h.TestErrorPage)

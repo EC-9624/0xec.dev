@@ -57,8 +57,11 @@ templ adminBase(title string) {
 			<meta name="htmx-config" content='{"scrollBehavior":"smooth","responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'/>
 			<title>{ title } | Admin</title>
 			<link rel="stylesheet" href={ assets.Path("css/output.css") }/>
+			<link rel="stylesheet" href={ assets.Path("css/vendor/github-dark.min.css") }/>
 			<script src={ assets.Path("js/theme.js") }></script>
 			<script src={ assets.Path("js/htmx.min.js") } defer></script>
+			<script src={ assets.Path("js/vendor/marked.min.js") } defer></script>
+			<script src={ assets.Path("js/vendor/highlight.min.js") } defer></script>
 			<script src={ assets.Path("js/dist/bundle.js") } defer></script>
 		</head>
 		<body class="min-h-screen bg-background font-mono" hx-headers={ csrfHeaderJSON(ctx) }>

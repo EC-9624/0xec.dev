@@ -6,219 +6,313 @@ import (
 	"github.com/EC-9624/0xec.dev/web/templates/layouts"
 )
 
-// PostForm renders the full-page post editor with sidebar
+// PostForm renders the full-page split-view markdown editor
 templ PostForm(post *models.Post, tags []models.Tag, allTags []models.Tag, isNew bool, errors *models.FormErrors, input *models.CreatePostInput) {
 	@layouts.AdminFullWidth(postFormTitle(post, isNew), "/admin/posts") {
-		<div class="editor-layout" data-editor data-is-new={ boolToString(isNew) } data-editor-type="markdown">
-			<!-- Main Editor Area -->
-			<div class="editor-main">
-				<!-- Editor Header -->
-				<header class="editor-header">
-					<div class="editor-header-left">
-						<a href="/admin/posts" class="editor-back-btn" title="Back to posts">
-							@components.ArrowLeftIcon(components.IconMD)
-						</a>
-						<span class="editor-header-title" data-title-display>
-							if !isNew && post != nil {
-								{ post.Title }
-							} else {
-								Untitled
-							}
-						</span>
-					</div>
-					<div class="editor-header-center">
-						<span class="editor-status" data-status>
-							if !isNew && post != nil {
-								<span class="editor-status-saved" data-updated-at={ postUpdatedAtISO(post) }>
-									Last saved: { postUpdatedAtRelative(post) }
-								</span>
-							}
-						</span>
-					</div>
-					<div class="editor-header-right">
-						<button
-							type="button"
-							class="btn-outline btn-sm"
-							data-action-btn="save"
-							title="Save without publishing"
-						>
-							Save
-						</button>
-						@publishButton(post, isNew)
-					</div>
-				</header>
-
-				<!-- Editor Body -->
-				<div class="editor-body">
-					<form
-						id="post-editor-form"
-						if isNew {
-							action="/admin/posts"
+		<div 
+			class="split-editor-layout" 
+			data-editor 
+			data-is-new={ boolToString(isNew) } 
+			data-editor-type="split-markdown"
+			data-upload-url="/admin/uploads/image"
+		>
+			<!-- Editor Header -->
+			<header class="split-editor-header">
+				<div class="split-editor-header-left">
+					<a href="/admin/posts" class="split-editor-back-btn" title="Back to posts">
+						@components.ArrowLeftIcon(components.IconMD)
+					</a>
+					<span class="split-editor-title" data-title-display>
+						if !isNew && post != nil {
+							{ post.Title }
 						} else {
-							action={ templ.URL("/admin/posts/" + post.Slug) }
+							Untitled
 						}
-						method="POST"
-						class="editor-form"
-						data-validate
-						data-autosave={ postFormAutosaveURL(post, isNew) }
-						novalidate
-					>
-						<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
-						<input type="hidden" name="action" value="save" data-action-field/>
-						
-						<!-- Title Input -->
-						<input
-							type="text"
-							id="title"
-							name="title"
-							class="editor-title"
-							value={ postFormValue(post, input, "title") }
-							placeholder="Post title..."
-							required
-							maxlength="200"
-							autocomplete="off"
-							data-error-required="Title is required"
-							data-error-maxlength="Title cannot exceed 200 characters"
-						/>
-						@components.FieldError(errors, "title")
-						
-						<!-- Editor Content Area (component mountpoint) -->
-						<div class="editor-content-area" data-editor-mount>
-							<textarea
-								id="content"
-								name="content"
-								class="editor-content"
-								placeholder="Write your story..."
-								data-error-required="Content is required when publishing"
-							>{ postFormValue(post, input, "content") }</textarea>
-							@components.FieldError(errors, "content")
-						</div>
-
-						<!-- Hidden fields synced from sidebar -->
-						<input type="hidden" id="slug" name="slug" value={ postFormValue(post, input, "slug") }/>
-						<input type="hidden" id="excerpt" name="excerpt" value={ postFormValue(post, input, "excerpt") }/>
-						<input type="hidden" id="cover_image" name="cover_image" value={ postFormValue(post, input, "cover_image") }/>
-						<input type="hidden" id="is_draft" name="is_draft" value={ postFormIsDraftValue(post, input) }/>
-						
-						<!-- Tag IDs container -->
-						<div id="tag-ids-container">
-							for _, tagID := range postFormTagIDs(post, tags, input) {
-								<input type="hidden" name="tag_ids" value={ tagIDToString(tagID) } data-tag-id={ tagIDToString(tagID) }/>
-							}
-						</div>
-					</form>
+					</span>
 				</div>
+				<div class="split-editor-header-center">
+					<span class="editor-status" data-status>
+						if !isNew && post != nil {
+							<span class="editor-status-saved" data-updated-at={ postUpdatedAtISO(post) }>
+								Last saved: { postUpdatedAtRelative(post) }
+							</span>
+						}
+					</span>
+				</div>
+				<div class="split-editor-header-right">
+					<button type="button" class="btn-ghost btn-sm" data-action-btn="toggle-sidebar" title="Toggle sidebar">
+						@sidebarIcon()
+					</button>
+					<button type="button" class="btn-outline btn-sm" data-action-btn="save" title="Save without publishing">
+						Save
+					</button>
+					@publishButton(post, isNew)
+				</div>
+			</header>
 
-				<!-- Floating Markdown Toolbar -->
+			<!-- Markdown Toolbar -->
+			<div class="split-editor-toolbar" data-toolbar>
+				<div class="split-editor-toolbar-group">
+					<button type="button" data-action="heading" title="Heading (Ctrl+H)">
+						<span class="font-bold">H</span>
+					</button>
+					<button type="button" data-action="bold" title="Bold (Ctrl+B)">
+						<span class="font-bold">B</span>
+					</button>
+					<button type="button" data-action="italic" title="Italic (Ctrl+I)">
+						<span class="italic">I</span>
+					</button>
+					<button type="button" data-action="strikethrough" title="Strikethrough">
+						<span class="line-through">S</span>
+					</button>
+				</div>
+				<div class="split-editor-toolbar-divider"></div>
+				<div class="split-editor-toolbar-group">
+					<button type="button" data-action="quote" title="Quote">
+						@quoteIcon()
+					</button>
+					<button type="button" data-action="code" title="Inline Code (Ctrl+`)">
+						@codeIcon()
+					</button>
+					<button type="button" data-action="codeblock" title="Code Block">
+						@codeBlockIcon()
+					</button>
+				</div>
+				<div class="split-editor-toolbar-divider"></div>
+				<div class="split-editor-toolbar-group">
+					<button type="button" data-action="link" title="Link (Ctrl+K)">
+						@linkIcon()
+					</button>
+					<button type="button" data-action="image" title="Image (Ctrl+Shift+I)">
+						@imageIconSmall()
+					</button>
+				</div>
+				<div class="split-editor-toolbar-divider"></div>
+				<div class="split-editor-toolbar-group">
+					<button type="button" data-action="ul" title="Bullet List">
+						@listIcon()
+					</button>
+					<button type="button" data-action="ol" title="Numbered List">
+						@listOrderedIcon()
+					</button>
+					<button type="button" data-action="table" title="Table">
+						@tableIcon()
+					</button>
+				</div>
+				<div class="split-editor-toolbar-divider"></div>
+				<div class="split-editor-toolbar-group">
+					<button type="button" data-action="hr" title="Horizontal Rule">
+						@minusIcon()
+					</button>
+				</div>
+				<div class="split-editor-toolbar-spacer"></div>
+				<div class="split-editor-toolbar-group">
+					<button type="button" data-action="toggle-preview" title="Toggle Preview (Ctrl+P)" class="split-editor-toolbar-toggle" data-preview-toggle>
+						@eyeIcon()
+						<span>Preview</span>
+					</button>
+				</div>
 			</div>
 
-			<!-- Sidebar -->
-			<aside class="editor-sidebar">
-				<div class="editor-sidebar-content">
-					<!-- URL Section -->
-					<div class="editor-sidebar-section">
-						<h3 class="editor-sidebar-heading">URL</h3>
-						<div class="space-y-2">
-							<label for="sidebar-slug" class="label">Slug <span class="text-destructive">*</span></label>
+			<!-- Main Content Area -->
+			<div class="split-editor-main">
+				<!-- Editor + Preview Split -->
+				<div class="split-editor-content">
+					<!-- Editor Pane -->
+					<div class="split-editor-pane" data-editor-pane>
+						<form
+							id="post-editor-form"
+							if isNew {
+								action="/admin/posts"
+							} else {
+								action={ templ.URL("/admin/posts/" + post.Slug) }
+							}
+							method="POST"
+							class="split-editor-form"
+							data-validate
+							data-autosave={ postFormAutosaveURL(post, isNew) }
+							novalidate
+						>
+							<input type="hidden" name="csrf_token" value={ components.GetCSRFToken(ctx) }/>
+							<input type="hidden" name="action" value="save" data-action-field/>
+							
+							<!-- Title Input -->
 							<input
 								type="text"
-								id="sidebar-slug"
-								class={ components.InputClass(errors, "slug") }
-								value={ postFormValue(post, input, "slug") }
-								placeholder="post-url-slug"
+								id="title"
+								name="title"
+								class="split-editor-title-input"
+								value={ postFormValue(post, input, "title") }
+								placeholder="Post title..."
 								required
-								maxlength="100"
-								pattern="[a-z0-9-]+"
-								data-sync="slug"
+								maxlength="200"
+								autocomplete="off"
+								data-error-required="Title is required"
+								data-error-maxlength="Title cannot exceed 200 characters"
 							/>
-							<p class="text-xs text-muted-foreground">Lowercase letters, numbers, hyphens only</p>
-							@components.FieldError(errors, "slug")
-						</div>
-					</div>
-
-					<!-- SEO Section -->
-					<div class="editor-sidebar-section">
-						<h3 class="editor-sidebar-heading">SEO</h3>
-						<div class="space-y-2">
-							<label for="sidebar-excerpt" class="label">Excerpt</label>
-							<textarea
-								id="sidebar-excerpt"
-								rows="3"
-								class="textarea text-sm"
-								placeholder="Brief description for search engines and social sharing..."
-								data-sync="excerpt"
-							>{ postFormValue(post, input, "excerpt") }</textarea>
-						</div>
-					</div>
-
-					<!-- Media Section -->
-					<div class="editor-sidebar-section">
-						<h3 class="editor-sidebar-heading">Media</h3>
-						<div class="space-y-3">
-							<div class="space-y-2">
-								<label for="sidebar-cover-image" class="label">Cover Image URL</label>
-								<input
-									type="url"
-									id="sidebar-cover-image"
-									class={ components.InputClass(errors, "cover_image") }
-									value={ postFormValue(post, input, "cover_image") }
-									placeholder="https://example.com/image.jpg"
-									data-sync="cover_image"
-									data-preview-trigger
-								/>
-								@components.FieldError(errors, "cover_image")
+							@components.FieldError(errors, "title")
+							
+							<!-- Content Textarea -->
+							<div class="split-editor-textarea-wrapper" data-dropzone>
+								<textarea
+									id="content"
+									name="content"
+									class="split-editor-textarea"
+									placeholder="Write your story in Markdown..."
+									data-error-required="Content is required when publishing"
+								>{ postFormValue(post, input, "content") }</textarea>
+								<div class="split-editor-dropzone-overlay" data-dropzone-overlay>
+									<div class="split-editor-dropzone-content">
+										@components.UploadIcon(components.IconXXL)
+										<span>Drop image to upload</span>
+									</div>
+								</div>
 							</div>
-							<!-- Cover Image Preview -->
-							<div class="cover-image-preview" data-cover-preview>
-								if postFormValue(post, input, "cover_image") != "" {
-									<img 
-										src={ postFormValue(post, input, "cover_image") } 
-										alt="Cover preview"
-										class="cover-image-preview-img"
-										onerror="this.parentElement.classList.add('error')"
-										onload="this.parentElement.classList.remove('error')"
-									/>
+							@components.FieldError(errors, "content")
+
+							<!-- Hidden fields synced from sidebar -->
+							<input type="hidden" id="slug" name="slug" value={ postFormValue(post, input, "slug") }/>
+							<input type="hidden" id="excerpt" name="excerpt" value={ postFormValue(post, input, "excerpt") }/>
+							<input type="hidden" id="cover_image" name="cover_image" value={ postFormValue(post, input, "cover_image") }/>
+							<input type="hidden" id="is_draft" name="is_draft" value={ postFormIsDraftValue(post, input) }/>
+							
+							<!-- Tag IDs container -->
+							<div id="tag-ids-container">
+								for _, tagID := range postFormTagIDs(post, tags, input) {
+									<input type="hidden" name="tag_ids" value={ tagIDToString(tagID) } data-tag-id={ tagIDToString(tagID) }/>
 								}
-								<div class="cover-image-preview-placeholder">
-									@imageIcon()
-									<span>No image</span>
-								</div>
-								<div class="cover-image-preview-error">
-									@alertIcon()
-									<span>Failed to load</span>
-								</div>
+							</div>
+						</form>
+					</div>
+
+					<!-- Preview Pane -->
+					<div class="split-editor-preview" data-preview-pane>
+						<div class="split-editor-preview-inner">
+							<h1 class="split-editor-preview-title" data-preview-title>
+								if !isNew && post != nil {
+									{ post.Title }
+								} else {
+									Untitled
+								}
+							</h1>
+							<div class="article-content" data-preview-content>
+								<p class="text-muted-foreground">Start writing to see preview...</p>
 							</div>
 						</div>
 					</div>
-
-					<!-- Tags Section -->
-					<div class="editor-sidebar-section">
-						<h3 class="editor-sidebar-heading">Tags</h3>
-						@components.TagSelect(components.TagSelectProps{
-							AllTags:     allTags,
-							SelectedIDs: postFormTagIDs(post, tags, input),
-							FieldName:   "sidebar_tag_ids",
-						})
-					</div>
-
-					<!-- Danger Zone Section -->
-					if !isNew {
-						<div class="editor-sidebar-section editor-sidebar-danger">
-							<h3 class="editor-sidebar-heading text-destructive">Danger Zone</h3>
-							<button
-								type="button"
-								hx-delete={ "/admin/posts/" + post.Slug }
-								hx-confirm="Are you sure you want to delete this post? This action cannot be undone."
-								class="btn-destructive btn-sm w-full"
-							>
-								@components.TrashIcon(components.IconMD)
-								Delete Post
-							</button>
-						</div>
-					}
 				</div>
-			</aside>
+
+				<!-- Sidebar -->
+				<aside class="split-editor-sidebar" data-sidebar>
+					<div class="split-editor-sidebar-content">
+						<!-- URL Section -->
+						<div class="split-editor-sidebar-section">
+							<h3 class="split-editor-sidebar-heading">URL</h3>
+							<div class="space-y-2">
+								<label for="sidebar-slug" class="label">Slug <span class="text-destructive">*</span></label>
+								<input
+									type="text"
+									id="sidebar-slug"
+									class={ components.InputClass(errors, "slug") }
+									value={ postFormValue(post, input, "slug") }
+									placeholder="post-url-slug"
+									required
+									maxlength="100"
+									pattern="[a-z0-9-]+"
+									data-sync="slug"
+								/>
+								<p class="text-xs text-muted-foreground">Lowercase letters, numbers, hyphens only</p>
+								@components.FieldError(errors, "slug")
+							</div>
+						</div>
+
+						<!-- SEO Section -->
+						<div class="split-editor-sidebar-section">
+							<h3 class="split-editor-sidebar-heading">SEO</h3>
+							<div class="space-y-2">
+								<label for="sidebar-excerpt" class="label">Excerpt</label>
+								<textarea
+									id="sidebar-excerpt"
+									rows="3"
+									class="textarea text-sm"
+									placeholder="Brief description for search engines and social sharing..."
+									data-sync="excerpt"
+								>{ postFormValue(post, input, "excerpt") }</textarea>
+							</div>
+						</div>
+
+						<!-- Media Section -->
+						<div class="split-editor-sidebar-section">
+							<h3 class="split-editor-sidebar-heading">Media</h3>
+							<div class="space-y-3">
+								<div class="space-y-2">
+									<label for="sidebar-cover-image" class="label">Cover Image URL</label>
+									<input
+										type="url"
+										id="sidebar-cover-image"
+										class={ components.InputClass(errors, "cover_image") }
+										value={ postFormValue(post, input, "cover_image") }
+										placeholder="https://example.com/image.jpg"
+										data-sync="cover_image"
+										data-preview-trigger
+									/>
+									@components.FieldError(errors, "cover_image")
+								</div>
+								<!-- Cover Image Preview -->
+								<div class="cover-image-preview" data-cover-preview>
+									if postFormValue(post, input, "cover_image") != "" {
+										<img 
+											src={ postFormValue(post, input, "cover_image") } 
+											alt="Cover preview"
+											class="cover-image-preview-img"
+											onerror="this.parentElement.classList.add('error')"
+											onload="this.parentElement.classList.remove('error')"
+										/>
+									}
+									<div class="cover-image-preview-placeholder">
+										@imageIcon()
+										<span>No image</span>
+									</div>
+									<div class="cover-image-preview-error">
+										@alertIcon()
+										<span>Failed to load</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Tags Section -->
+						<div class="split-editor-sidebar-section">
+							<h3 class="split-editor-sidebar-heading">Tags</h3>
+							@components.TagSelect(components.TagSelectProps{
+								AllTags:     allTags,
+								SelectedIDs: postFormTagIDs(post, tags, input),
+								FieldName:   "sidebar_tag_ids",
+							})
+						</div>
+
+						<!-- Danger Zone Section -->
+						if !isNew {
+							<div class="split-editor-sidebar-section split-editor-sidebar-danger">
+								<h3 class="split-editor-sidebar-heading text-destructive">Danger Zone</h3>
+								<button
+									type="button"
+									hx-delete={ "/admin/posts/" + post.Slug }
+									hx-confirm="Are you sure you want to delete this post? This action cannot be undone."
+									class="btn-destructive btn-sm w-full"
+								>
+									@components.TrashIcon(components.IconMD)
+									Delete Post
+								</button>
+							</div>
+						}
+					</div>
+				</aside>
+			</div>
 		</div>
+
+		<!-- Hidden file input for image upload -->
+		<input type="file" id="image-upload-input" accept="image/*" class="hidden" data-image-input/>
 	}
 }
 
@@ -252,18 +346,92 @@ templ publishButton(post *models.Post, isNew bool) {
 	}
 }
 
-// Helper icons
-templ editorLinkIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+// Toolbar icons
+templ quoteIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"></path>
+		<path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"></path>
+	</svg>
+}
+
+templ codeIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<polyline points="16 18 22 12 16 6"></polyline>
+		<polyline points="8 6 2 12 8 18"></polyline>
+	</svg>
+}
+
+templ codeBlockIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<rect width="18" height="18" x="3" y="3" rx="2"></rect>
+		<path d="m10 10-2 2 2 2"></path>
+		<path d="m14 14 2-2-2-2"></path>
+	</svg>
+}
+
+templ linkIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 		<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
 		<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
 	</svg>
 }
 
-templ editorQuoteIcon() {
-	<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-		<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"></path>
-		<path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"></path>
+templ imageIconSmall() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+		<circle cx="9" cy="9" r="2"></circle>
+		<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+	</svg>
+}
+
+templ listIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<line x1="8" x2="21" y1="6" y2="6"></line>
+		<line x1="8" x2="21" y1="12" y2="12"></line>
+		<line x1="8" x2="21" y1="18" y2="18"></line>
+		<line x1="3" x2="3.01" y1="6" y2="6"></line>
+		<line x1="3" x2="3.01" y1="12" y2="12"></line>
+		<line x1="3" x2="3.01" y1="18" y2="18"></line>
+	</svg>
+}
+
+templ listOrderedIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<line x1="10" x2="21" y1="6" y2="6"></line>
+		<line x1="10" x2="21" y1="12" y2="12"></line>
+		<line x1="10" x2="21" y1="18" y2="18"></line>
+		<path d="M4 6h1v4"></path>
+		<path d="M4 10h2"></path>
+		<path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
+	</svg>
+}
+
+templ tableIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M12 3v18"></path>
+		<rect width="18" height="18" x="3" y="3" rx="2"></rect>
+		<path d="M3 9h18"></path>
+		<path d="M3 15h18"></path>
+	</svg>
+}
+
+templ minusIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M5 12h14"></path>
+	</svg>
+}
+
+templ eyeIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+		<circle cx="12" cy="12" r="3"></circle>
+	</svg>
+}
+
+templ sidebarIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<rect width="18" height="18" x="3" y="3" rx="2"></rect>
+		<path d="M15 3v18"></path>
 	</svg>
 }
 
