@@ -825,12 +825,11 @@ html:not(.light):not(.dark) {
   .card {
     @apply border border-border/50 bg-card text-card-foreground rounded-lg;
     box-shadow: var(--shadow-sm);
-    transition-property: transform, box-shadow;
+    transition-property: box-shadow;
     transition-duration: var(--duration-slow);
   }
 
   .card:hover {
-    transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
 
